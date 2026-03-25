@@ -27,8 +27,6 @@ export default function Usuarios() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  if (!isAdmin) return <Navigate to="/dashboard" replace />;
-
   const fetchUsers = async () => {
     setLoading(true);
     const { data: profiles } = await supabase.from('profiles').select('*').order('nome');
@@ -42,7 +40,11 @@ export default function Usuarios() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchUsers(); }, []);
+  useEffect(() => {
+    if (isAdmin) fetchUsers();
+  }, [isAdmin]);
+
+  if (!isAdmin) return <Navigate to="/dashboard" replace />;
 
   const changeRole = async (userId: string, newRole: string) => {
     const { error } = await supabase

@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,6 +10,8 @@ import Dashboard from "./pages/Dashboard";
 import ObraDetail from "./pages/ObraDetail";
 import Financeiro from "./pages/Financeiro";
 import Relatorios from "./pages/Relatorios";
+import Clientes from "./pages/Clientes";
+import Usuarios from "./pages/Usuarios";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +30,8 @@ const App = () => (
               <Route path="/obras/:id" element={<ObraDetail />} />
               <Route path="/financeiro" element={<Financeiro />} />
               <Route path="/relatorios" element={<Relatorios />} />
+              <Route path="/clientes" element={<Clientes />} />
+              <Route path="/usuarios" element={<Usuarios />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
