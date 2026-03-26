@@ -5,16 +5,18 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus, Users } from 'lucide-react';
+import { Plus, Users, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Clientes() {
-  const { canEdit } = useAuth();
+  const { canEdit, isAdmin } = useAuth();
   const [clientes, setClientes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [nome, setNome] = useState('');
   const [cpfCnpj, setCpfCnpj] = useState('');
   const [endereco, setEndereco] = useState('');
@@ -22,6 +24,11 @@ export default function Clientes() {
   const [telefone, setTelefone] = useState('');
   const [email, setEmail] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // Delete
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteNome, setDeleteNome] = useState('');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const fetchClientes = async () => {
     setLoading(true);
@@ -32,25 +39,80 @@ export default function Clientes() {
 
   useEffect(() => { fetchClientes(); }, []);
 
+  const resetForm = () => {
+    setNome(''); setCpfCnpj(''); setEndereco(''); setAdministradora(''); setTelefone(''); setEmail('');
+    setEditingId(null);
+  };
+
+  const openNew = () => {
+    resetForm();
+    setDialogOpen(true);
+  };
+
+  const openEdit = (c: any) => {
+    setEditingId(c.id);
+    setNome(c.nome || '');
+    setCpfCnpj(c.cpf_cnpj || '');
+    setEndereco(c.endereco || '');
+    setAdministradora(c.administradora || '');
+    setTelefone(c.telefone || '');
+    setEmail(c.email || '');
+    setDialogOpen(true);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!nome.trim()) { toast.error('Nome é obrigatório'); return; }
     setSaving(true);
-    const { error } = await supabase.from('clientes').insert({
-      nome,
+
+    const payload = {
+      nome: nome.trim(),
       cpf_cnpj: cpfCnpj || null,
       endereco: endereco || null,
       administradora: administradora || null,
       telefone: telefone || null,
       email: email || null,
-    });
-    setSaving(false);
-    if (error) toast.error('Erro: ' + error.message);
-    else {
+    };
+
+    if (editingId) {
+      const { error } = await supabase.from('clientes').update(payload).eq('id', editingId);
+      setSaving(false);
+      if (error) { toast.error('Erro: ' + error.message); return; }
+      toast.success('Cliente atualizado com sucesso!');
+    } else {
+      const { error } = await supabase.from('clientes').insert(payload);
+      setSaving(false);
+      if (error) { toast.error('Erro: ' + error.message); return; }
       toast.success('Cliente cadastrado!');
-      setNome(''); setCpfCnpj(''); setEndereco(''); setAdministradora(''); setTelefone(''); setEmail('');
-      setDialogOpen(false);
-      fetchClientes();
     }
+
+    resetForm();
+    setDialogOpen(false);
+    fetchClientes();
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
+
+    // Check if client has linked obras
+    const { data: obras } = await supabase.from('obras').select('id').eq('cliente_id', deleteId);
+    if (obras && obras.length > 0) {
+      toast.error('Este cliente possui obras vinculadas e não pode ser excluído');
+      setDeleteDialogOpen(false);
+      return;
+    }
+
+    const { error } = await supabase.from('clientes').delete().eq('id', deleteId);
+    if (error) { toast.error('Erro: ' + error.message); }
+    else { toast.success('Cliente excluído com sucesso!'); }
+    setDeleteDialogOpen(false);
+    fetchClientes();
+  };
+
+  const openDelete = (c: any) => {
+    setDeleteId(c.id);
+    setDeleteNome(c.nome);
+    setDeleteDialogOpen(true);
   };
 
   return (
@@ -61,7 +123,7 @@ export default function Clientes() {
           <p className="text-muted-foreground mt-1">Gerenciamento de clientes e condomínios</p>
         </div>
         {canEdit && (
-          <Button onClick={() => setDialogOpen(true)} className="bg-accent text-accent-foreground hover:bg-accent/90">
+          <Button onClick={openNew} className="bg-accent text-accent-foreground hover:bg-accent/90">
             <Plus className="h-4 w-4 mr-2" /> Novo Cliente
           </Button>
         )}
@@ -89,6 +151,7 @@ export default function Clientes() {
                   <TableHead>Administradora</TableHead>
                   <TableHead>Telefone</TableHead>
                   <TableHead>E-mail</TableHead>
+                  {canEdit && <TableHead>Ações</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -99,6 +162,20 @@ export default function Clientes() {
                     <TableCell>{c.administradora || '—'}</TableCell>
                     <TableCell>{c.telefone || '—'}</TableCell>
                     <TableCell>{c.email || '—'}</TableCell>
+                    {canEdit && (
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => openEdit(c)}>
+                            <Pencil className="h-4 w-4 mr-1" /> Editar
+                          </Button>
+                          {isAdmin && (
+                            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => openDelete(c)}>
+                              <Trash2 className="h-4 w-4 mr-1" /> Excluir
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -107,9 +184,12 @@ export default function Clientes() {
         </Card>
       )}
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {/* Dialog: Novo / Editar Cliente */}
+      <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
         <DialogContent>
-          <DialogHeader><DialogTitle className="font-display">Novo Cliente</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="font-display">{editingId ? 'Editar Cliente' : 'Novo Cliente'}</DialogTitle>
+          </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div><Label>Nome *</Label><Input value={nome} onChange={e => setNome(e.target.value)} required /></div>
             <div><Label>CPF/CNPJ</Label><Input value={cpfCnpj} onChange={e => setCpfCnpj(e.target.value)} /></div>
@@ -118,11 +198,29 @@ export default function Clientes() {
             <div><Label>Telefone</Label><Input value={telefone} onChange={e => setTelefone(e.target.value)} /></div>
             <div><Label>E-mail</Label><Input type="email" value={email} onChange={e => setEmail(e.target.value)} /></div>
             <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={saving}>
-              {saving ? 'Salvando...' : 'Cadastrar Cliente'}
+              {saving ? 'Salvando...' : editingId ? 'Salvar Alterações' : 'Cadastrar Cliente'}
             </Button>
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* AlertDialog: Confirmar Exclusão */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir cliente</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o cliente <strong>{deleteNome}</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
