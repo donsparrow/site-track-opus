@@ -204,7 +204,8 @@ export default function Relatorios() {
   };
 
   const handleGerarPDF = async () => {
-    if (!obraData || !empresa) { toast.error('Configure os dados da empresa primeiro'); return; }
+    if (!obraData) { toast.error('Selecione uma obra e consolide os dados'); return; }
+    if (!empresa) { toast.info('Dados da empresa não configurados. O PDF será gerado sem cabeçalho/logo.'); }
     setGenerating(true);
     const latestVersion = versoes.length > 0 ? versoes[0].numero_versao : 1;
     try {
