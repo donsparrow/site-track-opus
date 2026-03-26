@@ -37,6 +37,7 @@ interface RelatorioPDFData {
   imagens: any[];
   assinaturas: any[];
   versao?: number;
+  versoes?: { rev: string; data: string; resumo: string }[];
 }
 
 const fmt = (d: string) => {
@@ -261,7 +262,14 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   doc.text('RELATÓRIO DE OBRA', pageW / 2, coverY, { align: 'center' });
   coverY += 12;
 
-  if (data.versao) {
+  // REV label
+  if (data.versao !== undefined) {
+    const revLabel = `REV ${String(data.versao).padStart(2, '0')}`;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
+    doc.text(revLabel, pageW / 2, coverY, { align: 'center' });
+    coverY += 10;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100);
@@ -463,10 +471,28 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     }
   }
 
+  // =========== REVISION HISTORY ===========
+  if (data.versoes && data.versoes.length > 0) {
+    addFooter(currentPage);
+    newPage();
+    sectionTitle('10. HISTÓRICO DE REVISÕES');
+    autoTable(doc, {
+      startY: y,
+      head: [['Revisão', 'Data', 'Resumo das Alterações']],
+      body: data.versoes.map(v => [v.rev, v.data, v.resumo]),
+      margin: { left: MARGIN, right: MARGIN },
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [BLUE[0], BLUE[1], BLUE[2]], textColor: 255 },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      theme: 'striped',
+    });
+    y = (doc as any).lastAutoTable.finalY + 8;
+  }
+
   // =========== SIGNATURES ===========
   addFooter(currentPage);
   newPage();
-  sectionTitle('10. ASSINATURAS');
+  sectionTitle('11. ASSINATURAS');
   y += 5;
 
   if (data.assinaturas.length > 0) {

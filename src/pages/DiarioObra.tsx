@@ -43,6 +43,7 @@ export default function DiarioObra() {
   const [ocorrencias, setOcorrencias] = useState<any[]>([]);
   const [imagens, setImagens] = useState<any[]>([]);
   const [paralisacoes, setParalisacoes] = useState<any[]>([]);
+  const [prazoContratual, setPrazoContratual] = useState<number>(0);
 
   // Inline add forms
   const [addingEquipe, setAddingEquipe] = useState(false);
@@ -52,7 +53,7 @@ export default function DiarioObra() {
   const [addingParalisacao, setAddingParalisacao] = useState(false);
 
   useEffect(() => {
-    supabase.from('obras').select('id, nome').order('nome').then(({ data }) => setObras(data || []));
+    supabase.from('obras').select('id, nome, prazo_contratual_dias').order('nome').then(({ data }) => setObras(data || []));
   }, []);
 
   const fetchDiarios = async (obraId: string) => {
@@ -68,7 +69,11 @@ export default function DiarioObra() {
   };
 
   useEffect(() => {
-    if (selectedObra) fetchDiarios(selectedObra);
+    if (selectedObra) {
+      fetchDiarios(selectedObra);
+      const obra = obras.find(o => o.id === selectedObra);
+      setPrazoContratual((obra as any)?.prazo_contratual_dias || 0);
+    }
   }, [selectedObra]);
 
   const fetchDiarioDetails = async (diario: any) => {
@@ -192,6 +197,34 @@ export default function DiarioObra() {
           </Button>
         )}
       </div>
+
+      {selectedObra && (
+        <Card className="mb-6">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-4">
+              <Label className="whitespace-nowrap text-sm font-medium">Prazo Contratual (dias úteis):</Label>
+              <Input
+                type="number"
+                min={1}
+                className="w-32"
+                value={prazoContratual || ''}
+                onChange={e => {
+                  const val = parseInt(e.target.value);
+                  setPrazoContratual(val >= 1 ? val : 0);
+                }}
+                onBlur={() => {
+                  if (prazoContratual >= 1) {
+                    supabase.from('obras').update({ prazo_contratual_dias: prazoContratual } as any).eq('id', selectedObra);
+                    toast.success('Prazo contratual atualizado');
+                  }
+                }}
+                placeholder="Dias"
+              />
+              <span className="text-xs text-muted-foreground">{prazoContratual > 0 ? `${prazoContratual} dias` : 'Não definido'}</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {selectedObra && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

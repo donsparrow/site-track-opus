@@ -707,6 +707,7 @@ export type Database = {
           endereco: string | null
           id: string
           nome: string
+          prazo_contratual_dias: number | null
           responsavel: string | null
           status: string
           updated_at: string
@@ -719,6 +720,7 @@ export type Database = {
           endereco?: string | null
           id?: string
           nome: string
+          prazo_contratual_dias?: number | null
           responsavel?: string | null
           status?: string
           updated_at?: string
@@ -731,6 +733,7 @@ export type Database = {
           endereco?: string | null
           id?: string
           nome?: string
+          prazo_contratual_dias?: number | null
           responsavel?: string | null
           status?: string
           updated_at?: string
@@ -958,6 +961,7 @@ export type Database = {
           observacoes: string | null
           prazo_ajustado: number | null
           prazo_contratual_dias_uteis: number | null
+          revisao_pdf: number | null
           saldo_prazo: number | null
           status: string
           updated_at: string
@@ -973,6 +977,7 @@ export type Database = {
           observacoes?: string | null
           prazo_ajustado?: number | null
           prazo_contratual_dias_uteis?: number | null
+          revisao_pdf?: number | null
           saldo_prazo?: number | null
           status?: string
           updated_at?: string
@@ -988,6 +993,7 @@ export type Database = {
           observacoes?: string | null
           prazo_ajustado?: number | null
           prazo_contratual_dias_uteis?: number | null
+          revisao_pdf?: number | null
           saldo_prazo?: number | null
           status?: string
           updated_at?: string
