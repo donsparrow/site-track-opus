@@ -210,6 +210,7 @@ export default function Relatorios() {
         .select()
         .single();
       relatorio = newRel;
+      setRevisaoPdf(0);
 
       if (relatorio && user) {
         await supabase.from('relatorio_versoes').insert({
