@@ -73,7 +73,7 @@ export default function Dashboard() {
     setParcelasAtrasadas(late);
 
     // Build obra summaries
-    const obrasComResumo: ObraResumo[] = obrasData.map((obra: any) => {
+    const obrasComResumo: ObraResumo[] = filteredObras.map((obra: any) => {
       const obraReceitas = (allReceitas || []).filter(r => r.obra_id === obra.id);
       const obraReceitaIds = obraReceitas.map(r => r.id);
       const obraDespesas = (allDespesas || []).filter(d => d.obra_id === obra.id);
