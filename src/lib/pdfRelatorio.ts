@@ -351,7 +351,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   if (data.ocorrencias.length > 0) {
     sectionTitle('8. OCORRÊNCIAS');
     checkPage(20);
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: y,
       head: [['Descrição', 'Impacto']],
       body: data.ocorrencias.map(o => [o.descricao, o.impacto]),
