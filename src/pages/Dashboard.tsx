@@ -48,8 +48,14 @@ export default function Dashboard() {
 
     if (!obrasData) { setLoading(false); return; }
 
-    // Fetch all financial data in fewer queries
-    const obraIds = obrasData.map((o: any) => o.id);
+    // Filter obras based on user access
+    const filteredObras = filterObras(obrasData as any[]);
+    const obraIds = filteredObras.map((o: any) => o.id);
+    if (obraIds.length === 0) {
+      setObras([]);
+      setLoading(false);
+      return;
+    }
 
     const { data: allReceitas } = await supabase.from('receitas').select('id, valor_total, obra_id').in('obra_id', obraIds);
     const { data: allDespesas } = await supabase.from('despesas').select('valor, obra_id, tipo, data').in('obra_id', obraIds);
