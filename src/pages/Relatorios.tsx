@@ -5,18 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { FileText, Calendar, Clock, BarChart3, PenTool, History, Download } from 'lucide-react';
+import { FileText, Calendar, Clock, BarChart3, PenTool, History, Download, Save, Edit, Eye, List, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import { gerarRelatorioPDF } from '@/lib/pdfRelatorio';
 import SignatureCanvas from 'react-signature-canvas';
 
-// Business days calculation (Mon-Fri)
 function calcBusinessDays(start: string, end: string): number {
   const s = new Date(start + 'T00:00:00');
   const e = new Date(end + 'T00:00:00');
@@ -30,8 +28,11 @@ function calcBusinessDays(start: string, end: string): number {
   return count;
 }
 
+type ViewMode = 'list' | 'edit';
+
 export default function Relatorios() {
   const { canEdit, user, role } = useAuth();
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [obras, setObras] = useState<any[]>([]);
   const [selectedObra, setSelectedObra] = useState('');
   const [obraData, setObraData] = useState<any>(null);
@@ -39,6 +40,9 @@ export default function Relatorios() {
   // Period
   const [periodoInicio, setPeriodoInicio] = useState('');
   const [periodoFim, setPeriodoFim] = useState('');
+
+  // Editable prazo contratual
+  const [prazoContratualManual, setPrazoContratualManual] = useState<number | null>(null);
 
   // Computed data
   const [prazos, setPrazos] = useState({ contratual: 0, parados: 0, ajustado: 0, trabalhados: 0, saldo: 0 });
@@ -56,7 +60,13 @@ export default function Relatorios() {
   const [assinaturas, setAssinaturas] = useState<any[]>([]);
   const [signOpen, setSignOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [empresa, setEmpresa] = useState<any>(null);
+
+  // Listing
+  const [relatoriosList, setRelatoriosList] = useState<any[]>([]);
+  const [filtroObra, setFiltroObra] = useState('');
+  const [filtroStatus, setFiltroStatus] = useState('');
 
   const sigRef = useRef<SignatureCanvas>(null);
   const [signName, setSignName] = useState('');
@@ -66,7 +76,16 @@ export default function Relatorios() {
   useEffect(() => {
     supabase.from('obras').select('id, nome, data_inicio, data_fim_prevista, endereco, responsavel, clientes(nome, cpf_cnpj, email, telefone)').order('nome').then(({ data }) => setObras(data || []));
     supabase.from('configuracoes_empresa').select('*').limit(1).single().then(({ data }) => setEmpresa(data));
+    loadRelatoriosList();
   }, []);
+
+  const loadRelatoriosList = async () => {
+    const { data } = await supabase
+      .from('relatorios')
+      .select('*, obras(nome, clientes(nome))')
+      .order('created_at', { ascending: false });
+    setRelatoriosList(data || []);
+  };
 
   useEffect(() => {
     if (selectedObra) {
@@ -74,13 +93,27 @@ export default function Relatorios() {
       setObraData(obra);
       if (obra?.data_inicio) setPeriodoInicio(obra.data_inicio);
       if (obra?.data_fim_prevista) setPeriodoFim(obra.data_fim_prevista);
+      setPrazoContratualManual(null);
     }
   }, [selectedObra, obras]);
+
+  // Recalculate prazos when manual prazo changes
+  useEffect(() => {
+    if (prazoContratualManual !== null && prazoContratualManual >= 1) {
+      const ajustado = prazoContratualManual + prazos.parados;
+      const saldo = ajustado - prazos.trabalhados;
+      setPrazos(prev => ({
+        ...prev,
+        contratual: prazoContratualManual,
+        ajustado,
+        saldo,
+      }));
+    }
+  }, [prazoContratualManual]);
 
   const consolidar = async () => {
     if (!selectedObra || !periodoInicio || !periodoFim) return;
 
-    // Fetch diarios in period
     const { data: diariosList } = await supabase
       .from('diario_obra')
       .select('*')
@@ -112,13 +145,14 @@ export default function Relatorios() {
       setAllEquipe([]); setAllAtividades([]); setAllMateriais([]); setAllOcorrencias([]); setAllImagens([]); setParalisacoes([]);
     }
 
-    // Calculate prazos
     const obra = obras.find(o => o.id === selectedObra);
-    const prazoContratual = obra?.data_inicio && obra?.data_fim_prevista
-      ? calcBusinessDays(obra.data_inicio, obra.data_fim_prevista)
-      : 0;
+    let prazoContratual = prazoContratualManual;
+    if (prazoContratual === null) {
+      prazoContratual = obra?.data_inicio && obra?.data_fim_prevista
+        ? calcBusinessDays(obra.data_inicio, obra.data_fim_prevista)
+        : 0;
+    }
 
-    // Sum paralisacoes days in this period
     let diasParados = 0;
     if (diarioIds.length > 0) {
       const { data: parData } = await supabase
@@ -143,7 +177,7 @@ export default function Relatorios() {
     // Find or create relatorio
     let { data: relatorio } = await supabase
       .from('relatorios')
-      .select('id')
+      .select('id, status, prazo_contratual_dias_uteis')
       .eq('obra_id', selectedObra)
       .gte('data_inicio', periodoInicio)
       .lte('data_fim', periodoFim)
@@ -161,12 +195,12 @@ export default function Relatorios() {
           dias_trabalhados: diasTrabalhados,
           prazo_ajustado: prazoAjustado,
           saldo_prazo: saldoPrazo,
+          status: 'rascunho',
         })
         .select()
         .single();
       relatorio = newRel;
 
-      // Create version 1
       if (relatorio && user) {
         await supabase.from('relatorio_versoes').insert({
           relatorio_id: relatorio.id,
@@ -182,7 +216,11 @@ export default function Relatorios() {
         });
       }
     } else {
-      // Update existing
+      // Load saved manual prazo if exists and user hasn't set one
+      if (prazoContratualManual === null && relatorio.prazo_contratual_dias_uteis) {
+        setPrazoContratualManual(relatorio.prazo_contratual_dias_uteis);
+      }
+
       await supabase.from('relatorios').update({
         prazo_contratual_dias_uteis: prazoContratual,
         dias_parados: diasParados,
@@ -201,6 +239,61 @@ export default function Relatorios() {
     }
 
     toast.success('Dados consolidados!');
+  };
+
+  const handleSalvar = async () => {
+    if (!relatorioId) { toast.error('Consolide os dados primeiro'); return; }
+    setSaving(true);
+
+    try {
+      const prazoVal = prazoContratualManual !== null ? prazoContratualManual : prazos.contratual;
+      await supabase.from('relatorios').update({
+        prazo_contratual_dias_uteis: prazoVal,
+        dias_parados: prazos.parados,
+        dias_trabalhados: prazos.trabalhados,
+        prazo_ajustado: prazos.ajustado,
+        saldo_prazo: prazos.saldo,
+        data_inicio: periodoInicio,
+        data_fim: periodoFim,
+      }).eq('id', relatorioId);
+
+      // Create new version
+      if (user) {
+        const nextVersion = versoes.length > 0 ? versoes[0].numero_versao + 1 : 1;
+        await supabase.from('relatorio_versoes').insert({
+          relatorio_id: relatorioId,
+          numero_versao: nextVersion,
+          criado_por: user.id,
+          status: 'rascunho',
+          descricao_alteracao: 'Relatório salvo',
+          snapshot_dados: {
+            prazos,
+            periodo: { inicio: periodoInicio, fim: periodoFim },
+            diarios_count: diarios.length,
+            equipe_count: allEquipe.length,
+            atividades_count: allAtividades.length,
+            materiais_count: allMateriais.length,
+            ocorrencias_count: allOcorrencias.length,
+            imagens_count: allImagens.length,
+          },
+        });
+        await supabase.from('relatorio_logs').insert({
+          relatorio_id: relatorioId,
+          usuario_id: user.id,
+          acao: 'salvou',
+        });
+      }
+
+      // Reload versions
+      const { data: vers } = await supabase.from('relatorio_versoes').select('*').eq('relatorio_id', relatorioId).order('numero_versao', { ascending: false });
+      setVersoes(vers || []);
+      await loadRelatoriosList();
+
+      toast.success('Relatório salvo com sucesso!');
+    } catch (err: any) {
+      toast.error('Erro ao salvar: ' + err.message);
+    }
+    setSaving(false);
   };
 
   const handleGerarPDF = async () => {
@@ -233,7 +326,6 @@ export default function Relatorios() {
       });
       toast.success('PDF gerado!');
 
-      // Log
       if (relatorioId && user) {
         await supabase.from('relatorio_logs').insert({
           relatorio_id: relatorioId,
@@ -245,6 +337,18 @@ export default function Relatorios() {
       toast.error('Erro ao gerar PDF: ' + err.message);
     }
     setGenerating(false);
+  };
+
+  const handleOpenRelatorio = async (rel: any) => {
+    setSelectedObra(rel.obra_id);
+    setPeriodoInicio(rel.data_inicio || '');
+    setPeriodoFim(rel.data_fim || '');
+    if (rel.prazo_contratual_dias_uteis) {
+      setPrazoContratualManual(rel.prazo_contratual_dias_uteis);
+    }
+    setViewMode('edit');
+    // Wait for obra data to load then consolidate
+    setTimeout(() => consolidar(), 500);
   };
 
   const handleSign = async () => {
@@ -268,7 +372,6 @@ export default function Relatorios() {
     });
     if (error) { toast.error(error.message); return; }
 
-    // Create new version as signed
     if (user) {
       const nextVersion = versoes.length > 0 ? versoes[0].numero_versao + 1 : 1;
       await supabase.from('relatorio_versoes').insert({
@@ -291,11 +394,122 @@ export default function Relatorios() {
     consolidar();
   };
 
+  const filteredRelatorios = relatoriosList.filter(r => {
+    if (filtroObra && r.obra_id !== filtroObra) return false;
+    if (filtroStatus && r.status !== filtroStatus) return false;
+    return true;
+  });
+
   const saldoColor = prazos.saldo > 0 ? 'text-success' : prazos.saldo < 0 ? 'text-destructive' : 'text-foreground';
 
+  const statusBadge = (status: string) => {
+    const map: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
+      rascunho: 'outline',
+      finalizado: 'secondary',
+      assinado: 'default',
+    };
+    return <Badge variant={map[status] || 'outline'}>{status}</Badge>;
+  };
+
+  // ========== LIST VIEW ==========
+  if (viewMode === 'list') {
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-display font-bold">Relatórios</h1>
+          <Button onClick={() => { setRelatorioId(null); setSelectedObra(''); setPeriodoInicio(''); setPeriodoFim(''); setPrazoContratualManual(null); setViewMode('edit'); }} className="bg-accent text-accent-foreground hover:bg-accent/90">
+            <FileText className="h-4 w-4 mr-2" />Novo Relatório
+          </Button>
+        </div>
+
+        {/* Filters */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              <div>
+                <Label>Filtrar por Obra</Label>
+                <Select value={filtroObra} onValueChange={setFiltroObra}>
+                  <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    {obras.map(o => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Filtrar por Status</Label>
+                <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+                  <SelectTrigger><SelectValue placeholder="Todos" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="rascunho">Rascunho</SelectItem>
+                    <SelectItem value="finalizado">Finalizado</SelectItem>
+                    <SelectItem value="assinado">Assinado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button variant="outline" onClick={() => { setFiltroObra(''); setFiltroStatus(''); }}>
+                <Filter className="h-4 w-4 mr-2" />Limpar Filtros
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Table */}
+        <Card>
+          <CardContent className="pt-6">
+            {filteredRelatorios.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">Nenhum relatório encontrado</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Obra</TableHead>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Período</TableHead>
+                    <TableHead>Criado em</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredRelatorios.map(r => (
+                    <TableRow key={r.id}>
+                      <TableCell className="font-medium">{r.obras?.nome || '—'}</TableCell>
+                      <TableCell>{r.obras?.clientes?.nome || '—'}</TableCell>
+                      <TableCell className="text-sm">
+                        {r.data_inicio ? new Date(r.data_inicio + 'T00:00:00').toLocaleDateString('pt-BR') : '—'} a{' '}
+                        {r.data_fim ? new Date(r.data_fim + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}
+                      </TableCell>
+                      <TableCell className="text-sm">{new Date(r.created_at).toLocaleDateString('pt-BR')}</TableCell>
+                      <TableCell>{statusBadge(r.status)}</TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="ghost" onClick={() => handleOpenRelatorio(r)} title="Editar">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // ========== EDIT VIEW ==========
   return (
     <div>
-      <h1 className="text-3xl font-display font-bold mb-8">Relatórios</h1>
+      <div className="flex items-center gap-3 mb-8">
+        <Button variant="outline" onClick={() => { setViewMode('list'); loadRelatoriosList(); }}>
+          <List className="h-4 w-4 mr-2" />Voltar à Lista
+        </Button>
+        <h1 className="text-3xl font-display font-bold">{relatorioId ? 'Editar Relatório' : 'Novo Relatório'}</h1>
+      </div>
 
       {/* Obra & Period Selection */}
       <Card className="mb-6">
@@ -344,6 +558,32 @@ export default function Relatorios() {
             </Card>
           )}
 
+          {/* Editable Prazo Contratual + Indicators */}
+          <Card className="mb-6">
+            <CardHeader className="py-3">
+              <CardTitle className="text-sm font-display">Prazo Contratual (dias úteis)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4">
+                <Input
+                  type="number"
+                  min={1}
+                  className="w-40"
+                  value={prazoContratualManual !== null ? prazoContratualManual : prazos.contratual}
+                  onChange={e => {
+                    const val = parseInt(e.target.value);
+                    if (val >= 1) setPrazoContratualManual(val);
+                    else if (e.target.value === '') setPrazoContratualManual(null);
+                  }}
+                  placeholder="Dias úteis"
+                />
+                <span className="text-sm text-muted-foreground">
+                  {prazoContratualManual !== null ? '(valor manual)' : '(calculado da obra)'}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Indicators */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
             {[
@@ -366,11 +606,16 @@ export default function Relatorios() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 mb-6">
+          <div className="flex gap-3 mb-6 flex-wrap">
             {canEdit && (
-              <Button onClick={handleGerarPDF} disabled={generating} className="bg-accent text-accent-foreground hover:bg-accent/90">
-                <Download className="h-4 w-4 mr-2" />{generating ? 'Gerando...' : 'Gerar PDF'}
-              </Button>
+              <>
+                <Button onClick={handleSalvar} disabled={saving} variant="outline">
+                  <Save className="h-4 w-4 mr-2" />{saving ? 'Salvando...' : 'Salvar Relatório'}
+                </Button>
+                <Button onClick={handleGerarPDF} disabled={generating} className="bg-accent text-accent-foreground hover:bg-accent/90">
+                  <Download className="h-4 w-4 mr-2" />{generating ? 'Gerando...' : 'Gerar PDF'}
+                </Button>
+              </>
             )}
             <Button variant="outline" onClick={() => setSignOpen(true)}>
               <PenTool className="h-4 w-4 mr-2" />Assinar
