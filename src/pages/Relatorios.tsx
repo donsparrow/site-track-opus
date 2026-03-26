@@ -412,8 +412,12 @@ export default function Relatorios() {
     setSelectedObra(rel.obra_id);
     setPeriodoInicio(rel.data_inicio || '');
     setPeriodoFim(rel.data_fim || '');
-    if (rel.prazo_contratual_dias_uteis) {
-      setPrazoContratualManual(rel.prazo_contratual_dias_uteis);
+    // Always fetch prazo from obras (single source of truth)
+    const { data: obraAtual } = await supabase.from('obras').select('prazo_contratual_dias').eq('id', rel.obra_id).single();
+    if (obraAtual?.prazo_contratual_dias && obraAtual.prazo_contratual_dias > 0) {
+      setPrazoContratualManual(obraAtual.prazo_contratual_dias);
+    } else {
+      setPrazoContratualManual(null);
     }
     setViewMode('edit');
     // Wait for obra data to load then consolidate
