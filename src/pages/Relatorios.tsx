@@ -94,7 +94,12 @@ export default function Relatorios() {
       setObraData(obra);
       if (obra?.data_inicio) setPeriodoInicio(obra.data_inicio);
       if (obra?.data_fim_prevista) setPeriodoFim(obra.data_fim_prevista);
-      setPrazoContratualManual(null);
+      // Use centralized prazo from obra
+      if (obra?.prazo_contratual_dias && obra.prazo_contratual_dias > 0) {
+        setPrazoContratualManual(obra.prazo_contratual_dias);
+      } else {
+        setPrazoContratualManual(null);
+      }
     }
   }, [selectedObra, obras]);
 
