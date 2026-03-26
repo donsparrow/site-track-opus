@@ -64,7 +64,7 @@ export default function Relatorios() {
   const [signTipo, setSignTipo] = useState('responsavel_tecnico');
 
   useEffect(() => {
-    supabase.from('obras').select('id, nome, data_inicio, data_fim_prevista, endereco, clientes(nome)').order('nome').then(({ data }) => setObras(data || []));
+    supabase.from('obras').select('id, nome, data_inicio, data_fim_prevista, endereco, clientes(nome, cpf_cnpj, email, telefone)').order('nome').then(({ data }) => setObras(data || []));
     supabase.from('configuracoes_empresa').select('*').limit(1).single().then(({ data }) => setEmpresa(data));
   }, []);
 
