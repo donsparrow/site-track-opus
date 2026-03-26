@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 interface RelatorioPDFData {
   empresa: {
@@ -284,7 +284,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     ['Dias Trabalhados', String(data.prazos.trabalhados)],
     ['Saldo de Prazo', String(data.prazos.saldo)],
   ];
-  (doc as any).autoTable({
+  autoTable(doc, {
     startY: y,
     head: [['Indicador', 'Valor']],
     body: prazoData,
@@ -300,7 +300,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   if (data.atividades.length > 0) {
     sectionTitle('5. DESCRIÇÃO DOS SERVIÇOS');
     checkPage(20);
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: y,
       head: [['Descrição', 'Status']],
       body: data.atividades.map(a => [a.descricao, a.status]),
@@ -317,7 +317,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   if (data.equipe.length > 0) {
     sectionTitle('6. EQUIPE');
     checkPage(20);
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: y,
       head: [['Funcionário', 'Função', 'Horas Trabalhadas']],
       body: data.equipe.map(e => [e.nome_funcionario, e.funcao || '—', `${e.horas_trabalhadas || 0}h`]),
@@ -334,7 +334,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   if (data.materiais.length > 0) {
     sectionTitle('7. MATERIAIS UTILIZADOS');
     checkPage(20);
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: y,
       head: [['Material', 'Quantidade', 'Unidade']],
       body: data.materiais.map(m => [m.material, String(m.quantidade || 0), m.unidade || 'un']),
@@ -351,7 +351,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   if (data.ocorrencias.length > 0) {
     sectionTitle('8. OCORRÊNCIAS');
     checkPage(20);
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: y,
       head: [['Descrição', 'Impacto']],
       body: data.ocorrencias.map(o => [o.descricao, o.impacto]),
