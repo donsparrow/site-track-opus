@@ -536,5 +536,15 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     addFooter(i - 1); // page numbering starts at 1 after cover
   }
 
-  doc.save(`relatorio_${data.obra.nome.replace(/\s+/g, '_')}_v${data.versao || 1}.pdf`);
+  const hoje = new Date();
+  const dataFormatada = `${String(hoje.getDate()).padStart(2, '0')}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${hoje.getFullYear()}`;
+  const nomeObra = data.obra.nome.toLowerCase().replace(/\s+/g, '_').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const fileName = `relatorio_${nomeObra}_${dataFormatada}.pdf`;
+
+  try {
+    doc.save(fileName);
+  } catch {
+    // Fallback: open in new tab
+    window.open(doc.output('bloburl'), '_blank');
+  }
 }
