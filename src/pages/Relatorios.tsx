@@ -231,6 +231,7 @@ export default function Relatorios() {
       if (prazoContratualManual === null && relatorio.prazo_contratual_dias_uteis) {
         setPrazoContratualManual(relatorio.prazo_contratual_dias_uteis);
       }
+      setRevisaoPdf((relatorio as any).revisao_pdf || 0);
 
       await supabase.from('relatorios').update({
         prazo_contratual_dias_uteis: prazoContratual,
