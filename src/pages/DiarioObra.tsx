@@ -69,7 +69,11 @@ export default function DiarioObra() {
   };
 
   useEffect(() => {
-    if (selectedObra) fetchDiarios(selectedObra);
+    if (selectedObra) {
+      fetchDiarios(selectedObra);
+      const obra = obras.find(o => o.id === selectedObra);
+      setPrazoContratual((obra as any)?.prazo_contratual_dias || 0);
+    }
   }, [selectedObra]);
 
   const fetchDiarioDetails = async (diario: any) => {
