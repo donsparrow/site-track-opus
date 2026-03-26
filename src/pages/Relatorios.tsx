@@ -210,10 +210,11 @@ export default function Relatorios() {
     const latestVersion = versoes.length > 0 ? versoes[0].numero_versao : 1;
     try {
       await gerarRelatorioPDF({
-        empresa: empresa || {},
+        empresa: empresa || null,
         obra: {
           nome: obraData.nome,
           endereco: obraData.endereco || '',
+          responsavel: obraData.responsavel || '',
           cliente_nome: obraData.clientes?.nome || '',
           cliente_cpf_cnpj: obraData.clientes?.cpf_cnpj || '',
           cliente_email: obraData.clientes?.email || '',
