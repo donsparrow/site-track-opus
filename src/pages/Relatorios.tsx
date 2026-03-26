@@ -87,7 +87,8 @@ export default function Relatorios() {
       .from('relatorios')
       .select('*, obras(nome, clientes(nome))')
       .order('created_at', { ascending: false });
-    setRelatoriosList(data || []);
+    const filtered = (data || []).filter((r: any) => isObraAllowed(r.obra_id));
+    setRelatoriosList(filtered);
   };
 
   useEffect(() => {
