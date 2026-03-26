@@ -36,6 +36,7 @@ export default function Relatorios() {
   const [obras, setObras] = useState<any[]>([]);
   const [selectedObra, setSelectedObra] = useState('');
   const [obraData, setObraData] = useState<any>(null);
+  const [revisaoPdf, setRevisaoPdf] = useState<number>(0);
 
   // Period
   const [periodoInicio, setPeriodoInicio] = useState('');
