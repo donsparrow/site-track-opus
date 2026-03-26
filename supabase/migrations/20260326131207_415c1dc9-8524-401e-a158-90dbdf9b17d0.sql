@@ -1,0 +1,1 @@
+UPDATE obras SET cliente_id = '23bbc0b7-5fd7-4c8d-b2a4-62365b0da256' WHERE id = '295a205c-3c99-4a5a-a2a5-26f5a05e6c53';
