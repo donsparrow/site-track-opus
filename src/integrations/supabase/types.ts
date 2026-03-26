@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      assinaturas: {
+        Row: {
+          assinatura_url: string
+          cargo: string | null
+          created_at: string
+          data_assinatura: string
+          id: string
+          nome_assinante: string
+          relatorio_id: string
+          tipo: string
+          tipo_assinatura: string
+        }
+        Insert: {
+          assinatura_url: string
+          cargo?: string | null
+          created_at?: string
+          data_assinatura?: string
+          id?: string
+          nome_assinante: string
+          relatorio_id: string
+          tipo?: string
+          tipo_assinatura?: string
+        }
+        Update: {
+          assinatura_url?: string
+          cargo?: string | null
+          created_at?: string
+          data_assinatura?: string
+          id?: string
+          nome_assinante?: string
+          relatorio_id?: string
+          tipo?: string
+          tipo_assinatura?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assinaturas_relatorio_id_fkey"
+            columns: ["relatorio_id"]
+            isOneToOne: false
+            referencedRelation: "relatorios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       atividades_obra: {
         Row: {
           created_at: string
@@ -182,6 +226,48 @@ export type Database = {
           },
         ]
       }
+      configuracoes_empresa: {
+        Row: {
+          cnpj: string | null
+          created_at: string
+          email: string | null
+          endereco: string | null
+          id: string
+          instagram: string | null
+          logo_url: string | null
+          nome_empresa: string
+          site: string | null
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          instagram?: string | null
+          logo_url?: string | null
+          nome_empresa?: string
+          site?: string | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          instagram?: string | null
+          logo_url?: string | null
+          nome_empresa?: string
+          site?: string | null
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       despesas: {
         Row: {
           anexo: string | null
@@ -225,6 +311,257 @@ export type Database = {
             columns: ["obra_id"]
             isOneToOne: false
             referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      diario_atividades: {
+        Row: {
+          created_at: string
+          descricao: string
+          diario_id: string
+          id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          diario_id: string
+          id?: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          diario_id?: string
+          id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diario_atividades_diario_id_fkey"
+            columns: ["diario_id"]
+            isOneToOne: false
+            referencedRelation: "diario_obra"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      diario_equipe: {
+        Row: {
+          created_at: string
+          diario_id: string
+          funcao: string | null
+          horas_trabalhadas: number | null
+          id: string
+          nome_funcionario: string
+        }
+        Insert: {
+          created_at?: string
+          diario_id: string
+          funcao?: string | null
+          horas_trabalhadas?: number | null
+          id?: string
+          nome_funcionario: string
+        }
+        Update: {
+          created_at?: string
+          diario_id?: string
+          funcao?: string | null
+          horas_trabalhadas?: number | null
+          id?: string
+          nome_funcionario?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diario_equipe_diario_id_fkey"
+            columns: ["diario_id"]
+            isOneToOne: false
+            referencedRelation: "diario_obra"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      diario_imagens: {
+        Row: {
+          created_at: string
+          descricao: string | null
+          diario_id: string
+          id: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          descricao?: string | null
+          diario_id: string
+          id?: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string | null
+          diario_id?: string
+          id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diario_imagens_diario_id_fkey"
+            columns: ["diario_id"]
+            isOneToOne: false
+            referencedRelation: "diario_obra"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      diario_materiais: {
+        Row: {
+          created_at: string
+          diario_id: string
+          id: string
+          material: string
+          quantidade: number | null
+          unidade: string | null
+        }
+        Insert: {
+          created_at?: string
+          diario_id: string
+          id?: string
+          material: string
+          quantidade?: number | null
+          unidade?: string | null
+        }
+        Update: {
+          created_at?: string
+          diario_id?: string
+          id?: string
+          material?: string
+          quantidade?: number | null
+          unidade?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diario_materiais_diario_id_fkey"
+            columns: ["diario_id"]
+            isOneToOne: false
+            referencedRelation: "diario_obra"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      diario_obra: {
+        Row: {
+          clima: string
+          created_at: string
+          data: string
+          horario_fim: string | null
+          horario_inicio: string | null
+          id: string
+          obra_id: string
+          observacoes_gerais: string | null
+          temperatura: string | null
+          updated_at: string
+        }
+        Insert: {
+          clima?: string
+          created_at?: string
+          data?: string
+          horario_fim?: string | null
+          horario_inicio?: string | null
+          id?: string
+          obra_id: string
+          observacoes_gerais?: string | null
+          temperatura?: string | null
+          updated_at?: string
+        }
+        Update: {
+          clima?: string
+          created_at?: string
+          data?: string
+          horario_fim?: string | null
+          horario_inicio?: string | null
+          id?: string
+          obra_id?: string
+          observacoes_gerais?: string | null
+          temperatura?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diario_obra_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      diario_ocorrencias: {
+        Row: {
+          created_at: string
+          descricao: string
+          diario_id: string
+          id: string
+          impacto: string
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          diario_id: string
+          id?: string
+          impacto?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          diario_id?: string
+          id?: string
+          impacto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diario_ocorrencias_diario_id_fkey"
+            columns: ["diario_id"]
+            isOneToOne: false
+            referencedRelation: "diario_obra"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      diario_paralisacoes: {
+        Row: {
+          created_at: string
+          data_fim: string | null
+          data_inicio: string
+          diario_id: string
+          id: string
+          motivo: string
+          total_dias: number | null
+        }
+        Insert: {
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string
+          diario_id: string
+          id?: string
+          motivo: string
+          total_dias?: number | null
+        }
+        Update: {
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string
+          diario_id?: string
+          id?: string
+          motivo?: string
+          total_dias?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diario_paralisacoes_diario_id_fkey"
+            columns: ["diario_id"]
+            isOneToOne: false
+            referencedRelation: "diario_obra"
             referencedColumns: ["id"]
           },
         ]
@@ -526,32 +863,130 @@ export type Database = {
           },
         ]
       }
+      relatorio_logs: {
+        Row: {
+          acao: string
+          data: string
+          id: string
+          relatorio_id: string
+          usuario_id: string
+          versao_id: string | null
+        }
+        Insert: {
+          acao?: string
+          data?: string
+          id?: string
+          relatorio_id: string
+          usuario_id: string
+          versao_id?: string | null
+        }
+        Update: {
+          acao?: string
+          data?: string
+          id?: string
+          relatorio_id?: string
+          usuario_id?: string
+          versao_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "relatorio_logs_relatorio_id_fkey"
+            columns: ["relatorio_id"]
+            isOneToOne: false
+            referencedRelation: "relatorios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "relatorio_logs_versao_id_fkey"
+            columns: ["versao_id"]
+            isOneToOne: false
+            referencedRelation: "relatorio_versoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      relatorio_versoes: {
+        Row: {
+          criado_por: string
+          data_criacao: string
+          descricao_alteracao: string | null
+          id: string
+          numero_versao: number
+          relatorio_id: string
+          snapshot_dados: Json | null
+          status: string
+        }
+        Insert: {
+          criado_por: string
+          data_criacao?: string
+          descricao_alteracao?: string | null
+          id?: string
+          numero_versao?: number
+          relatorio_id: string
+          snapshot_dados?: Json | null
+          status?: string
+        }
+        Update: {
+          criado_por?: string
+          data_criacao?: string
+          descricao_alteracao?: string | null
+          id?: string
+          numero_versao?: number
+          relatorio_id?: string
+          snapshot_dados?: Json | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "relatorio_versoes_relatorio_id_fkey"
+            columns: ["relatorio_id"]
+            isOneToOne: false
+            referencedRelation: "relatorios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       relatorios: {
         Row: {
           created_at: string
           data_fim: string | null
           data_inicio: string | null
+          dias_parados: number | null
+          dias_trabalhados: number | null
           id: string
           obra_id: string
           observacoes: string | null
+          prazo_ajustado: number | null
+          prazo_contratual_dias_uteis: number | null
+          saldo_prazo: number | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           data_fim?: string | null
           data_inicio?: string | null
+          dias_parados?: number | null
+          dias_trabalhados?: number | null
           id?: string
           obra_id: string
           observacoes?: string | null
+          prazo_ajustado?: number | null
+          prazo_contratual_dias_uteis?: number | null
+          saldo_prazo?: number | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           data_fim?: string | null
           data_inicio?: string | null
+          dias_parados?: number | null
+          dias_trabalhados?: number | null
           id?: string
           obra_id?: string
           observacoes?: string | null
+          prazo_ajustado?: number | null
+          prazo_contratual_dias_uteis?: number | null
+          saldo_prazo?: number | null
           updated_at?: string
         }
         Relationships: [
