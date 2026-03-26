@@ -334,7 +334,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   if (data.materiais.length > 0) {
     sectionTitle('7. MATERIAIS UTILIZADOS');
     checkPage(20);
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: y,
       head: [['Material', 'Quantidade', 'Unidade']],
       body: data.materiais.map(m => [m.material, String(m.quantidade || 0), m.unidade || 'un']),
