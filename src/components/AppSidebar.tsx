@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Building2, LayoutDashboard, Wallet, FileText,
-  Users, LogOut, HardHat, UserCircle
+  Users, LogOut, HardHat, UserCircle, ClipboardList, Settings
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -10,11 +10,13 @@ const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/clientes', label: 'Clientes', icon: UserCircle },
   { to: '/financeiro', label: 'Financeiro', icon: Wallet },
+  { to: '/diario', label: 'Diário de Obra', icon: ClipboardList },
   { to: '/relatorios', label: 'Relatórios', icon: FileText },
 ];
 
 const adminItems = [
   { to: '/usuarios', label: 'Usuários', icon: Users },
+  { to: '/configuracoes', label: 'Configurações', icon: Settings },
 ];
 
 export default function AppSidebar() {

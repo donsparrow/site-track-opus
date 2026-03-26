@@ -10,6 +10,8 @@ import Dashboard from "./pages/Dashboard";
 import ObraDetail from "./pages/ObraDetail";
 import Financeiro from "./pages/Financeiro";
 import Relatorios from "./pages/Relatorios";
+import DiarioObra from "./pages/DiarioObra";
+import Configuracoes from "./pages/Configuracoes";
 import Clientes from "./pages/Clientes";
 import Usuarios from "./pages/Usuarios";
 import NotFound from "./pages/NotFound";
@@ -29,7 +31,9 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/obras/:id" element={<ObraDetail />} />
               <Route path="/financeiro" element={<Financeiro />} />
+              <Route path="/diario" element={<DiarioObra />} />
               <Route path="/relatorios" element={<Relatorios />} />
+              <Route path="/configuracoes" element={<Configuracoes />} />
               <Route path="/clientes" element={<Clientes />} />
               <Route path="/usuarios" element={<Usuarios />} />
             </Route>
