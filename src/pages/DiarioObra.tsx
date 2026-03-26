@@ -212,10 +212,22 @@ export default function DiarioObra() {
                   const val = parseInt(e.target.value);
                   setPrazoContratual(val >= 1 ? val : 0);
                 }}
-                onBlur={() => {
-                  if (prazoContratual >= 1) {
-                    supabase.from('obras').update({ prazo_contratual_dias: prazoContratual } as any).eq('id', selectedObra);
-                    toast.success('Prazo contratual atualizado');
+                onBlur={async () => {
+                  if (prazoContratual >= 1 && selectedObra) {
+                    console.log('[PRAZO] Salvando prazo_contratual_dias:', prazoContratual, 'para obra:', selectedObra);
+                    const { error } = await supabase
+                      .from('obras')
+                      .update({ prazo_contratual_dias: prazoContratual })
+                      .eq('id', selectedObra);
+                    if (error) {
+                      console.error('[PRAZO] Erro ao salvar:', error);
+                      toast.error('Erro ao salvar prazo: ' + error.message);
+                    } else {
+                      // Verify persistence
+                      const { data: verify } = await supabase.from('obras').select('prazo_contratual_dias').eq('id', selectedObra).single();
+                      console.log('[PRAZO] Valor no banco após salvar:', verify?.prazo_contratual_dias);
+                      toast.success('Prazo contratual atualizado: ' + prazoContratual + ' dias');
+                    }
                   }
                 }}
                 placeholder="Dias"
