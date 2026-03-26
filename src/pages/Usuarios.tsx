@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Plus, Link2, Trash2 } from 'lucide-react';
+import { Plus, Link2, KeyRound, Copy, RefreshCw } from 'lucide-react';
 
 const roleLabels: Record<string, string> = {
   admin: 'Administrador',
@@ -27,6 +27,15 @@ const roleBadgeVariant: Record<string, 'default' | 'secondary' | 'destructive'> 
   sindico: 'secondary',
   cliente: 'secondary',
 };
+
+function generatePassword(length = 10): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$';
+  let pwd = '';
+  for (let i = 0; i < length; i++) {
+    pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return pwd;
+}
 
 export default function Usuarios() {
   const { isAdmin, user } = useAuth();
@@ -47,8 +56,15 @@ export default function Usuarios() {
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkUserId, setLinkUserId] = useState('');
   const [linkUserName, setLinkUserName] = useState('');
-  const [userObras, setUserObras] = useState<any[]>([]);
   const [linkObrasSelecionadas, setLinkObrasSelecionadas] = useState<string[]>([]);
+
+  // Password reset dialog
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
+  const [resetUserId, setResetUserId] = useState('');
+  const [resetUserName, setResetUserName] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [resetting, setResetting] = useState(false);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -102,7 +118,6 @@ export default function Usuarios() {
     }
     setSaving(true);
     try {
-      // Create user via Supabase Auth (trigger creates profile + role)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: novoEmail,
         password: novoSenha,
@@ -113,9 +128,7 @@ export default function Usuarios() {
       const newUserId = authData.user?.id;
       if (!newUserId) throw new Error('Usuário não criado');
 
-      // Update role if not default
       if (novoTipo !== 'trabalhador') {
-        // Wait a moment for trigger to create the role row
         await new Promise(r => setTimeout(r, 1000));
         await supabase
           .from('user_roles')
@@ -123,7 +136,6 @@ export default function Usuarios() {
           .eq('user_id', newUserId);
       }
 
-      // Link to selected obras
       if (obrasSelecionadas.length > 0) {
         await new Promise(r => setTimeout(r, 500));
         const inserts = obrasSelecionadas.map(obra_id => ({
@@ -154,14 +166,11 @@ export default function Usuarios() {
     const { data } = await supabase.from('usuario_obras').select('obra_id').eq('user_id', userId);
     const linked = (data || []).map((d: any) => d.obra_id);
     setLinkObrasSelecionadas(linked);
-    setUserObras(data || []);
     setLinkDialogOpen(true);
   };
 
   const saveLinkObras = async () => {
-    // Delete existing links
     await supabase.from('usuario_obras').delete().eq('user_id', linkUserId);
-    // Insert new links
     if (linkObrasSelecionadas.length > 0) {
       const inserts = linkObrasSelecionadas.map(obra_id => ({
         user_id: linkUserId,
@@ -172,6 +181,58 @@ export default function Usuarios() {
     toast.success('Obras vinculadas atualizadas!');
     setLinkDialogOpen(false);
     fetchUsers();
+  };
+
+  const openResetDialog = (userId: string, userName: string) => {
+    setResetUserId(userId);
+    setResetUserName(userName);
+    setNewPassword('');
+    setConfirmPassword('');
+    setResetDialogOpen(true);
+  };
+
+  const handleGeneratePassword = () => {
+    const pwd = generatePassword();
+    setNewPassword(pwd);
+    setConfirmPassword(pwd);
+  };
+
+  const handleCopyPassword = () => {
+    navigator.clipboard.writeText(newPassword);
+    toast.success('Senha copiada!');
+  };
+
+  const handleResetPassword = async () => {
+    if (!newPassword || !confirmPassword) {
+      toast.error('Preencha os campos de senha');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('As senhas não coincidem');
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error('Senha deve ter no mínimo 6 caracteres');
+      return;
+    }
+
+    setResetting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await supabase.functions.invoke('admin-reset-password', {
+        body: { user_id: resetUserId, new_password: newPassword },
+      });
+
+      if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
+
+      toast.success('Senha redefinida com sucesso!');
+      setResetDialogOpen(false);
+    } catch (err: any) {
+      toast.error('Erro ao redefinir senha: ' + err.message);
+    } finally {
+      setResetting(false);
+    }
   };
 
   const toggleObra = (obraId: string, list: string[], setList: (v: string[]) => void) => {
@@ -202,10 +263,10 @@ export default function Usuarios() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
-                  <TableHead>E-mail</TableHead>
-                  <TableHead>Papel</TableHead>
+                  <TableHead>E-mail (Login)</TableHead>
+                  <TableHead>Tipo</TableHead>
                   <TableHead>Obras Vinculadas</TableHead>
-                  <TableHead>Alterar Papel</TableHead>
+                  <TableHead>Alterar Tipo</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -225,7 +286,7 @@ export default function Usuarios() {
                           {u.obras_vinculadas.map((link: any) => {
                             const obra = obras.find(o => o.id === link.obra_id);
                             return (
-                              <Badge key={link.id} variant="secondary" className="text-xs">
+                              <Badge key={link.id || link.obra_id} variant="secondary" className="text-xs">
                                 {obra?.nome || 'Obra'}
                               </Badge>
                             );
@@ -253,16 +314,28 @@ export default function Usuarios() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {u.user_id !== user?.id && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openLinkDialog(u.user_id, u.nome)}
-                        >
-                          <Link2 className="h-4 w-4 mr-1" />
-                          Vincular Obras
-                        </Button>
-                      )}
+                      <div className="flex gap-2">
+                        {u.user_id !== user?.id && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openLinkDialog(u.user_id, u.nome)}
+                            >
+                              <Link2 className="h-4 w-4 mr-1" />
+                              Obras
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openResetDialog(u.user_id, u.nome)}
+                            >
+                              <KeyRound className="h-4 w-4 mr-1" />
+                              Senha
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -289,7 +362,12 @@ export default function Usuarios() {
             </div>
             <div>
               <Label>Senha *</Label>
-              <Input type="password" value={novoSenha} onChange={e => setNovoSenha(e.target.value)} placeholder="Mínimo 6 caracteres" />
+              <div className="flex gap-2">
+                <Input type="text" value={novoSenha} onChange={e => setNovoSenha(e.target.value)} placeholder="Mínimo 6 caracteres" />
+                <Button type="button" variant="outline" size="icon" onClick={() => setNovoSenha(generatePassword())} title="Gerar senha">
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <div>
               <Label>Tipo de Usuário</Label>
@@ -348,6 +426,55 @@ export default function Usuarios() {
             ))}
           </div>
           <Button onClick={saveLinkObras} className="w-full">Salvar Vinculações</Button>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Redefinir Senha */}
+      <Dialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Redefinir Senha — {resetUserName}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Nova Senha *</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="text"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  placeholder="Mínimo 6 caracteres"
+                />
+                <Button type="button" variant="outline" size="icon" onClick={handleGeneratePassword} title="Gerar senha automática">
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+                {newPassword && (
+                  <Button type="button" variant="outline" size="icon" onClick={handleCopyPassword} title="Copiar senha">
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+            <div>
+              <Label>Confirmar Senha *</Label>
+              <Input
+                type="text"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                placeholder="Repita a senha"
+              />
+            </div>
+            {newPassword && confirmPassword && newPassword !== confirmPassword && (
+              <p className="text-sm text-destructive">As senhas não coincidem</p>
+            )}
+            <Button
+              onClick={handleResetPassword}
+              disabled={resetting || !newPassword || newPassword !== confirmPassword}
+              className="w-full"
+            >
+              {resetting ? 'Redefinindo...' : 'Redefinir Senha'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
