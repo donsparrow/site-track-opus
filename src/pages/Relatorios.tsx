@@ -227,9 +227,10 @@ export default function Relatorios() {
         });
       }
     } else {
-      // Load saved manual prazo if exists and user hasn't set one
-      if (prazoContratualManual === null && relatorio.prazo_contratual_dias_uteis) {
-        setPrazoContratualManual(relatorio.prazo_contratual_dias_uteis);
+      // Always use prazo from obras (single source of truth), not from saved relatorio
+      const obraRef = obras.find(o => o.id === selectedObra);
+      if (prazoContratualManual === null && obraRef?.prazo_contratual_dias && obraRef.prazo_contratual_dias > 0) {
+        setPrazoContratualManual(obraRef.prazo_contratual_dias);
       }
       setRevisaoPdf((relatorio as any).revisao_pdf || 0);
 
@@ -412,8 +413,12 @@ export default function Relatorios() {
     setSelectedObra(rel.obra_id);
     setPeriodoInicio(rel.data_inicio || '');
     setPeriodoFim(rel.data_fim || '');
-    if (rel.prazo_contratual_dias_uteis) {
-      setPrazoContratualManual(rel.prazo_contratual_dias_uteis);
+    // Always fetch prazo from obras (single source of truth)
+    const { data: obraAtual } = await supabase.from('obras').select('prazo_contratual_dias').eq('id', rel.obra_id).single();
+    if (obraAtual?.prazo_contratual_dias && obraAtual.prazo_contratual_dias > 0) {
+      setPrazoContratualManual(obraAtual.prazo_contratual_dias);
+    } else {
+      setPrazoContratualManual(null);
     }
     setViewMode('edit');
     // Wait for obra data to load then consolidate
