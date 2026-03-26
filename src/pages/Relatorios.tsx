@@ -187,7 +187,7 @@ export default function Relatorios() {
     // Find or create relatorio
     let { data: relatorio } = await supabase
       .from('relatorios')
-      .select('id, status, prazo_contratual_dias_uteis')
+      .select('id, status, prazo_contratual_dias_uteis, revisao_pdf')
       .eq('obra_id', selectedObra)
       .gte('data_inicio', periodoInicio)
       .lte('data_fim', periodoFim)
