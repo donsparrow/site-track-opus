@@ -53,7 +53,7 @@ export default function DiarioObra() {
   const [addingParalisacao, setAddingParalisacao] = useState(false);
 
   useEffect(() => {
-    supabase.from('obras').select('id, nome').order('nome').then(({ data }) => setObras(data || []));
+    supabase.from('obras').select('id, nome, prazo_contratual_dias').order('nome').then(({ data }) => setObras(data || []));
   }, []);
 
   const fetchDiarios = async (obraId: string) => {
