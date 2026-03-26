@@ -199,6 +199,34 @@ export default function DiarioObra() {
       </div>
 
       {selectedObra && (
+        <Card className="mb-6">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center gap-4">
+              <Label className="whitespace-nowrap text-sm font-medium">Prazo Contratual (dias úteis):</Label>
+              <Input
+                type="number"
+                min={1}
+                className="w-32"
+                value={prazoContratual || ''}
+                onChange={e => {
+                  const val = parseInt(e.target.value);
+                  setPrazoContratual(val >= 1 ? val : 0);
+                }}
+                onBlur={() => {
+                  if (prazoContratual >= 1) {
+                    supabase.from('obras').update({ prazo_contratual_dias: prazoContratual } as any).eq('id', selectedObra);
+                    toast.success('Prazo contratual atualizado');
+                  }
+                }}
+                placeholder="Dias"
+              />
+              <span className="text-xs text-muted-foreground">{prazoContratual > 0 ? `${prazoContratual} dias` : 'Não definido'}</span>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedObra && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left: list */}
           <div className="space-y-2">
