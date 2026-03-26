@@ -701,7 +701,7 @@ export default function Relatorios() {
             <TabsList>
               <TabsTrigger value="resumo">Resumo</TabsTrigger>
               <TabsTrigger value="assinaturas">Assinaturas ({assinaturas.length})</TabsTrigger>
-              <TabsTrigger value="versoes">Versões ({versoes.length})</TabsTrigger>
+              <TabsTrigger value="versoes"><History className="h-3 w-3 mr-1" />Histórico ({versoes.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="resumo">
