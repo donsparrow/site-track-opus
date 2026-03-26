@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Building2, Plus, TrendingUp, TrendingDown, DollarSign, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useObrasFiltered } from '@/hooks/useObrasFiltered';
 import NovaObraDialog from '@/components/NovaObraDialog';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
@@ -30,6 +31,7 @@ const COLORS = ['hsl(var(--accent))', 'hsl(var(--destructive))', 'hsl(var(--prim
 
 export default function Dashboard() {
   const { canEdit } = useAuth();
+  const { filterObras, loading: obrasFilterLoading } = useObrasFiltered();
   const [obras, setObras] = useState<ObraResumo[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -46,8 +48,14 @@ export default function Dashboard() {
 
     if (!obrasData) { setLoading(false); return; }
 
-    // Fetch all financial data in fewer queries
-    const obraIds = obrasData.map((o: any) => o.id);
+    // Filter obras based on user access
+    const filteredObras = filterObras(obrasData as any[]);
+    const obraIds = filteredObras.map((o: any) => o.id);
+    if (obraIds.length === 0) {
+      setObras([]);
+      setLoading(false);
+      return;
+    }
 
     const { data: allReceitas } = await supabase.from('receitas').select('id, valor_total, obra_id').in('obra_id', obraIds);
     const { data: allDespesas } = await supabase.from('despesas').select('valor, obra_id, tipo, data').in('obra_id', obraIds);
@@ -65,7 +73,7 @@ export default function Dashboard() {
     setParcelasAtrasadas(late);
 
     // Build obra summaries
-    const obrasComResumo: ObraResumo[] = obrasData.map((obra: any) => {
+    const obrasComResumo: ObraResumo[] = filteredObras.map((obra: any) => {
       const obraReceitas = (allReceitas || []).filter(r => r.obra_id === obra.id);
       const obraReceitaIds = obraReceitas.map(r => r.id);
       const obraDespesas = (allDespesas || []).filter(d => d.obra_id === obra.id);

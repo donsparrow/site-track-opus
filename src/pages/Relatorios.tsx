@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useObrasFiltered } from '@/hooks/useObrasFiltered';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +33,7 @@ type ViewMode = 'list' | 'edit';
 
 export default function Relatorios() {
   const { canEdit, user, role } = useAuth();
+  const { filterObras, isObraAllowed } = useObrasFiltered();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [obras, setObras] = useState<any[]>([]);
   const [selectedObra, setSelectedObra] = useState('');
@@ -75,7 +77,7 @@ export default function Relatorios() {
   const [signTipo, setSignTipo] = useState('responsavel_tecnico');
 
   useEffect(() => {
-    supabase.from('obras').select('id, nome, data_inicio, data_fim_prevista, endereco, responsavel, prazo_contratual_dias, clientes(nome, cpf_cnpj, email, telefone)').order('nome').then(({ data }) => setObras(data || []));
+    supabase.from('obras').select('id, nome, data_inicio, data_fim_prevista, endereco, responsavel, prazo_contratual_dias, clientes(nome, cpf_cnpj, email, telefone)').order('nome').then(({ data }) => setObras(filterObras((data || []) as any[])));
     supabase.from('configuracoes_empresa').select('*').limit(1).single().then(({ data }) => setEmpresa(data));
     loadRelatoriosList();
   }, []);
@@ -85,7 +87,8 @@ export default function Relatorios() {
       .from('relatorios')
       .select('*, obras(nome, clientes(nome))')
       .order('created_at', { ascending: false });
-    setRelatoriosList(data || []);
+    const filtered = (data || []).filter((r: any) => isObraAllowed(r.obra_id));
+    setRelatoriosList(filtered);
   };
 
   useEffect(() => {
