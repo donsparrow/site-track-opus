@@ -114,6 +114,10 @@ export default function Relatorios() {
         ajustado,
         saldo,
       }));
+      // Sync to obras table
+      if (selectedObra) {
+        supabase.from('obras').update({ prazo_contratual_dias: prazoContratualManual } as any).eq('id', selectedObra);
+      }
     }
   }, [prazoContratualManual]);
 
