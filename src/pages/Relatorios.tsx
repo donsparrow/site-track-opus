@@ -776,18 +776,18 @@ export default function Relatorios() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Versão</TableHead>
+                          <TableHead>REV</TableHead>
                           <TableHead>Status</TableHead>
-                          <TableHead>Descrição</TableHead>
+                          <TableHead>Resumo das Alterações</TableHead>
                           <TableHead>Data</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {versoes.map(v => (
                           <TableRow key={v.id}>
-                            <TableCell className="font-bold">v{v.numero_versao}</TableCell>
+                            <TableCell className="font-bold">REV {String(v.numero_versao - 1).padStart(2, '0')}</TableCell>
                             <TableCell>
-                              <Badge variant={v.status === 'assinado' ? 'default' : v.status === 'finalizado' ? 'secondary' : 'outline'}>
+                              <Badge variant={v.status.startsWith('gerado pdf') ? 'default' : v.status === 'assinado' ? 'default' : 'outline'}>
                                 {v.status}
                               </Badge>
                             </TableCell>
