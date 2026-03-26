@@ -300,7 +300,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   if (data.atividades.length > 0) {
     sectionTitle('5. DESCRIÇÃO DOS SERVIÇOS');
     checkPage(20);
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: y,
       head: [['Descrição', 'Status']],
       body: data.atividades.map(a => [a.descricao, a.status]),
