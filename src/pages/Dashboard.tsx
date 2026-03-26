@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Building2, Plus, TrendingUp, TrendingDown, DollarSign, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useObrasFiltered } from '@/hooks/useObrasFiltered';
 import NovaObraDialog from '@/components/NovaObraDialog';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
