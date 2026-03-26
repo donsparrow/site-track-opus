@@ -262,7 +262,14 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   doc.text('RELATÓRIO DE OBRA', pageW / 2, coverY, { align: 'center' });
   coverY += 12;
 
-  if (data.versao) {
+  // REV label
+  if (data.versao !== undefined) {
+    const revLabel = `REV ${String(data.versao).padStart(2, '0')}`;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
+    doc.text(revLabel, pageW / 2, coverY, { align: 'center' });
+    coverY += 10;
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(100);
