@@ -471,10 +471,28 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     }
   }
 
+  // =========== REVISION HISTORY ===========
+  if (data.versoes && data.versoes.length > 0) {
+    addFooter(currentPage);
+    newPage();
+    sectionTitle('10. HISTÓRICO DE REVISÕES');
+    autoTable(doc, {
+      startY: y,
+      head: [['Revisão', 'Data', 'Resumo das Alterações']],
+      body: data.versoes.map(v => [v.rev, v.data, v.resumo]),
+      margin: { left: MARGIN, right: MARGIN },
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [BLUE[0], BLUE[1], BLUE[2]], textColor: 255 },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      theme: 'striped',
+    });
+    y = (doc as any).lastAutoTable.finalY + 8;
+  }
+
   // =========== SIGNATURES ===========
   addFooter(currentPage);
   newPage();
-  sectionTitle('10. ASSINATURAS');
+  sectionTitle('11. ASSINATURAS');
   y += 5;
 
   if (data.assinaturas.length > 0) {
