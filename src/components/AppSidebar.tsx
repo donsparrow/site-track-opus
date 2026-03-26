@@ -6,17 +6,14 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const navItems = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/clientes', label: 'Clientes', icon: UserCircle },
-  { to: '/financeiro', label: 'Financeiro', icon: Wallet },
-  { to: '/diario', label: 'Diário de Obra', icon: ClipboardList },
-  { to: '/relatorios', label: 'Relatórios', icon: FileText },
-];
-
-const adminItems = [
-  { to: '/usuarios', label: 'Usuários', icon: Users },
-  { to: '/configuracoes', label: 'Configurações', icon: Settings },
+const navItemsAll = [
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'trabalhador', 'cliente', 'sindico'] },
+  { to: '/clientes', label: 'Clientes', icon: UserCircle, roles: ['admin', 'trabalhador'] },
+  { to: '/financeiro', label: 'Financeiro', icon: Wallet, roles: ['admin', 'trabalhador'] },
+  { to: '/diario', label: 'Diário de Obra', icon: ClipboardList, roles: ['admin', 'trabalhador'] },
+  { to: '/relatorios', label: 'Relatórios', icon: FileText, roles: ['admin', 'trabalhador', 'cliente', 'sindico'] },
+  { to: '/usuarios', label: 'Usuários', icon: Users, roles: ['admin'] },
+  { to: '/configuracoes', label: 'Configurações', icon: Settings, roles: ['admin'] },
 ];
 
 export default function AppSidebar() {
@@ -28,7 +25,7 @@ export default function AppSidebar() {
     navigate('/');
   };
 
-  const allItems = [...navItems, ...(isAdmin ? adminItems : [])];
+  const visibleItems = navItemsAll.filter(item => role && item.roles.includes(role));
 
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
@@ -43,7 +40,7 @@ export default function AppSidebar() {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {allItems.map(({ to, label, icon: Icon }) => (
+        {visibleItems.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
