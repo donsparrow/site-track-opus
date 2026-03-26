@@ -18,6 +18,9 @@ export default function NovaObraDialog({ open, onOpenChange, onCreated }: Props)
   const [endereco, setEndereco] = useState('');
   const [responsavel, setResponsavel] = useState('');
   const [clienteId, setClienteId] = useState('');
+  const [dataInicio, setDataInicio] = useState('');
+  const [dataFimPrevista, setDataFimPrevista] = useState('');
+  const [status, setStatus] = useState('planejamento');
   const [clientes, setClientes] = useState<{ id: string; nome: string }[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -37,6 +40,9 @@ export default function NovaObraDialog({ open, onOpenChange, onCreated }: Props)
       endereco: endereco || null,
       responsavel: responsavel || null,
       cliente_id: clienteId || null,
+      data_inicio: dataInicio || null,
+      data_fim_prevista: dataFimPrevista || null,
+      status,
     });
     setLoading(false);
     if (error) {
@@ -44,6 +50,7 @@ export default function NovaObraDialog({ open, onOpenChange, onCreated }: Props)
     } else {
       toast.success('Obra criada!');
       setNome(''); setEndereco(''); setResponsavel(''); setClienteId('');
+      setDataInicio(''); setDataFimPrevista(''); setStatus('planejamento');
       onOpenChange(false);
       onCreated();
     }
@@ -64,9 +71,22 @@ export default function NovaObraDialog({ open, onOpenChange, onCreated }: Props)
             <Label>Endereço</Label>
             <Input value={endereco} onChange={(e) => setEndereco(e.target.value)} />
           </div>
-          <div>
-            <Label>Responsável</Label>
-            <Input value={responsavel} onChange={(e) => setResponsavel(e.target.value)} />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Responsável</Label>
+              <Input value={responsavel} onChange={(e) => setResponsavel(e.target.value)} />
+            </div>
+            <div>
+              <Label>Status</Label>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="planejamento">Planejamento</SelectItem>
+                  <SelectItem value="andamento">Em andamento</SelectItem>
+                  <SelectItem value="concluida">Concluída</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div>
             <Label>Cliente</Label>
@@ -80,6 +100,16 @@ export default function NovaObraDialog({ open, onOpenChange, onCreated }: Props)
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Data de Início</Label>
+              <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} />
+            </div>
+            <div>
+              <Label>Previsão de Término</Label>
+              <Input type="date" value={dataFimPrevista} onChange={(e) => setDataFimPrevista(e.target.value)} />
+            </div>
           </div>
           <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={loading}>
             {loading ? 'Criando...' : 'Criar Obra'}

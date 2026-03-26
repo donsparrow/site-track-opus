@@ -5,10 +5,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, DollarSign, TrendingUp, TrendingDown, Wallet, Check } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { ArrowLeft, DollarSign, TrendingUp, TrendingDown, Wallet, Check, ClipboardList, FileText, Edit2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import NovaReceitaDialog from '@/components/NovaReceitaDialog';
+import NovaDespesaDialog from '@/components/NovaDespesaDialog';
 
 interface Parcela {
   id: string;
@@ -27,6 +32,16 @@ export default function ObraDetail() {
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
   const [financeiro, setFinanceiro] = useState({ contrato: 0, recebido: 0, aReceber: 0, gasto: 0, saldo: 0 });
   const [loading, setLoading] = useState(true);
+  const [receitaOpen, setReceitaOpen] = useState(false);
+  const [despesaOpen, setDespesaOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+
+  // Edit form
+  const [editStatus, setEditStatus] = useState('');
+  const [editDataInicio, setEditDataInicio] = useState('');
+  const [editDataFim, setEditDataFim] = useState('');
+  const [editEndereco, setEditEndereco] = useState('');
+  const [editResponsavel, setEditResponsavel] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -42,6 +57,14 @@ export default function ObraDetail() {
       .eq('id', id!)
       .single();
     setObra(obraData);
+
+    if (obraData) {
+      setEditStatus(obraData.status);
+      setEditDataInicio(obraData.data_inicio || '');
+      setEditDataFim(obraData.data_fim_prevista || '');
+      setEditEndereco(obraData.endereco || '');
+      setEditResponsavel(obraData.responsavel || '');
+    }
 
     const { data: receitas } = await supabase.from('receitas').select('id, valor_total').eq('obra_id', id!);
     const totalContrato = (receitas || []).reduce((s, r) => s + Number(r.valor_total), 0);
@@ -97,6 +120,23 @@ export default function ObraDetail() {
     }
   };
 
+  const handleEditObra = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { error } = await supabase.from('obras').update({
+      status: editStatus,
+      data_inicio: editDataInicio || null,
+      data_fim_prevista: editDataFim || null,
+      endereco: editEndereco || null,
+      responsavel: editResponsavel || null,
+    }).eq('id', id!);
+    if (error) toast.error('Erro: ' + error.message);
+    else {
+      toast.success('Obra atualizada!');
+      setEditOpen(false);
+      fetchData();
+    }
+  };
+
   const fmt = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
   const statusBadge = (status: string) => {
@@ -109,6 +149,7 @@ export default function ObraDetail() {
   if (!obra) return <p>Obra não encontrada</p>;
 
   const statusLabels: Record<string, string> = { planejamento: 'Planejamento', andamento: 'Em andamento', concluida: 'Concluída' };
+  const atrasadas = parcelas.filter(p => p.status === 'atrasado').length;
 
   return (
     <div>
@@ -116,14 +157,37 @@ export default function ObraDetail() {
         <ArrowLeft className="h-4 w-4" /> Voltar ao Dashboard
       </Link>
 
-      <div className="flex items-center gap-4 mb-8">
+      <div className="flex items-start justify-between mb-8">
         <div>
           <h1 className="text-3xl font-display font-bold">{obra.nome}</h1>
-          <div className="flex items-center gap-3 mt-1">
+          <div className="flex items-center gap-3 mt-1 flex-wrap">
             <Badge variant="secondary">{statusLabels[obra.status] || obra.status}</Badge>
             {obra.clientes?.nome && <span className="text-sm text-muted-foreground">{obra.clientes.nome}</span>}
             {obra.endereco && <span className="text-sm text-muted-foreground">· {obra.endereco}</span>}
+            {obra.data_inicio && (
+              <span className="text-sm text-muted-foreground">
+                · {new Date(obra.data_inicio + 'T00:00:00').toLocaleDateString('pt-BR')}
+                {obra.data_fim_prevista && ` a ${new Date(obra.data_fim_prevista + 'T00:00:00').toLocaleDateString('pt-BR')}`}
+              </span>
+            )}
           </div>
+        </div>
+        <div className="flex gap-2">
+          {canEdit && (
+            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+              <Edit2 className="h-4 w-4 mr-1" /> Editar
+            </Button>
+          )}
+          <Link to={`/diario?obra=${id}`}>
+            <Button variant="outline" size="sm">
+              <ClipboardList className="h-4 w-4 mr-1" /> Diário
+            </Button>
+          </Link>
+          <Link to={`/relatorios?obra=${id}`}>
+            <Button variant="outline" size="sm">
+              <FileText className="h-4 w-4 mr-1" /> Relatório
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -151,6 +215,24 @@ export default function ObraDetail() {
         </div>
       )}
 
+      {atrasadas > 0 && (
+        <div className="mb-6 rounded-lg border border-warning/30 bg-warning/5 p-4 text-sm text-warning">
+          ⏰ {atrasadas} parcela{atrasadas > 1 ? 's' : ''} atrasada{atrasadas > 1 ? 's' : ''}!
+        </div>
+      )}
+
+      {/* Action buttons */}
+      {canEdit && (
+        <div className="flex gap-3 mb-6">
+          <Button onClick={() => setReceitaOpen(true)} className="bg-accent text-accent-foreground hover:bg-accent/90" size="sm">
+            <TrendingUp className="h-4 w-4 mr-1" /> Nova Receita
+          </Button>
+          <Button onClick={() => setDespesaOpen(true)} variant="outline" size="sm">
+            <TrendingDown className="h-4 w-4 mr-1" /> Nova Despesa
+          </Button>
+        </div>
+      )}
+
       {/* Parcelas table */}
       <Card>
         <CardHeader>
@@ -158,7 +240,7 @@ export default function ObraDetail() {
         </CardHeader>
         <CardContent>
           {parcelas.length === 0 ? (
-            <p className="text-muted-foreground text-sm py-4 text-center">Nenhuma parcela registrada</p>
+            <p className="text-muted-foreground text-sm py-4 text-center">Nenhuma parcela registrada. Adicione uma receita para gerar parcelas automaticamente.</p>
           ) : (
             <Table>
               <TableHeader>
@@ -177,8 +259,8 @@ export default function ObraDetail() {
                   <TableRow key={p.id} className={p.status === 'atrasado' ? 'bg-destructive/5' : ''}>
                     <TableCell>{p.numero_parcela}</TableCell>
                     <TableCell className="font-medium">{fmt(Number(p.valor))}</TableCell>
-                    <TableCell>{new Date(p.data_vencimento).toLocaleDateString('pt-BR')}</TableCell>
-                    <TableCell>{p.data_recebimento ? new Date(p.data_recebimento).toLocaleDateString('pt-BR') : '—'}</TableCell>
+                    <TableCell>{new Date(p.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
+                    <TableCell>{p.data_recebimento ? new Date(p.data_recebimento + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
                     <TableCell>{statusBadge(p.status)}</TableCell>
                     <TableCell className="capitalize">{p.forma_pagamento || '—'}</TableCell>
                     {canEdit && (
@@ -195,6 +277,36 @@ export default function ObraDetail() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Obra Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="font-display">Editar Obra</DialogTitle></DialogHeader>
+          <form onSubmit={handleEditObra} className="space-y-4">
+            <div>
+              <Label>Status</Label>
+              <Select value={editStatus} onValueChange={setEditStatus}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="planejamento">Planejamento</SelectItem>
+                  <SelectItem value="andamento">Em andamento</SelectItem>
+                  <SelectItem value="concluida">Concluída</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div><Label>Endereço</Label><Input value={editEndereco} onChange={e => setEditEndereco(e.target.value)} /></div>
+            <div><Label>Responsável</Label><Input value={editResponsavel} onChange={e => setEditResponsavel(e.target.value)} /></div>
+            <div className="grid grid-cols-2 gap-4">
+              <div><Label>Data de Início</Label><Input type="date" value={editDataInicio} onChange={e => setEditDataInicio(e.target.value)} /></div>
+              <div><Label>Previsão de Término</Label><Input type="date" value={editDataFim} onChange={e => setEditDataFim(e.target.value)} /></div>
+            </div>
+            <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">Salvar</Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <NovaReceitaDialog open={receitaOpen} onOpenChange={setReceitaOpen} onCreated={fetchData} />
+      <NovaDespesaDialog open={despesaOpen} onOpenChange={setDespesaOpen} onCreated={fetchData} />
     </div>
   );
 }

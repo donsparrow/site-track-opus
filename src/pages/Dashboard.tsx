@@ -4,9 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Building2, Plus, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
+import { Building2, Plus, TrendingUp, TrendingDown, DollarSign, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import NovaObraDialog from '@/components/NovaObraDialog';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface ObraResumo {
   id: string;
@@ -25,11 +26,16 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
   concluida: { label: 'Concluída', variant: 'default' },
 };
 
+const COLORS = ['hsl(var(--accent))', 'hsl(var(--destructive))', 'hsl(var(--primary))', 'hsl(var(--secondary))', '#6366f1'];
+
 export default function Dashboard() {
   const { canEdit } = useAuth();
   const [obras, setObras] = useState<ObraResumo[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [despesasPorTipo, setDespesasPorTipo] = useState<any[]>([]);
+  const [evolucaoMensal, setEvolucaoMensal] = useState<any[]>([]);
+  const [parcelasAtrasadas, setParcelasAtrasadas] = useState(0);
 
   const fetchObras = async () => {
     setLoading(true);
@@ -40,59 +46,80 @@ export default function Dashboard() {
 
     if (!obrasData) { setLoading(false); return; }
 
-    const obrasComResumo: ObraResumo[] = await Promise.all(
-      obrasData.map(async (obra: any) => {
-        const { data: receitas } = await supabase
-          .from('receitas')
-          .select('valor_total')
-          .eq('obra_id', obra.id);
+    // Fetch all financial data in fewer queries
+    const obraIds = obrasData.map((o: any) => o.id);
 
-        const { data: despesas } = await supabase
-          .from('despesas')
-          .select('valor')
-          .eq('obra_id', obra.id);
+    const { data: allReceitas } = await supabase.from('receitas').select('id, valor_total, obra_id').in('obra_id', obraIds);
+    const { data: allDespesas } = await supabase.from('despesas').select('valor, obra_id, tipo, data').in('obra_id', obraIds);
 
-        const { data: parcelas } = await supabase
-          .from('parcelas')
-          .select('valor, status, receita_id')
-          .eq('status', 'recebido');
+    const receitaIds = (allReceitas || []).map(r => r.id);
+    let allParcelas: any[] = [];
+    if (receitaIds.length > 0) {
+      const { data } = await supabase.from('parcelas').select('valor, status, receita_id, data_vencimento, data_recebimento').in('receita_id', receitaIds);
+      allParcelas = data || [];
+    }
 
-        // Filter parcelas that belong to this obra's receitas
-        const receitaIds = (receitas || []).map(() => obra.id);
-        const totalReceitas = (receitas || []).reduce((s: number, r: any) => s + Number(r.valor_total), 0);
-        const totalDespesas = (despesas || []).reduce((s: number, d: any) => s + Number(d.valor), 0);
+    // Count late parcels
+    const today = new Date().toISOString().split('T')[0];
+    const late = allParcelas.filter(p => !p.data_recebimento && p.data_vencimento < today).length;
+    setParcelasAtrasadas(late);
 
-        // Get parcelas for this obra
-        const { data: obraReceitas } = await supabase
-          .from('receitas')
-          .select('id')
-          .eq('obra_id', obra.id);
-        const obraReceitaIds = (obraReceitas || []).map((r: any) => r.id);
+    // Build obra summaries
+    const obrasComResumo: ObraResumo[] = obrasData.map((obra: any) => {
+      const obraReceitas = (allReceitas || []).filter(r => r.obra_id === obra.id);
+      const obraReceitaIds = obraReceitas.map(r => r.id);
+      const obraDespesas = (allDespesas || []).filter(d => d.obra_id === obra.id);
+      const obraParcelas = allParcelas.filter(p => obraReceitaIds.includes(p.receita_id));
 
-        let totalRecebido = 0;
-        if (obraReceitaIds.length > 0) {
-          const { data: parcelasRecebidas } = await supabase
-            .from('parcelas')
-            .select('valor')
-            .in('receita_id', obraReceitaIds)
-            .eq('status', 'recebido');
-          totalRecebido = (parcelasRecebidas || []).reduce((s: number, p: any) => s + Number(p.valor), 0);
-        }
-
-        return {
-          id: obra.id,
-          nome: obra.nome,
-          endereco: obra.endereco,
-          status: obra.status,
-          cliente_nome: obra.clientes?.nome || null,
-          total_receitas: totalReceitas,
-          total_despesas: totalDespesas,
-          total_recebido: totalRecebido,
-        };
-      })
-    );
+      return {
+        id: obra.id,
+        nome: obra.nome,
+        endereco: obra.endereco,
+        status: obra.status,
+        cliente_nome: obra.clientes?.nome || null,
+        total_receitas: obraReceitas.reduce((s, r) => s + Number(r.valor_total), 0),
+        total_despesas: obraDespesas.reduce((s, d) => s + Number(d.valor), 0),
+        total_recebido: obraParcelas.filter(p => p.data_recebimento).reduce((s, p) => s + Number(p.valor), 0),
+      };
+    });
 
     setObras(obrasComResumo);
+
+    // Expense by type chart
+    const tipoMap: Record<string, number> = {};
+    const tipoLabels: Record<string, string> = { material: 'Material', mao_obra: 'Mão de Obra', ferramenta: 'Ferramenta', manutencao: 'Manutenção', outros: 'Outros' };
+    (allDespesas || []).forEach(d => {
+      const label = tipoLabels[d.tipo] || d.tipo;
+      tipoMap[label] = (tipoMap[label] || 0) + Number(d.valor);
+    });
+    setDespesasPorTipo(Object.entries(tipoMap).map(([name, value]) => ({ name, value })));
+
+    // Monthly evolution
+    const mesesMap: Record<string, { receitas: number; despesas: number }> = {};
+    (allReceitas || []).forEach(r => {
+      // use current month as approximation
+    });
+    (allDespesas || []).forEach(d => {
+      const m = d.data?.slice(0, 7);
+      if (m) {
+        if (!mesesMap[m]) mesesMap[m] = { receitas: 0, despesas: 0 };
+        mesesMap[m].despesas += Number(d.valor);
+      }
+    });
+    allParcelas.forEach(p => {
+      if (p.data_recebimento) {
+        const m = p.data_recebimento.slice(0, 7);
+        if (!mesesMap[m]) mesesMap[m] = { receitas: 0, despesas: 0 };
+        mesesMap[m].receitas += Number(p.valor);
+      }
+    });
+    const sortedMonths = Object.entries(mesesMap).sort((a, b) => a[0].localeCompare(b[0])).slice(-6);
+    setEvolucaoMensal(sortedMonths.map(([mes, vals]) => ({
+      mes: new Date(mes + '-01T00:00:00').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+      Receitas: vals.receitas,
+      Despesas: vals.despesas,
+    })));
+
     setLoading(false);
   };
 
@@ -121,7 +148,7 @@ export default function Dashboard() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -155,7 +182,57 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Parcelas Atrasadas</p>
+                <p className={`text-2xl font-display font-bold ${parcelasAtrasadas > 0 ? 'text-destructive' : 'text-foreground'}`}>{parcelasAtrasadas}</p>
+              </div>
+              <AlertTriangle className={`h-8 w-8 ${parcelasAtrasadas > 0 ? 'text-destructive' : 'text-muted-foreground'}`} />
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Charts */}
+      {(despesasPorTipo.length > 0 || evolucaoMensal.length > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {despesasPorTipo.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle className="font-display text-base">Despesas por Tipo</CardTitle></CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie data={despesasPorTipo} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                      {despesasPorTipo.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                    </Pie>
+                    <Tooltip formatter={(val: number) => formatCurrency(val)} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+          {evolucaoMensal.length > 0 && (
+            <Card>
+              <CardHeader><CardTitle className="font-display text-base">Evolução Mensal</CardTitle></CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={evolucaoMensal}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
+                    <YAxis tick={{ fontSize: 12 }} tickFormatter={v => `R$${(v / 1000).toFixed(0)}k`} />
+                    <Tooltip formatter={(val: number) => formatCurrency(val)} />
+                    <Legend />
+                    <Bar dataKey="Receitas" fill="hsl(var(--success))" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Despesas" fill="hsl(var(--destructive))" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* Obras list */}
       {loading ? (
