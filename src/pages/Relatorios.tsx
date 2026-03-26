@@ -310,8 +310,26 @@ export default function Relatorios() {
     if (!obraData) { toast.error('Selecione uma obra e consolide os dados'); return; }
     if (!empresa) { toast.info('Dados da empresa não configurados. O PDF será gerado sem cabeçalho/logo.'); }
     setGenerating(true);
-    const latestVersion = versoes.length > 0 ? versoes[0].numero_versao : 1;
+    const newRevisao = revisaoPdf;
+    const revLabel = `REV ${String(newRevisao).padStart(2, '0')}`;
     try {
+      // Generate change summary by comparing with previous version snapshot
+      let changeSummary = newRevisao === 0 ? 'Relatório inicial criado' : '';
+      if (newRevisao > 0 && versoes.length > 0) {
+        const prevSnapshot = versoes[0]?.snapshot_dados as any;
+        if (prevSnapshot) {
+          const changes: string[] = [];
+          if (prevSnapshot.prazos?.contratual !== prazos.contratual) changes.push(`Prazo alterado de ${prevSnapshot.prazos?.contratual || 0} para ${prazos.contratual} dias`);
+          if (prevSnapshot.imagens_count !== allImagens.length) changes.push(`Imagens: ${prevSnapshot.imagens_count || 0} → ${allImagens.length}`);
+          if (prevSnapshot.atividades_count !== allAtividades.length) changes.push(`Atividades: ${prevSnapshot.atividades_count || 0} → ${allAtividades.length}`);
+          if (prevSnapshot.ocorrencias_count !== allOcorrencias.length) changes.push(`Ocorrências: ${prevSnapshot.ocorrencias_count || 0} → ${allOcorrencias.length}`);
+          if (prevSnapshot.periodo?.inicio !== periodoInicio || prevSnapshot.periodo?.fim !== periodoFim) changes.push('Alteração no período');
+          changeSummary = changes.length > 0 ? changes.join('; ') : 'Geração de nova revisão do PDF';
+        } else {
+          changeSummary = 'Geração de nova revisão do PDF';
+        }
+      }
+
       await gerarRelatorioPDF({
         empresa: empresa || null,
         obra: {
@@ -332,16 +350,55 @@ export default function Relatorios() {
         ocorrencias: allOcorrencias,
         imagens: allImagens,
         assinaturas,
-        versao: latestVersion,
+        versao: newRevisao,
+        versoes: versoes.map(v => ({
+          rev: `REV ${String(v.numero_versao).padStart(2, '0')}`,
+          data: new Date(v.data_criacao).toLocaleDateString('pt-BR'),
+          resumo: v.descricao_alteracao || '—',
+        })),
       });
-      toast.success('PDF gerado!');
+      toast.success(`PDF ${revLabel} gerado!`);
 
       if (relatorioId && user) {
+        // Update revisao_pdf and status
+        const nextRevisao = revisaoPdf + 1;
+        const newStatus = `gerado pdf rev${String(newRevisao).padStart(2, '0')}`;
+        await supabase.from('relatorios').update({
+          revisao_pdf: nextRevisao,
+          status: newStatus,
+        } as any).eq('id', relatorioId);
+        setRevisaoPdf(nextRevisao);
+
+        // Create version entry with change summary
+        const nextVersion = versoes.length > 0 ? versoes[0].numero_versao + 1 : 1;
+        await supabase.from('relatorio_versoes').insert({
+          relatorio_id: relatorioId,
+          numero_versao: nextVersion,
+          criado_por: user.id,
+          status: newStatus,
+          descricao_alteracao: changeSummary,
+          snapshot_dados: {
+            prazos,
+            periodo: { inicio: periodoInicio, fim: periodoFim },
+            diarios_count: diarios.length,
+            equipe_count: allEquipe.length,
+            atividades_count: allAtividades.length,
+            materiais_count: allMateriais.length,
+            ocorrencias_count: allOcorrencias.length,
+            imagens_count: allImagens.length,
+          },
+        });
+
         await supabase.from('relatorio_logs').insert({
           relatorio_id: relatorioId,
           usuario_id: user.id,
-          acao: 'gerou PDF',
+          acao: `gerou PDF ${revLabel}`,
         });
+
+        // Reload versions
+        const { data: vers } = await supabase.from('relatorio_versoes').select('*').eq('relatorio_id', relatorioId).order('numero_versao', { ascending: false });
+        setVersoes(vers || []);
+        await loadRelatoriosList();
       }
     } catch (err: any) {
       toast.error('Erro ao gerar PDF: ' + err.message);
