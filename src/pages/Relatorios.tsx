@@ -64,7 +64,7 @@ export default function Relatorios() {
   const [signTipo, setSignTipo] = useState('responsavel_tecnico');
 
   useEffect(() => {
-    supabase.from('obras').select('id, nome, data_inicio, data_fim_prevista, endereco, clientes(nome, cpf_cnpj, email, telefone)').order('nome').then(({ data }) => setObras(data || []));
+    supabase.from('obras').select('id, nome, data_inicio, data_fim_prevista, endereco, responsavel, clientes(nome, cpf_cnpj, email, telefone)').order('nome').then(({ data }) => setObras(data || []));
     supabase.from('configuracoes_empresa').select('*').limit(1).single().then(({ data }) => setEmpresa(data));
   }, []);
 
@@ -204,15 +204,17 @@ export default function Relatorios() {
   };
 
   const handleGerarPDF = async () => {
-    if (!obraData || !empresa) { toast.error('Configure os dados da empresa primeiro'); return; }
+    if (!obraData) { toast.error('Selecione uma obra e consolide os dados'); return; }
+    if (!empresa) { toast.info('Dados da empresa não configurados. O PDF será gerado sem cabeçalho/logo.'); }
     setGenerating(true);
     const latestVersion = versoes.length > 0 ? versoes[0].numero_versao : 1;
     try {
       await gerarRelatorioPDF({
-        empresa: empresa || {},
+        empresa: empresa || null,
         obra: {
           nome: obraData.nome,
           endereco: obraData.endereco || '',
+          responsavel: obraData.responsavel || '',
           cliente_nome: obraData.clientes?.nome || '',
           cliente_cpf_cnpj: obraData.clientes?.cpf_cnpj || '',
           cliente_email: obraData.clientes?.email || '',
