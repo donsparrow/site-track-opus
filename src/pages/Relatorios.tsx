@@ -227,9 +227,10 @@ export default function Relatorios() {
         });
       }
     } else {
-      // Load saved manual prazo if exists and user hasn't set one
-      if (prazoContratualManual === null && relatorio.prazo_contratual_dias_uteis) {
-        setPrazoContratualManual(relatorio.prazo_contratual_dias_uteis);
+      // Always use prazo from obras (single source of truth), not from saved relatorio
+      const obraRef = obras.find(o => o.id === selectedObra);
+      if (prazoContratualManual === null && obraRef?.prazo_contratual_dias && obraRef.prazo_contratual_dias > 0) {
+        setPrazoContratualManual(obraRef.prazo_contratual_dias);
       }
       setRevisaoPdf((relatorio as any).revisao_pdf || 0);
 
