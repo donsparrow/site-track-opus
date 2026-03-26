@@ -284,7 +284,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     ['Dias Trabalhados', String(data.prazos.trabalhados)],
     ['Saldo de Prazo', String(data.prazos.saldo)],
   ];
-  (doc as any).autoTable({
+  autoTable(doc, {
     startY: y,
     head: [['Indicador', 'Valor']],
     body: prazoData,
