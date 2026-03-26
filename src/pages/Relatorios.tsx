@@ -210,7 +210,14 @@ export default function Relatorios() {
     try {
       await gerarRelatorioPDF({
         empresa: empresa || {},
-        obra: { nome: obraData.nome, endereco: obraData.endereco || '', cliente_nome: obraData.clientes?.nome || '' },
+        obra: {
+          nome: obraData.nome,
+          endereco: obraData.endereco || '',
+          cliente_nome: obraData.clientes?.nome || '',
+          cliente_cpf_cnpj: obraData.clientes?.cpf_cnpj || '',
+          cliente_email: obraData.clientes?.email || '',
+          cliente_telefone: obraData.clientes?.telefone || '',
+        },
         periodo: { inicio: periodoInicio, fim: periodoFim },
         prazos,
         diarios,
