@@ -11,7 +11,7 @@ interface RelatorioPDFData {
     site: string;
     instagram: string;
   };
-  obra: { nome: string; endereco: string; cliente_nome: string };
+  obra: { nome: string; endereco: string; cliente_nome: string; cliente_cpf_cnpj?: string; cliente_email?: string; cliente_telefone?: string };
   periodo: { inicio: string; fim: string };
   prazos: {
     contratual: number;
@@ -104,12 +104,24 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   sectionTitle('DADOS DA OBRA');
   const infoLines = [
     `Obra: ${data.obra.nome}`,
-    `Cliente: ${data.obra.cliente_nome || '—'}`,
     `Endereço: ${data.obra.endereco || '—'}`,
     `Período: ${fmt(data.periodo.inicio)} a ${fmt(data.periodo.fim)}`,
   ];
   infoLines.forEach(l => { doc.text(l, marginX, y); y += 5; });
   y += 4;
+
+  // Client info
+  if (data.obra.cliente_nome) {
+    sectionTitle('DADOS DO CLIENTE');
+    const clientLines = [
+      `Nome: ${data.obra.cliente_nome}`,
+      `CNPJ/CPF: ${data.obra.cliente_cpf_cnpj || '—'}`,
+      `E-mail: ${data.obra.cliente_email || '—'}`,
+      `Telefone: ${data.obra.cliente_telefone || '—'}`,
+    ];
+    clientLines.forEach(l => { doc.text(l, marginX, y); y += 5; });
+    y += 4;
+  }
 
   // Prazos
   sectionTitle('CONTROLE DE PRAZO');

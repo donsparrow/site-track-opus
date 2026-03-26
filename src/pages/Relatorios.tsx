@@ -64,7 +64,7 @@ export default function Relatorios() {
   const [signTipo, setSignTipo] = useState('responsavel_tecnico');
 
   useEffect(() => {
-    supabase.from('obras').select('id, nome, data_inicio, data_fim_prevista, endereco, clientes(nome)').order('nome').then(({ data }) => setObras(data || []));
+    supabase.from('obras').select('id, nome, data_inicio, data_fim_prevista, endereco, clientes(nome, cpf_cnpj, email, telefone)').order('nome').then(({ data }) => setObras(data || []));
     supabase.from('configuracoes_empresa').select('*').limit(1).single().then(({ data }) => setEmpresa(data));
   }, []);
 
@@ -210,7 +210,14 @@ export default function Relatorios() {
     try {
       await gerarRelatorioPDF({
         empresa: empresa || {},
-        obra: { nome: obraData.nome, endereco: obraData.endereco || '', cliente_nome: obraData.clientes?.nome || '' },
+        obra: {
+          nome: obraData.nome,
+          endereco: obraData.endereco || '',
+          cliente_nome: obraData.clientes?.nome || '',
+          cliente_cpf_cnpj: obraData.clientes?.cpf_cnpj || '',
+          cliente_email: obraData.clientes?.email || '',
+          cliente_telefone: obraData.clientes?.telefone || '',
+        },
         periodo: { inicio: periodoInicio, fim: periodoFim },
         prazos,
         diarios,
@@ -318,6 +325,23 @@ export default function Relatorios() {
 
       {relatorioId && (
         <>
+          {/* Dados do Cliente */}
+          {obraData?.clientes && (
+            <Card className="mb-6">
+              <CardHeader className="py-3">
+                <CardTitle className="text-sm font-display">Dados do Cliente</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                  <div><span className="text-muted-foreground">Nome:</span> <span className="font-medium">{obraData.clientes.nome || '—'}</span></div>
+                  <div><span className="text-muted-foreground">CNPJ/CPF:</span> <span className="font-medium">{obraData.clientes.cpf_cnpj || '—'}</span></div>
+                  <div><span className="text-muted-foreground">E-mail:</span> <span className="font-medium">{obraData.clientes.email || '—'}</span></div>
+                  <div><span className="text-muted-foreground">Telefone:</span> <span className="font-medium">{obraData.clientes.telefone || '—'}</span></div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Indicators */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
             {[
