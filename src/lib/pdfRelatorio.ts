@@ -477,11 +477,21 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
     const renderSigBlock = async (sig: any, xPos: number) => {
       try {
-        const sigDataUrl = await loadImageAsDataUrl(sig.assinatura_url);
+        const sigDataUrl = await loadImageAsPngDataUrl(sig.assinatura_url);
         if (sigDataUrl) {
           doc.addImage(sigDataUrl, 'PNG', xPos, y, 50, 20);
+        } else {
+          doc.setFontSize(8);
+          doc.setTextColor(150);
+          doc.text('Assinatura não disponível', xPos, y + 10);
+          doc.setTextColor(0);
         }
-      } catch { /* skip */ }
+      } catch {
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text('Assinatura não disponível', xPos, y + 10);
+        doc.setTextColor(0);
+      }
       const sigY = y + 22;
       doc.setDrawColor(0);
       doc.line(xPos, sigY, xPos + sigWidth, sigY);
