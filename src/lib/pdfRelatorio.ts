@@ -79,6 +79,37 @@ async function loadImageAsDataUrl(url: string): Promise<string | null> {
   }
 }
 
+async function loadImageAsPngDataUrl(url: string): Promise<string | null> {
+  // If it's already a data URL (from canvas signature), return as-is
+  if (url.startsWith('data:')) return url;
+  try {
+    return await new Promise<string | null>((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0);
+            resolve(canvas.toDataURL('image/png'));
+          } else {
+            resolve(null);
+          }
+        } catch {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  } catch {
+    return null;
+  }
+}
+
 export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   const doc = new jsPDF('p', 'mm', 'a4');
   const pageW = doc.internal.pageSize.getWidth();
@@ -446,11 +477,21 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
     const renderSigBlock = async (sig: any, xPos: number) => {
       try {
-        const sigDataUrl = await loadImageAsDataUrl(sig.assinatura_url);
+        const sigDataUrl = await loadImageAsPngDataUrl(sig.assinatura_url);
         if (sigDataUrl) {
           doc.addImage(sigDataUrl, 'PNG', xPos, y, 50, 20);
+        } else {
+          doc.setFontSize(8);
+          doc.setTextColor(150);
+          doc.text('Assinatura não disponível', xPos, y + 10);
+          doc.setTextColor(0);
         }
-      } catch { /* skip */ }
+      } catch {
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text('Assinatura não disponível', xPos, y + 10);
+        doc.setTextColor(0);
+      }
       const sigY = y + 22;
       doc.setDrawColor(0);
       doc.line(xPos, sigY, xPos + sigWidth, sigY);
