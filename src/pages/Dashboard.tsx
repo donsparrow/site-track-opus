@@ -31,6 +31,7 @@ const COLORS = ['hsl(var(--accent))', 'hsl(var(--destructive))', 'hsl(var(--prim
 
 export default function Dashboard() {
   const { canEdit } = useAuth();
+  const { filterObras, loading: obrasFilterLoading } = useObrasFiltered();
   const [obras, setObras] = useState<ObraResumo[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
