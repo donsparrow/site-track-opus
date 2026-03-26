@@ -317,7 +317,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   if (data.equipe.length > 0) {
     sectionTitle('6. EQUIPE');
     checkPage(20);
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: y,
       head: [['Funcionário', 'Função', 'Horas Trabalhadas']],
       body: data.equipe.map(e => [e.nome_funcionario, e.funcao || '—', `${e.horas_trabalhadas || 0}h`]),
