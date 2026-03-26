@@ -11,7 +11,7 @@ interface RelatorioPDFData {
     site: string;
     instagram: string;
   };
-  obra: { nome: string; endereco: string; cliente_nome: string };
+  obra: { nome: string; endereco: string; cliente_nome: string; cliente_cpf_cnpj?: string; cliente_email?: string; cliente_telefone?: string };
   periodo: { inicio: string; fim: string };
   prazos: {
     contratual: number;
