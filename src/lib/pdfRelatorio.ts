@@ -37,6 +37,7 @@ interface RelatorioPDFData {
   imagens: any[];
   assinaturas: any[];
   versao?: number;
+  versoes?: { rev: string; data: string; resumo: string }[];
 }
 
 const fmt = (d: string) => {
