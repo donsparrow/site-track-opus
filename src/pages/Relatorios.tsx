@@ -162,7 +162,7 @@ export default function Relatorios() {
       diasParados = (parData || []).reduce((s, p) => s + (p.total_dias || 0), 0);
     }
 
-    const diasTrabalhados = dList.length;
+    const diasTrabalhados = (periodoInicio && periodoFim) ? calcBusinessDays(periodoInicio, periodoFim) : 0;
     const prazoAjustado = prazoContratual + diasParados;
     const saldoPrazo = prazoAjustado - diasTrabalhados;
 
