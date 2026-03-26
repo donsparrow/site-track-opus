@@ -11,11 +11,23 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Sun, Cloud, CloudRain, Trash2, Upload, Users, Wrench, Package, AlertTriangle, Image as ImageIcon, PauseCircle } from 'lucide-react';
+import { Plus, Sun, Cloud, CloudRain, Trash2, Upload, Users, Wrench, Package, AlertTriangle, Image as ImageIcon, PauseCircle, Pencil, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 const climaIcons: Record<string, any> = { sol: Sun, nublado: Cloud, chuva: CloudRain };
 const climaLabels: Record<string, string> = { sol: 'Sol', nublado: 'Nublado', chuva: 'Chuva' };
+
+const statusLabels: Record<string, string> = {
+  'concluido': 'Concluído',
+  'andamento': 'Em andamento',
+  'nao iniciado': 'Não iniciado',
+  // legacy support
+  'executado': 'Concluído',
+};
+
+function mapLegacyStatus(s: string) {
+  return s === 'executado' ? 'concluido' : s;
+}
 
 export default function DiarioObra() {
   const { canEdit, user } = useAuth();
@@ -52,6 +64,11 @@ export default function DiarioObra() {
   const [addingOcorrencia, setAddingOcorrencia] = useState(false);
   const [addingParalisacao, setAddingParalisacao] = useState(false);
 
+  // Editing atividade
+  const [editingAtividadeId, setEditingAtividadeId] = useState<string | null>(null);
+  const [editAtivDesc, setEditAtivDesc] = useState('');
+  const [editAtivStatus, setEditAtivStatus] = useState('');
+
   useEffect(() => {
     supabase.from('obras').select('id, nome, prazo_contratual_dias').order('nome').then(({ data }) => setObras(data || []));
   }, []);
@@ -78,6 +95,7 @@ export default function DiarioObra() {
 
   const fetchDiarioDetails = async (diario: any) => {
     setSelectedDiario(diario);
+    setEditingAtividadeId(null);
     const [e, a, m, o, i, p] = await Promise.all([
       supabase.from('diario_equipe').select('*').eq('diario_id', diario.id),
       supabase.from('diario_atividades').select('*').eq('diario_id', diario.id),
@@ -94,6 +112,53 @@ export default function DiarioObra() {
     setParalisacoes(p.data || []);
   };
 
+  // Inherit data from last diary
+  const inheritFromLastDiary = async (newDiarioId: string) => {
+    // Find last diary for this obra (excluding the one just created)
+    const { data: lastDiarios } = await supabase
+      .from('diario_obra')
+      .select('id')
+      .eq('obra_id', selectedObra)
+      .neq('id', newDiarioId)
+      .order('data', { ascending: false })
+      .limit(1);
+
+    if (!lastDiarios || lastDiarios.length === 0) return;
+    const lastId = lastDiarios[0].id;
+
+    // Fetch equipe and atividades from last diary
+    const [eqRes, atRes] = await Promise.all([
+      supabase.from('diario_equipe').select('nome_funcionario, funcao, horas_trabalhadas').eq('diario_id', lastId),
+      supabase.from('diario_atividades').select('descricao, status').eq('diario_id', lastId),
+    ]);
+
+    const lastEquipe = eqRes.data || [];
+    const lastAtividades = atRes.data || [];
+
+    // Copy equipe as new records
+    if (lastEquipe.length > 0) {
+      await supabase.from('diario_equipe').insert(
+        lastEquipe.map(e => ({
+          diario_id: newDiarioId,
+          nome_funcionario: e.nome_funcionario,
+          funcao: e.funcao,
+          horas_trabalhadas: e.horas_trabalhadas,
+        }))
+      );
+    }
+
+    // Copy atividades as new records (map legacy status)
+    if (lastAtividades.length > 0) {
+      await supabase.from('diario_atividades').insert(
+        lastAtividades.map(a => ({
+          diario_id: newDiarioId,
+          descricao: a.descricao,
+          status: mapLegacyStatus(a.status),
+        }))
+      );
+    }
+  };
+
   const handleCreateDiario = async (e: React.FormEvent) => {
     e.preventDefault();
     const { error, data } = await supabase.from('diario_obra').insert({
@@ -105,7 +170,13 @@ export default function DiarioObra() {
       observacoes_gerais: formData.observacoes_gerais || null,
     }).select().single();
     if (error) { toast.error('Erro: ' + error.message); return; }
-    toast.success('Diário criado!');
+
+    // Inherit from last diary
+    if (data) {
+      await inheritFromLastDiary(data.id);
+    }
+
+    toast.success('Diário criado com dados do último registro!');
     setDiarioOpen(false);
     fetchDiarios(selectedObra);
     if (data) fetchDiarioDetails(data);
@@ -124,11 +195,25 @@ export default function DiarioObra() {
   const addAtividadeItem = async (descricao: string, status: string) => {
     if (!selectedDiario) return;
     const { error } = await supabase.from('diario_atividades').insert({
-      diario_id: selectedDiario.id, descricao, status
+      diario_id: selectedDiario.id, descricao, status: mapLegacyStatus(status)
     });
     if (error) toast.error(error.message);
     else { toast.success('Adicionado!'); fetchDiarioDetails(selectedDiario); }
     setAddingAtividade(false);
+  };
+
+  const updateAtividadeItem = async (id: string) => {
+    const { error } = await supabase.from('diario_atividades')
+      .update({ descricao: editAtivDesc, status: editAtivStatus })
+      .eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('Atividade atualizada!'); setEditingAtividadeId(null); fetchDiarioDetails(selectedDiario); }
+  };
+
+  const deleteAtividadeItem = async (id: string) => {
+    const { error } = await supabase.from('diario_atividades').delete().eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('Atividade removida!'); fetchDiarioDetails(selectedDiario); }
   };
 
   const addMaterialItem = async (material: string, qtd: string, unidade: string) => {
@@ -223,7 +308,6 @@ export default function DiarioObra() {
                       console.error('[PRAZO] Erro ao salvar:', error);
                       toast.error('Erro ao salvar prazo: ' + error.message);
                     } else {
-                      // Verify persistence
                       const { data: verify } = await supabase.from('obras').select('prazo_contratual_dias').eq('id', selectedObra).single();
                       console.log('[PRAZO] Valor no banco após salvar:', verify?.prazo_contratual_dias);
                       toast.success('Prazo contratual atualizado: ' + prazoContratual + ' dias');
@@ -338,14 +422,59 @@ export default function DiarioObra() {
                         {addingAtividade && <InlineAtividadeForm onSave={addAtividadeItem} onCancel={() => setAddingAtividade(false)} />}
                         {atividades.length === 0 && !addingAtividade ? <p className="text-sm text-muted-foreground text-center py-4">Nenhum registro</p> : (
                           <div className="space-y-2">
-                            {atividades.map(a => (
-                              <div key={a.id} className="flex items-center gap-2 p-2 rounded border">
-                                <span className="flex-1 text-sm">{a.descricao}</span>
-                                <Badge variant={a.status === 'executado' ? 'default' : a.status === 'andamento' ? 'secondary' : 'outline'}>
-                                  {a.status === 'executado' ? 'Executado' : a.status === 'andamento' ? 'Andamento' : 'Não iniciado'}
-                                </Badge>
-                              </div>
-                            ))}
+                            {atividades.map(a => {
+                              const normalizedStatus = mapLegacyStatus(a.status);
+                              const isEditing = editingAtividadeId === a.id;
+
+                              if (isEditing) {
+                                return (
+                                  <div key={a.id} className="flex items-center gap-2 p-2 rounded border border-accent bg-accent/5">
+                                    <Input
+                                      value={editAtivDesc}
+                                      onChange={e => setEditAtivDesc(e.target.value)}
+                                      className="flex-1"
+                                    />
+                                    <Select value={editAtivStatus} onValueChange={setEditAtivStatus}>
+                                      <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="concluido">Concluído</SelectItem>
+                                        <SelectItem value="andamento">Em andamento</SelectItem>
+                                        <SelectItem value="nao iniciado">Não iniciado</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                    <Button size="sm" variant="ghost" onClick={() => updateAtividadeItem(a.id)}>
+                                      <Save className="h-3 w-3" />
+                                    </Button>
+                                    <Button size="sm" variant="ghost" onClick={() => setEditingAtividadeId(null)}>
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                );
+                              }
+
+                              return (
+                                <div key={a.id} className="flex items-center gap-2 p-2 rounded border">
+                                  <span className="flex-1 text-sm">{a.descricao}</span>
+                                  <Badge variant={normalizedStatus === 'concluido' ? 'default' : normalizedStatus === 'andamento' ? 'secondary' : 'outline'}>
+                                    {statusLabels[normalizedStatus] || normalizedStatus}
+                                  </Badge>
+                                  {canEdit && (
+                                    <>
+                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
+                                        setEditingAtividadeId(a.id);
+                                        setEditAtivDesc(a.descricao);
+                                        setEditAtivStatus(normalizedStatus);
+                                      }}>
+                                        <Pencil className="h-3 w-3" />
+                                      </Button>
+                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteAtividadeItem(a.id)}>
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </CardContent>
@@ -514,10 +643,10 @@ function InlineAtividadeForm({ onSave, onCancel }: { onSave: (d: string, s: stri
     <div className="flex gap-2 mb-3 p-2 bg-muted rounded">
       <Input placeholder="Descrição" value={d} onChange={e => setD(e.target.value)} className="flex-1" />
       <Select value={s} onValueChange={setS}>
-        <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+        <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
         <SelectContent>
-          <SelectItem value="executado">Executado</SelectItem>
-          <SelectItem value="andamento">Andamento</SelectItem>
+          <SelectItem value="concluido">Concluído</SelectItem>
+          <SelectItem value="andamento">Em andamento</SelectItem>
           <SelectItem value="nao iniciado">Não iniciado</SelectItem>
         </SelectContent>
       </Select>
