@@ -959,6 +959,7 @@ export type Database = {
           prazo_ajustado: number | null
           prazo_contratual_dias_uteis: number | null
           saldo_prazo: number | null
+          status: string
           updated_at: string
         }
         Insert: {
@@ -973,6 +974,7 @@ export type Database = {
           prazo_ajustado?: number | null
           prazo_contratual_dias_uteis?: number | null
           saldo_prazo?: number | null
+          status?: string
           updated_at?: string
         }
         Update: {
@@ -987,6 +989,7 @@ export type Database = {
           prazo_ajustado?: number | null
           prazo_contratual_dias_uteis?: number | null
           saldo_prazo?: number | null
+          status?: string
           updated_at?: string
         }
         Relationships: [
