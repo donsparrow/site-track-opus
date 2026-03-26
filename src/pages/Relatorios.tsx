@@ -472,12 +472,14 @@ export default function Relatorios() {
   const saldoColor = prazos.saldo > 0 ? 'text-success' : prazos.saldo < 0 ? 'text-destructive' : 'text-foreground';
 
   const statusBadge = (status: string) => {
+    const isRevStatus = status.startsWith('gerado pdf');
     const map: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
       rascunho: 'outline',
       finalizado: 'secondary',
       assinado: 'default',
     };
-    return <Badge variant={map[status] || 'outline'}>{status}</Badge>;
+    const variant = isRevStatus ? 'default' : (map[status] || 'outline');
+    return <Badge variant={variant}>{status.toUpperCase()}</Badge>;
   };
 
   // ========== LIST VIEW ==========
