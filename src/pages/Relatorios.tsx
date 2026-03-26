@@ -580,6 +580,9 @@ export default function Relatorios() {
           <List className="h-4 w-4 mr-2" />Voltar à Lista
         </Button>
         <h1 className="text-3xl font-display font-bold">{relatorioId ? 'Editar Relatório' : 'Novo Relatório'}</h1>
+        {relatorioId && revisaoPdf > 0 && (
+          <Badge variant="default" className="text-sm">REV {String(revisaoPdf - 1).padStart(2, '0')}</Badge>
+        )}
       </div>
 
       {/* Obra & Period Selection */}
