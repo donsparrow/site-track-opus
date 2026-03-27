@@ -254,9 +254,9 @@ export default function ObraDetail() {
           <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={exportingPdf}>
             <Download className="h-4 w-4 mr-1" /> {exportingPdf ? 'Exportando...' : 'Exportar PDF'}
           </Button>
-          {canEdit && (
-            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-              <Edit2 className="h-4 w-4 mr-1" /> Editar
+          {isAdmin && (
+            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={handleCheckDeleteObra}>
+              <Trash2 className="h-4 w-4 mr-1" /> Excluir Obra
             </Button>
           )}
           <Link to={`/diario?obra=${id}`}>
