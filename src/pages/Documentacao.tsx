@@ -340,9 +340,20 @@ export default function Documentacao() {
                 <div className="space-y-2">
                   {arquivos.map(arq => (
                     <div key={arq.id} className="relative flex items-center justify-between rounded-lg border px-4 py-3"
-                      onMouseEnter={(e) => { setHoverArquivo(arq); setHoverPos({ x: e.clientX, y: e.clientY }); }}
+                      onMouseEnter={(e) => {
+                        setHoverArquivo(arq);
+                        setHoverPos({ x: e.clientX, y: e.clientY });
+                        setPdfPreviewUrl(null);
+                        if (arq.tipo === 'pdf') {
+                          hoverTimeoutRef.current = setTimeout(() => renderPdfPreview(arq.url_arquivo, arq.id), 200);
+                        }
+                      }}
                       onMouseMove={(e) => setHoverPos({ x: e.clientX, y: e.clientY })}
-                      onMouseLeave={() => setHoverArquivo(null)}
+                      onMouseLeave={() => {
+                        setHoverArquivo(null);
+                        setPdfPreviewUrl(null);
+                        if (hoverTimeoutRef.current) { clearTimeout(hoverTimeoutRef.current); hoverTimeoutRef.current = null; }
+                      }}
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         {arq.tipo === 'imagem' ? (
