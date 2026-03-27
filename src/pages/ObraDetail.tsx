@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import NovaReceitaDialog from '@/components/NovaReceitaDialog';
 import NovaDespesaDialog from '@/components/NovaDespesaDialog';
+import AnotacoesObra from '@/components/AnotacoesObra';
 
 interface Parcela {
   id: string;
