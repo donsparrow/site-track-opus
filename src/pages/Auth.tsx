@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import constructionHero from '@/assets/construction-hero.jpg';
-
+import logoJn from '@/assets/logo-jn.jpeg';
 
 export default function Auth() {
   const { user, loading, signIn, signUp } = useAuth();
