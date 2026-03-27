@@ -419,6 +419,24 @@ export default function Documentacao() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog Editar Pasta */}
+      <Dialog open={!!editPastaId} onOpenChange={() => setEditPastaId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar nome da pasta</DialogTitle>
+          </DialogHeader>
+          <Input
+            placeholder="Nome da pasta"
+            value={editPastaNome}
+            onChange={e => setEditPastaNome(e.target.value)}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditPastaId(null)}>Cancelar</Button>
+            <Button onClick={renomearPasta} disabled={!editPastaNome.trim()}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
