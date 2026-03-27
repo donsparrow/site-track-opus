@@ -16,7 +16,7 @@ import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Download } from 'lucide-react
 import { toast } from 'sonner';
 import { format, differenceInDays, addDays, parseISO, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useObrasFiltered } from '@/hooks/useObrasFiltered';
+
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
