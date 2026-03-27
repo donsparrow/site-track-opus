@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { Paperclip, X } from 'lucide-react';
 
 interface Props {
   open: boolean;
@@ -22,7 +23,9 @@ export default function NovaReceitaDialog({ open, onOpenChange, onCreated }: Pro
   const [formaPagamento, setFormaPagamento] = useState('avista');
   const [numeroParcelas, setNumeroParcelas] = useState('1');
   const [observacoes, setObservacoes] = useState('');
+  const [anexoFile, setAnexoFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -33,6 +36,17 @@ export default function NovaReceitaDialog({ open, onOpenChange, onCreated }: Pro
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    let anexoUrl: string | null = null;
+    if (anexoFile) {
+      const ext = anexoFile.name.split('.').pop();
+      const path = `receitas/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('anexos').upload(path, anexoFile);
+      if (upErr) { toast.error('Erro ao enviar arquivo: ' + upErr.message); setLoading(false); return; }
+      const { data: urlData } = supabase.storage.from('anexos').getPublicUrl(path);
+      anexoUrl = urlData.publicUrl;
+    }
+
     const { error } = await supabase.from('receitas').insert({
       obra_id: obraId,
       descricao,
@@ -40,12 +54,13 @@ export default function NovaReceitaDialog({ open, onOpenChange, onCreated }: Pro
       forma_pagamento: formaPagamento as 'avista' | 'parcelado',
       numero_parcelas: formaPagamento === 'parcelado' ? parseInt(numeroParcelas) : 1,
       observacoes: observacoes || null,
-    });
+      anexo: anexoUrl,
+    } as any);
     setLoading(false);
     if (error) toast.error('Erro: ' + error.message);
     else {
       toast.success('Receita criada! Parcelas geradas automaticamente.');
-      setDescricao(''); setValorTotal(''); setObraId(''); setObservacoes('');
+      setDescricao(''); setValorTotal(''); setObraId(''); setObservacoes(''); setAnexoFile(null);
       onOpenChange(false);
       onCreated();
     }
@@ -53,7 +68,7 @@ export default function NovaReceitaDialog({ open, onOpenChange, onCreated }: Pro
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle className="font-display">Nova Receita</DialogTitle></DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -92,6 +107,27 @@ export default function NovaReceitaDialog({ open, onOpenChange, onCreated }: Pro
           <div>
             <Label>Observações</Label>
             <Textarea value={observacoes} onChange={e => setObservacoes(e.target.value)} />
+          </div>
+          <div>
+            <Label>Anexo (PDF, JPG, PNG)</Label>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png"
+              className="hidden"
+              onChange={e => setAnexoFile(e.target.files?.[0] || null)}
+            />
+            <div className="flex items-center gap-2 mt-1">
+              <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
+                <Paperclip className="h-4 w-4 mr-1" /> Anexar arquivo
+              </Button>
+              {anexoFile && (
+                <span className="text-sm text-muted-foreground flex items-center gap-1">
+                  {anexoFile.name}
+                  <button type="button" onClick={() => setAnexoFile(null)}><X className="h-3 w-3" /></button>
+                </span>
+              )}
+            </div>
           </div>
           <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={loading || !obraId}>
             {loading ? 'Criando...' : 'Criar Receita'}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,10 +11,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { ChevronDown, ChevronRight, Plus, DollarSign, TrendingDown, Pencil, Trash2, Check } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, DollarSign, TrendingDown, Pencil, Trash2, Check, Paperclip, Download, X, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import NovaReceitaDialog from '@/components/NovaReceitaDialog';
 import NovaDespesaDialog from '@/components/NovaDespesaDialog';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export default function Financeiro() {
   const { canEdit, role } = useAuth();
@@ -50,6 +52,10 @@ export default function Financeiro() {
   const [edData, setEdData] = useState('');
   const [edTipo, setEdTipo] = useState('');
   const [edFormaPgto, setEdFormaPgto] = useState('');
+  const [edTipoPgto, setEdTipoPgto] = useState('avista');
+  const [edDataVencimento, setEdDataVencimento] = useState('');
+  const [edAnexoFile, setEdAnexoFile] = useState<File | null>(null);
+  const edFileRef = useRef<HTMLInputElement>(null);
 
   // Delete despesa
   const [deleteDespesaId, setDeleteDespesaId] = useState<string | null>(null);
@@ -63,6 +69,14 @@ export default function Financeiro() {
   const [erDescricao, setErDescricao] = useState('');
   const [erValor, setErValor] = useState('');
   const [erObservacoes, setErObservacoes] = useState('');
+  const [erAnexoFile, setErAnexoFile] = useState<File | null>(null);
+  const erFileRef = useRef<HTMLInputElement>(null);
+
+  // Receber parcela
+  const [receberOpen, setReceberOpen] = useState(false);
+  const [receberParcelaId, setReceberParcelaId] = useState<string | null>(null);
+  const [receberReceitaId, setReceberReceitaId] = useState<string | null>(null);
+  const [receberFormaPgto, setReceberFormaPgto] = useState('pix');
 
   const isAdmin = role === 'admin';
 
@@ -119,7 +133,6 @@ export default function Financeiro() {
     else {
       toast.success('Parcela atualizada com sucesso!');
       setEditParcelaOpen(false);
-      // Refresh parcelas for this receita
       setParcelas(prev => { const copy = { ...prev }; delete copy[editParcela.receita_id]; return copy; });
       if (expandedReceita === editParcela.receita_id) {
         const { data } = await supabase.from('parcelas').select('*').eq('receita_id', editParcela.receita_id).order('numero_parcela');
@@ -161,17 +174,30 @@ export default function Financeiro() {
     setErDescricao(r.descricao);
     setErValor(String(r.valor_total));
     setErObservacoes(r.observacoes || '');
+    setErAnexoFile(null);
     setEditReceitaOpen(true);
   };
 
   const handleEditReceita = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editReceitaItem) return;
+
+    let anexoUrl = editReceitaItem.anexo;
+    if (erAnexoFile) {
+      const ext = erAnexoFile.name.split('.').pop();
+      const path = `receitas/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('anexos').upload(path, erAnexoFile);
+      if (upErr) { toast.error('Erro ao enviar arquivo: ' + upErr.message); return; }
+      const { data: urlData } = supabase.storage.from('anexos').getPublicUrl(path);
+      anexoUrl = urlData.publicUrl;
+    }
+
     const { error } = await supabase.from('receitas').update({
       descricao: erDescricao,
       valor_total: parseFloat(erValor),
       observacoes: erObservacoes || null,
-    }).eq('id', editReceitaItem.id);
+      anexo: anexoUrl,
+    } as any).eq('id', editReceitaItem.id);
     if (error) toast.error('Erro: ' + error.message);
     else { toast.success('Receita atualizada com sucesso!'); setEditReceitaOpen(false); fetchData(); }
   };
@@ -179,7 +205,6 @@ export default function Financeiro() {
   // --- DELETE RECEITA ---
   const handleDeleteReceita = async () => {
     if (!deleteReceitaId) return;
-    // Delete parcelas first
     await supabase.from('parcelas').delete().eq('receita_id', deleteReceitaId);
     const { error } = await supabase.from('receitas').delete().eq('id', deleteReceitaId);
     if (error) toast.error('Erro: ' + error.message);
@@ -198,20 +223,37 @@ export default function Financeiro() {
     setEdDescricao(d.descricao);
     setEdData(d.data);
     setEdTipo(d.tipo);
-    setEdFormaPgto(d.forma_pagamento || '');
+    setEdFormaPgto(d.forma_pagamento || 'pix');
+    setEdTipoPgto(d.tipo_pagamento || 'avista');
+    setEdDataVencimento(d.data_vencimento || '');
+    setEdAnexoFile(null);
     setEditDespesaOpen(true);
   };
 
   const handleEditDespesa = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editDespesaItem) return;
+
+    let anexoUrl = editDespesaItem.anexo;
+    if (edAnexoFile) {
+      const ext = edAnexoFile.name.split('.').pop();
+      const path = `despesas/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('anexos').upload(path, edAnexoFile);
+      if (upErr) { toast.error('Erro ao enviar arquivo: ' + upErr.message); return; }
+      const { data: urlData } = supabase.storage.from('anexos').getPublicUrl(path);
+      anexoUrl = urlData.publicUrl;
+    }
+
     const { error } = await supabase.from('despesas').update({
       valor: parseFloat(edValor),
       descricao: edDescricao,
       data: edData,
       tipo: edTipo,
       forma_pagamento: edFormaPgto || null,
-    }).eq('id', editDespesaItem.id);
+      tipo_pagamento: edTipoPgto,
+      data_vencimento: edTipoPgto === 'prazo' ? edDataVencimento : null,
+      anexo: anexoUrl,
+    } as any).eq('id', editDespesaItem.id);
     if (error) toast.error('Erro: ' + error.message);
     else { toast.success('Despesa atualizada com sucesso!'); setEditDespesaOpen(false); fetchData(); }
   };
@@ -226,11 +268,6 @@ export default function Financeiro() {
   };
 
   // --- RECEBER PARCELA ---
-  const [receberOpen, setReceberOpen] = useState(false);
-  const [receberParcelaId, setReceberParcelaId] = useState<string | null>(null);
-  const [receberReceitaId, setReceberReceitaId] = useState<string | null>(null);
-  const [receberFormaPgto, setReceberFormaPgto] = useState('pix');
-
   const openReceber = (parcelaId: string, receitaId: string) => {
     setReceberParcelaId(parcelaId);
     setReceberReceitaId(receitaId);
@@ -257,6 +294,68 @@ export default function Financeiro() {
     }
   };
 
+  // --- DOWNLOAD ---
+  const handleDownload = (url: string, nome?: string) => {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nome || 'anexo';
+    a.target = '_blank';
+    a.click();
+  };
+
+  const getFileName = (url: string) => {
+    try {
+      const parts = url.split('/');
+      const raw = parts[parts.length - 1];
+      // Remove timestamp prefix
+      return raw.replace(/^\d+_[a-z0-9]+\./, 'arquivo.');
+    } catch { return 'arquivo'; }
+  };
+
+  // --- NOTAS FISCAIS REPORT ---
+  const generateNotasReport = () => {
+    const items: any[] = [];
+    receitas.forEach(r => {
+      if (r.anexo) {
+        items.push({ tipo: 'Receita', obra: r.obras?.nome || '—', descricao: r.descricao, valor: Number(r.valor_total), data: r.created_at?.split('T')[0] || '', arquivo: getFileName(r.anexo), url: r.anexo });
+      }
+    });
+    despesas.forEach(d => {
+      if (d.anexo) {
+        items.push({ tipo: 'Despesa', obra: d.obras?.nome || '—', descricao: d.descricao, valor: Number(d.valor), data: d.data, arquivo: getFileName(d.anexo), url: d.anexo });
+      }
+    });
+
+    if (items.length === 0) {
+      toast.info('Nenhum documento anexado encontrado.');
+      return;
+    }
+
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text('Relatório de Notas Fiscais', 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 14, 28);
+
+    autoTable(doc, {
+      startY: 35,
+      head: [['Tipo', 'Obra', 'Descrição', 'Valor', 'Data', 'Arquivo']],
+      body: items.map(i => [
+        i.tipo,
+        i.obra,
+        i.descricao,
+        fmt(i.valor),
+        i.data ? new Date(i.data + 'T00:00:00').toLocaleDateString('pt-BR') : '',
+        i.arquivo,
+      ]),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [59, 130, 246] },
+    });
+
+    doc.save('relatorio_notas_fiscais.pdf');
+    toast.success('Relatório gerado com sucesso!');
+  };
+
   const fmt = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
   const tipoLabels: Record<string, string> = {
@@ -269,7 +368,12 @@ export default function Financeiro() {
 
   return (
     <div>
-      <h1 className="text-3xl font-display font-bold mb-6">Financeiro</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-display font-bold">Financeiro</h1>
+        <Button variant="outline" size="sm" onClick={generateNotasReport}>
+          <FileText className="h-4 w-4 mr-1" /> Relatório Notas Fiscais
+        </Button>
+      </div>
 
       {/* Summary */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -323,6 +427,7 @@ export default function Financeiro() {
         <TabsList className="mb-6">
           <TabsTrigger value="receitas">Receitas ({receitas.length})</TabsTrigger>
           <TabsTrigger value="despesas">Despesas ({despesas.length})</TabsTrigger>
+          <TabsTrigger value="notas">Notas Fiscais</TabsTrigger>
         </TabsList>
 
         <TabsContent value="receitas">
@@ -345,6 +450,7 @@ export default function Financeiro() {
                     <TableHead>Valor</TableHead>
                     <TableHead>Forma Pgto</TableHead>
                     <TableHead>Parcelas</TableHead>
+                    <TableHead>Anexo</TableHead>
                     {canEdit && <TableHead>Ações</TableHead>}
                   </TableRow>
                 </TableHeader>
@@ -360,6 +466,13 @@ export default function Financeiro() {
                         <TableCell className="text-success font-medium">{fmt(Number(r.valor_total))}</TableCell>
                         <TableCell className="capitalize">{r.forma_pagamento}</TableCell>
                         <TableCell>{r.numero_parcelas}x</TableCell>
+                        <TableCell>
+                          {r.anexo ? (
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); handleDownload(r.anexo); }}>
+                              <Download className="h-4 w-4 text-primary" />
+                            </Button>
+                          ) : '—'}
+                        </TableCell>
                         {canEdit && (
                           <TableCell>
                             <div className="flex items-center gap-1">
@@ -377,7 +490,7 @@ export default function Financeiro() {
                       </TableRow>
                       {expandedReceita === r.id && parcelas[r.id] && (
                         <TableRow key={`${r.id}-parcelas`}>
-                          <TableCell colSpan={canEdit ? 7 : 6} className="bg-muted/50 p-4">
+                          <TableCell colSpan={canEdit ? 8 : 7} className="bg-muted/50 p-4">
                             <Table>
                               <TableHeader>
                                  <TableRow>
@@ -437,7 +550,7 @@ export default function Financeiro() {
                   ))}
                   {receitas.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={canEdit ? 7 : 6} className="text-center py-8 text-muted-foreground">Nenhuma receita cadastrada</TableCell>
+                      <TableCell colSpan={canEdit ? 8 : 7} className="text-center py-8 text-muted-foreground">Nenhuma receita cadastrada</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
@@ -465,7 +578,10 @@ export default function Financeiro() {
                     <TableHead>Tipo</TableHead>
                     <TableHead>Valor</TableHead>
                     <TableHead>Data</TableHead>
-                    <TableHead>Forma Pgto</TableHead>
+                    <TableHead>Vencimento</TableHead>
+                    <TableHead>Pgto</TableHead>
+                    <TableHead>Forma</TableHead>
+                    <TableHead>Anexo</TableHead>
                     {canEdit && <TableHead>Ações</TableHead>}
                   </TableRow>
                 </TableHeader>
@@ -477,7 +593,20 @@ export default function Financeiro() {
                       <TableCell><Badge variant="secondary">{tipoLabels[d.tipo] || d.tipo}</Badge></TableCell>
                       <TableCell className="text-destructive font-medium">{fmt(Number(d.valor))}</TableCell>
                       <TableCell>{new Date(d.data + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
+                      <TableCell>{d.data_vencimento ? new Date(d.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
+                      <TableCell>
+                        <Badge variant={d.tipo_pagamento === 'prazo' ? 'outline' : 'secondary'}>
+                          {d.tipo_pagamento === 'prazo' ? 'A Prazo' : 'À Vista'}
+                        </Badge>
+                      </TableCell>
                       <TableCell className="capitalize">{d.forma_pagamento || '—'}</TableCell>
+                      <TableCell>
+                        {d.anexo ? (
+                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDownload(d.anexo)}>
+                            <Download className="h-4 w-4 text-primary" />
+                          </Button>
+                        ) : '—'}
+                      </TableCell>
                       {canEdit && (
                         <TableCell>
                           <div className="flex items-center gap-1">
@@ -496,7 +625,72 @@ export default function Financeiro() {
                   ))}
                   {despesas.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={canEdit ? 7 : 6} className="text-center py-8 text-muted-foreground">Nenhuma despesa cadastrada</TableCell>
+                      <TableCell colSpan={canEdit ? 10 : 9} className="text-center py-8 text-muted-foreground">Nenhuma despesa cadastrada</TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* NOTAS FISCAIS TAB */}
+        <TabsContent value="notas">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-display font-semibold">Documentos Anexados</h2>
+            <Button variant="outline" size="sm" onClick={generateNotasReport}>
+              <FileText className="h-4 w-4 mr-1" /> Exportar PDF
+            </Button>
+          </div>
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Obra</TableHead>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead>Valor</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Arquivo</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {[
+                    ...receitas.filter(r => r.anexo).map(r => ({
+                      id: r.id, tipo: 'Receita', obra: r.obras?.nome || '—', descricao: r.descricao,
+                      valor: Number(r.valor_total), data: r.created_at?.split('T')[0] || '', url: r.anexo,
+                    })),
+                    ...despesas.filter(d => d.anexo).map(d => ({
+                      id: d.id, tipo: 'Despesa', obra: d.obras?.nome || '—', descricao: d.descricao,
+                      valor: Number(d.valor), data: d.data, url: d.anexo,
+                    })),
+                  ].map((item) => (
+                    <TableRow key={`${item.tipo}-${item.id}`}>
+                      <TableCell>
+                        <Badge variant={item.tipo === 'Receita' ? 'default' : 'secondary'}>{item.tipo}</Badge>
+                      </TableCell>
+                      <TableCell>{item.obra}</TableCell>
+                      <TableCell className="font-medium">{item.descricao}</TableCell>
+                      <TableCell>{fmt(item.valor)}</TableCell>
+                      <TableCell>{item.data ? new Date(item.data + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
+                      <TableCell className="flex items-center gap-1">
+                        <Paperclip className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-sm">{getFileName(item.url)}</span>
+                      </TableCell>
+                      <TableCell>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDownload(item.url)}>
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {receitas.filter(r => r.anexo).length === 0 && despesas.filter(d => d.anexo).length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                        Nenhum documento anexado encontrado
+                      </TableCell>
                     </TableRow>
                   )}
                 </TableBody>
@@ -544,8 +738,8 @@ export default function Financeiro() {
             <AlertDialogTitle>Excluir Parcela</AlertDialogTitle>
             <AlertDialogDescription>
               {deleteParcelaRecebido
-                ? 'Esta parcela já foi marcada como recebida. Tem certeza que deseja excluí-la? Esta ação não pode ser desfeita.'
-                : 'Tem certeza que deseja excluir esta parcela? Esta ação não pode ser desfeita.'}
+                ? 'Esta parcela já foi marcada como recebida. Tem certeza que deseja excluí-la?'
+                : 'Tem certeza que deseja excluir esta parcela?'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -563,6 +757,17 @@ export default function Financeiro() {
             <div><Label>Descrição</Label><Input value={erDescricao} onChange={e => setErDescricao(e.target.value)} required /></div>
             <div><Label>Valor Total (R$)</Label><Input type="number" step="0.01" min="0" value={erValor} onChange={e => setErValor(e.target.value)} required /></div>
             <div><Label>Observações</Label><Input value={erObservacoes} onChange={e => setErObservacoes(e.target.value)} /></div>
+            <div>
+              <Label>Anexo (PDF, JPG, PNG)</Label>
+              <input ref={erFileRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={e => setErAnexoFile(e.target.files?.[0] || null)} />
+              <div className="flex items-center gap-2 mt-1">
+                <Button type="button" variant="outline" size="sm" onClick={() => erFileRef.current?.click()}>
+                  <Paperclip className="h-4 w-4 mr-1" /> {editReceitaItem?.anexo ? 'Substituir' : 'Anexar'}
+                </Button>
+                {erAnexoFile && <span className="text-sm text-muted-foreground flex items-center gap-1">{erAnexoFile.name} <button type="button" onClick={() => setErAnexoFile(null)}><X className="h-3 w-3" /></button></span>}
+                {!erAnexoFile && editReceitaItem?.anexo && <span className="text-sm text-muted-foreground">📎 Anexo existente</span>}
+              </div>
+            </div>
             <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">Salvar Alterações</Button>
           </form>
         </DialogContent>
@@ -573,7 +778,7 @@ export default function Financeiro() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir Receita</AlertDialogTitle>
-            <AlertDialogDescription>Tem certeza que deseja excluir esta receita e todas as parcelas vinculadas? Esta ação não pode ser desfeita.</AlertDialogDescription>
+            <AlertDialogDescription>Tem certeza que deseja excluir esta receita e todas as parcelas vinculadas?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -584,7 +789,7 @@ export default function Financeiro() {
 
       {/* Edit Despesa */}
       <Dialog open={editDespesaOpen} onOpenChange={setEditDespesaOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle className="font-display">Editar Despesa</DialogTitle></DialogHeader>
           <form onSubmit={handleEditDespesa} className="space-y-4">
             <div>
@@ -602,7 +807,20 @@ export default function Financeiro() {
             </div>
             <div><Label>Descrição</Label><Input value={edDescricao} onChange={e => setEdDescricao(e.target.value)} required /></div>
             <div><Label>Valor (R$)</Label><Input type="number" step="0.01" min="0" value={edValor} onChange={e => setEdValor(e.target.value)} required /></div>
-            <div><Label>Data</Label><Input type="date" value={edData} onChange={e => setEdData(e.target.value)} required /></div>
+            <div><Label>Data da Compra</Label><Input type="date" value={edData} onChange={e => setEdData(e.target.value)} required /></div>
+            <div>
+              <Label>Tipo de Pagamento</Label>
+              <Select value={edTipoPgto} onValueChange={setEdTipoPgto}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="avista">À Vista</SelectItem>
+                  <SelectItem value="prazo">A Prazo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {edTipoPgto === 'prazo' && (
+              <div><Label>Data de Vencimento</Label><Input type="date" value={edDataVencimento} onChange={e => setEdDataVencimento(e.target.value)} required /></div>
+            )}
             <div>
               <Label>Forma de Pagamento</Label>
               <Select value={edFormaPgto || 'pix'} onValueChange={setEdFormaPgto}>
@@ -616,6 +834,17 @@ export default function Financeiro() {
                   <SelectItem value="outros">Outros</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label>Anexo (PDF, JPG, PNG)</Label>
+              <input ref={edFileRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={e => setEdAnexoFile(e.target.files?.[0] || null)} />
+              <div className="flex items-center gap-2 mt-1">
+                <Button type="button" variant="outline" size="sm" onClick={() => edFileRef.current?.click()}>
+                  <Paperclip className="h-4 w-4 mr-1" /> {editDespesaItem?.anexo ? 'Substituir' : 'Anexar'}
+                </Button>
+                {edAnexoFile && <span className="text-sm text-muted-foreground flex items-center gap-1">{edAnexoFile.name} <button type="button" onClick={() => setEdAnexoFile(null)}><X className="h-3 w-3" /></button></span>}
+                {!edAnexoFile && editDespesaItem?.anexo && <span className="text-sm text-muted-foreground">📎 Anexo existente</span>}
+              </div>
             </div>
             <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">Salvar Alterações</Button>
           </form>
@@ -652,7 +881,7 @@ export default function Financeiro() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir Despesa</AlertDialogTitle>
-            <AlertDialogDescription>Tem certeza que deseja excluir esta despesa? Esta ação não pode ser desfeita.</AlertDialogDescription>
+            <AlertDialogDescription>Tem certeza que deseja excluir esta despesa?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
