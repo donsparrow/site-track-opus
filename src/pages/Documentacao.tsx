@@ -515,11 +515,16 @@ export default function Documentacao() {
               className="w-72 max-h-56 object-contain rounded-lg border-2 bg-background shadow-xl"
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />
+          ) : pdfPreviewUrl ? (
+            <img
+              src={pdfPreviewUrl}
+              alt={hoverArquivo.nome_arquivo}
+              className="w-72 max-h-64 object-contain rounded-lg border-2 bg-background shadow-xl"
+            />
           ) : (
             <div className="flex flex-col items-center gap-2 rounded-lg border-2 bg-background shadow-xl px-6 py-4">
-              <FileText className="h-12 w-12 text-destructive" />
-              <span className="text-sm font-medium text-foreground text-center max-w-[250px] truncate">{hoverArquivo.nome_arquivo}</span>
-              <span className="text-xs text-muted-foreground">Documento PDF</span>
+              <FileText className="h-10 w-10 text-destructive" />
+              <span className="text-xs text-muted-foreground">Carregando preview...</span>
             </div>
           )}
         </div>
