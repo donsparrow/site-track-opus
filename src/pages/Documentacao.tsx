@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import * as pdfjsLib from 'pdfjs-dist';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useObrasFiltered } from '@/hooks/useObrasFiltered';
@@ -38,8 +39,37 @@ export default function Documentacao() {
   const [editPastaNome, setEditPastaNome] = useState('');
   const [hoverArquivo, setHoverArquivo] = useState<Arquivo | null>(null);
   const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const pdfPreviewCache = useRef<Record<string, string>>({});
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load obras
+  // Setup pdf.js worker
+  useEffect(() => {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs`;
+  }, []);
+
+  const renderPdfPreview = async (url: string, id: string) => {
+    if (pdfPreviewCache.current[id]) {
+      setPdfPreviewUrl(pdfPreviewCache.current[id]);
+      return;
+    }
+    try {
+      const pdf = await pdfjsLib.getDocument(url).promise;
+      const page = await pdf.getPage(1);
+      const viewport = page.getViewport({ scale: 0.5 });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d')!;
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      const dataUrl = canvas.toDataURL('image/png');
+      pdfPreviewCache.current[id] = dataUrl;
+      setPdfPreviewUrl(dataUrl);
+    } catch {
+      setPdfPreviewUrl(null);
+    }
+  };
+
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase.from('obras').select('id, nome').order('nome');
@@ -310,9 +340,20 @@ export default function Documentacao() {
                 <div className="space-y-2">
                   {arquivos.map(arq => (
                     <div key={arq.id} className="relative flex items-center justify-between rounded-lg border px-4 py-3"
-                      onMouseEnter={(e) => { setHoverArquivo(arq); setHoverPos({ x: e.clientX, y: e.clientY }); }}
+                      onMouseEnter={(e) => {
+                        setHoverArquivo(arq);
+                        setHoverPos({ x: e.clientX, y: e.clientY });
+                        setPdfPreviewUrl(null);
+                        if (arq.tipo === 'pdf') {
+                          hoverTimeoutRef.current = setTimeout(() => renderPdfPreview(arq.url_arquivo, arq.id), 200);
+                        }
+                      }}
                       onMouseMove={(e) => setHoverPos({ x: e.clientX, y: e.clientY })}
-                      onMouseLeave={() => setHoverArquivo(null)}
+                      onMouseLeave={() => {
+                        setHoverArquivo(null);
+                        setPdfPreviewUrl(null);
+                        if (hoverTimeoutRef.current) { clearTimeout(hoverTimeoutRef.current); hoverTimeoutRef.current = null; }
+                      }}
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         {arq.tipo === 'imagem' ? (
@@ -474,11 +515,16 @@ export default function Documentacao() {
               className="w-72 max-h-56 object-contain rounded-lg border-2 bg-background shadow-xl"
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />
+          ) : pdfPreviewUrl ? (
+            <img
+              src={pdfPreviewUrl}
+              alt={hoverArquivo.nome_arquivo}
+              className="w-72 max-h-64 object-contain rounded-lg border-2 bg-background shadow-xl"
+            />
           ) : (
             <div className="flex flex-col items-center gap-2 rounded-lg border-2 bg-background shadow-xl px-6 py-4">
-              <FileText className="h-12 w-12 text-destructive" />
-              <span className="text-sm font-medium text-foreground text-center max-w-[250px] truncate">{hoverArquivo.nome_arquivo}</span>
-              <span className="text-xs text-muted-foreground">Documento PDF</span>
+              <FileText className="h-10 w-10 text-destructive" />
+              <span className="text-xs text-muted-foreground">Carregando preview...</span>
             </div>
           )}
         </div>
