@@ -250,14 +250,24 @@ export default function Documentacao() {
                     <span className="text-sm truncate">{p.nome_pasta}</span>
                   </div>
                   {canManage && (
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 shrink-0"
-                      onClick={(e) => { e.stopPropagation(); setDeletePastaId(p.id); }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                    </Button>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        onClick={(e) => { e.stopPropagation(); setEditPastaId(p.id); setEditPastaNome(p.nome_pasta); }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        onClick={(e) => { e.stopPropagation(); setDeletePastaId(p.id); }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </div>
                   )}
                 </div>
               ))}
