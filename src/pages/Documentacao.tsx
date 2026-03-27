@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { FolderPlus, Upload, Trash2, Eye, Folder, FileText, Image, X, Pencil } from 'lucide-react';
+import { FolderPlus, Upload, Trash2, Eye, Folder, FileText, Image, X, Pencil, Download } from 'lucide-react';
 
 type Pasta = { id: string; obra_id: string; nome_pasta: string; created_at: string };
 type Arquivo = { id: string; pasta_id: string; nome_arquivo: string; tipo: string; url_arquivo: string; tamanho: number; created_at: string };
@@ -307,18 +307,36 @@ export default function Documentacao() {
               {pastaAberta && arquivos.length > 0 && (
                 <div className="space-y-2">
                   {arquivos.map(arq => (
-                    <div key={arq.id} className="flex items-center justify-between rounded-lg border px-4 py-3">
+                    <div key={arq.id} className="group relative flex items-center justify-between rounded-lg border px-4 py-3">
                       <div className="flex items-center gap-3 min-w-0">
                         {arq.tipo === 'imagem' ? (
-                          <Image className="h-5 w-5 shrink-0 text-blue-500" />
+                          <Image className="h-5 w-5 shrink-0 text-primary" />
                         ) : (
-                          <FileText className="h-5 w-5 shrink-0 text-red-500" />
+                          <FileText className="h-5 w-5 shrink-0 text-destructive" />
                         )}
                         <div className="min-w-0">
                           <p className="text-sm font-medium truncate">{arq.nome_arquivo}</p>
                           <p className="text-xs text-muted-foreground">{formatSize(arq.tamanho)}</p>
                         </div>
                       </div>
+                      {/* Hover preview */}
+                      {arq.tipo === 'imagem' && (
+                        <div className="absolute left-0 bottom-full mb-2 z-50 hidden group-hover:block pointer-events-none">
+                          <img
+                            src={arq.url_arquivo}
+                            alt={arq.nome_arquivo}
+                            className="w-64 max-h-48 object-contain rounded-lg border bg-background shadow-lg"
+                          />
+                        </div>
+                      )}
+                      {arq.tipo === 'pdf' && (
+                        <div className="absolute left-0 bottom-full mb-2 z-50 hidden group-hover:block pointer-events-none">
+                          <div className="flex items-center gap-2 rounded-lg border bg-background shadow-lg px-4 py-3">
+                            <FileText className="h-8 w-8 text-destructive" />
+                            <span className="text-sm text-foreground">{arq.nome_arquivo}</span>
+                          </div>
+                        </div>
+                      )}
                       <div className="flex items-center gap-1">
                         <Button
                           size="icon"
@@ -330,6 +348,20 @@ export default function Documentacao() {
                           }}
                         >
                           <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8"
+                          onClick={() => {
+                            const link = document.createElement('a');
+                            link.href = arq.url_arquivo;
+                            link.download = arq.nome_arquivo;
+                            link.target = '_blank';
+                            link.click();
+                          }}
+                        >
+                          <Download className="h-4 w-4" />
                         </Button>
                         {canManage && (
                           <Button
