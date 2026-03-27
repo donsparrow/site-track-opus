@@ -42,7 +42,6 @@ export default function ObraDetail() {
   const [financeiro, setFinanceiro] = useState({ contrato: 0, recebido: 0, aReceber: 0, gasto: 0, saldo: 0 });
   const [loading, setLoading] = useState(true);
   const [exportingPdf, setExportingPdf] = useState(false);
-  const [exportingPdf, setExportingPdf] = useState(false);
   const [saldoPrazo, setSaldoPrazo] = useState<number | null>(null);
   const chartRef = useRef<HTMLDivElement>(null);
 
