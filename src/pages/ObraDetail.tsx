@@ -28,7 +28,7 @@ interface Parcela {
 
 export default function ObraDetail() {
   const { id } = useParams<{ id: string }>();
-  const { canEdit } = useAuth();
+  const { canEdit, role } = useAuth();
   const [obra, setObra] = useState<any>(null);
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
   const [financeiro, setFinanceiro] = useState({ contrato: 0, recebido: 0, aReceber: 0, gasto: 0, saldo: 0 });
