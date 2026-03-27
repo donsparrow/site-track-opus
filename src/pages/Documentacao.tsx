@@ -36,6 +36,8 @@ export default function Documentacao() {
   const [uploading, setUploading] = useState(false);
   const [editPastaId, setEditPastaId] = useState<string | null>(null);
   const [editPastaNome, setEditPastaNome] = useState('');
+  const [hoverArquivo, setHoverArquivo] = useState<Arquivo | null>(null);
+  const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
 
   // Load obras
   useEffect(() => {
