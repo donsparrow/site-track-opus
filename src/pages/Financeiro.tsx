@@ -400,6 +400,7 @@ export default function Financeiro() {
                                       <TableCell>{fmt(Number(p.valor))}</TableCell>
                                       <TableCell>{new Date(p.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
                                       <TableCell>{p.data_recebimento ? new Date(p.data_recebimento + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
+                                      <TableCell className="capitalize">{p.forma_pagamento || '—'}</TableCell>
                                       <TableCell>
                                         {st === 'recebido' && <Badge className="bg-success text-success-foreground">Recebido</Badge>}
                                         {st === 'atrasado' && <Badge variant="destructive">Atrasado</Badge>}
