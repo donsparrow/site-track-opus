@@ -622,6 +622,31 @@ export default function Financeiro() {
         </DialogContent>
       </Dialog>
 
+      {/* Receber Parcela */}
+      <Dialog open={receberOpen} onOpenChange={setReceberOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="font-display">Receber Parcela</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Forma de Pagamento</Label>
+              <Select value={receberFormaPgto} onValueChange={setReceberFormaPgto}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pix">PIX</SelectItem>
+                  <SelectItem value="boleto">Boleto</SelectItem>
+                  <SelectItem value="transferencia">Transferência</SelectItem>
+                  <SelectItem value="cartao">Cartão</SelectItem>
+                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                  <SelectItem value="outros">Outros</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-sm text-muted-foreground">A data de recebimento será preenchida com a data de hoje.</p>
+            <Button onClick={handleReceber} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">Confirmar Recebimento</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Despesa */}
       <AlertDialog open={!!deleteDespesaId} onOpenChange={(open) => !open && setDeleteDespesaId(null)}>
         <AlertDialogContent>
