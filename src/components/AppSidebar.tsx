@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Building2, LayoutDashboard, Wallet, FileText,
-  Users, LogOut, HardHat, UserCircle, ClipboardList, Settings, FolderOpen
+  Users, LogOut, HardHat, UserCircle, ClipboardList, Settings, FolderOpen, CalendarRange
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
