@@ -34,6 +34,8 @@ export default function Documentacao() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewTipo, setPreviewTipo] = useState<string>('');
   const [uploading, setUploading] = useState(false);
+  const [editPastaId, setEditPastaId] = useState<string | null>(null);
+  const [editPastaNome, setEditPastaNome] = useState('');
 
   // Load obras
   useEffect(() => {
