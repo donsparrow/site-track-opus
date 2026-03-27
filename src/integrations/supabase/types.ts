@@ -238,6 +238,7 @@ export type Database = {
           nome_empresa: string
           site: string | null
           telefone: string | null
+          texto_rodape: string | null
           updated_at: string
         }
         Insert: {
@@ -251,6 +252,7 @@ export type Database = {
           nome_empresa?: string
           site?: string | null
           telefone?: string | null
+          texto_rodape?: string | null
           updated_at?: string
         }
         Update: {
@@ -264,6 +266,7 @@ export type Database = {
           nome_empresa?: string
           site?: string | null
           telefone?: string | null
+          texto_rodape?: string | null
           updated_at?: string
         }
         Relationships: []
