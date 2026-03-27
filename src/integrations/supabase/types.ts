@@ -273,11 +273,13 @@ export type Database = {
           anexo: string | null
           created_at: string
           data: string
+          data_vencimento: string | null
           descricao: string
           forma_pagamento: string | null
           id: string
           obra_id: string
           tipo: string
+          tipo_pagamento: string
           updated_at: string
           valor: number
         }
@@ -285,11 +287,13 @@ export type Database = {
           anexo?: string | null
           created_at?: string
           data?: string
+          data_vencimento?: string | null
           descricao: string
           forma_pagamento?: string | null
           id?: string
           obra_id: string
           tipo?: string
+          tipo_pagamento?: string
           updated_at?: string
           valor: number
         }
@@ -297,11 +301,13 @@ export type Database = {
           anexo?: string | null
           created_at?: string
           data?: string
+          data_vencimento?: string | null
           descricao?: string
           forma_pagamento?: string | null
           id?: string
           obra_id?: string
           tipo?: string
+          tipo_pagamento?: string
           updated_at?: string
           valor?: number
         }
@@ -894,6 +900,7 @@ export type Database = {
       }
       receitas: {
         Row: {
+          anexo: string | null
           created_at: string
           descricao: string
           forma_pagamento: string
@@ -905,6 +912,7 @@ export type Database = {
           valor_total: number
         }
         Insert: {
+          anexo?: string | null
           created_at?: string
           descricao: string
           forma_pagamento?: string
@@ -916,6 +924,7 @@ export type Database = {
           valor_total?: number
         }
         Update: {
+          anexo?: string | null
           created_at?: string
           descricao?: string
           forma_pagamento?: string
