@@ -308,6 +308,10 @@ export default function ObraDetail() {
 
       <NovaReceitaDialog open={receitaOpen} onOpenChange={setReceitaOpen} onCreated={fetchData} />
       <NovaDespesaDialog open={despesaOpen} onOpenChange={setDespesaOpen} onCreated={fetchData} />
+
+      {(role === 'admin' || role === 'trabalhador') && (
+        <AnotacoesObra obraId={id!} initialContent={(obra as any)?.anotacoes} />
+      )}
     </div>
   );
 }
