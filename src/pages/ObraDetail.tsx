@@ -122,95 +122,36 @@ export default function ObraDetail() {
     setLoading(false);
   };
 
-  const registrarPagamento = async (parcelaId: string, formaPagamento: string) => {
-    const { error } = await supabase
-      .from('parcelas')
-      .update({ data_recebimento: new Date().toISOString().split('T')[0], status: 'recebido', forma_pagamento: formaPagamento })
-      .eq('id', parcelaId);
+  // --- DELETE OBRA ---
+  const handleCheckDeleteObra = async () => {
+    if (!id) return;
+    const checks = await Promise.all([
+      supabase.from('receitas').select('id', { count: 'exact', head: true }).eq('obra_id', id),
+      supabase.from('despesas').select('id', { count: 'exact', head: true }).eq('obra_id', id),
+      supabase.from('diario_obra').select('id', { count: 'exact', head: true }).eq('obra_id', id),
+      supabase.from('relatorios').select('id', { count: 'exact', head: true }).eq('obra_id', id),
+      supabase.from('documentos_pastas').select('id', { count: 'exact', head: true }).eq('obra_id', id),
+    ]);
+    const hasData = checks.some(c => (c.count ?? 0) > 0);
+    if (hasData) {
+      setDeleteObraBlocked(true);
+      setDeleteObraMsg('Não é possível excluir esta obra pois existem dados vinculados (financeiro, diário, relatórios ou documentos).');
+    } else {
+      setDeleteObraBlocked(false);
+      setDeleteObraMsg('Tem certeza que deseja excluir esta obra? Esta ação não pode ser desfeita.');
+    }
+    setDeleteObraOpen(true);
+  };
+
+  const handleDeleteObra = async () => {
+    if (!id) return;
+    const { error } = await supabase.from('obras').delete().eq('id', id);
     if (error) toast.error('Erro: ' + error.message);
-    else { toast.success('Pagamento registrado!'); fetchData(); }
-  };
-
-  // --- EDIT PARCELA ---
-  const openEditParcela = (p: Parcela) => {
-    setEditParcela(p);
-    setEpValor(String(p.valor));
-    setEpVencimento(p.data_vencimento);
-    setEpFormaPgto(p.forma_pagamento || 'pix');
-    setEditParcelaOpen(true);
-  };
-
-  const handleEditParcela = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editParcela) return;
-    const { error } = await supabase.from('parcelas').update({
-      valor: parseFloat(epValor),
-      data_vencimento: epVencimento,
-      forma_pagamento: epFormaPgto || null,
-    }).eq('id', editParcela.id);
-    if (error) toast.error('Erro: ' + error.message);
-    else { toast.success('Parcela atualizada com sucesso!'); setEditParcelaOpen(false); fetchData(); }
-  };
-
-  // --- DELETE PARCELA ---
-  const confirmDeleteParcela = (p: Parcela) => {
-    setDeleteParcelaId(p.id);
-    setDeleteParcelaRecebido(p.status === 'recebido');
-  };
-
-  const handleDeleteParcela = async () => {
-    if (!deleteParcelaId) return;
-    const { error } = await supabase.from('parcelas').delete().eq('id', deleteParcelaId);
-    if (error) toast.error('Erro: ' + error.message);
-    else { toast.success('Parcela excluída com sucesso!'); fetchData(); }
-    setDeleteParcelaId(null);
-  };
-
-  // --- EDIT DESPESA ---
-  const openEditDespesa = (d: Despesa) => {
-    setEditDespesaItem(d);
-    setEdValor(String(d.valor));
-    setEdDescricao(d.descricao);
-    setEdData(d.data);
-    setEdTipo(d.tipo);
-    setEdFormaPgto(d.forma_pagamento || '');
-    setEditDespesaOpen(true);
-  };
-
-  const handleEditDespesa = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editDespesaItem) return;
-    const { error } = await supabase.from('despesas').update({
-      valor: parseFloat(edValor),
-      descricao: edDescricao,
-      data: edData,
-      tipo: edTipo,
-      forma_pagamento: edFormaPgto || null,
-    }).eq('id', editDespesaItem.id);
-    if (error) toast.error('Erro: ' + error.message);
-    else { toast.success('Despesa atualizada com sucesso!'); setEditDespesaOpen(false); fetchData(); }
-  };
-
-  // --- DELETE DESPESA ---
-  const handleDeleteDespesa = async () => {
-    if (!deleteDespesaId) return;
-    const { error } = await supabase.from('despesas').delete().eq('id', deleteDespesaId);
-    if (error) toast.error('Erro: ' + error.message);
-    else { toast.success('Despesa excluída com sucesso!'); fetchData(); }
-    setDeleteDespesaId(null);
-  };
-
-  const handleEditObra = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const { error } = await supabase.from('obras').update({
-      status: editStatus,
-      data_inicio: editDataInicio || null,
-      data_fim_prevista: editDataFim || null,
-      endereco: editEndereco || null,
-      responsavel: editResponsavel || null,
-    }).eq('id', id!);
-    if (error) toast.error('Erro: ' + error.message);
-    else { toast.success('Obra atualizada!'); setEditOpen(false); fetchData(); }
+    else {
+      toast.success('Obra excluída com sucesso!');
+      window.location.href = '/dashboard';
+    }
+    setDeleteObraOpen(false);
   };
 
   const handleExportPDF = useCallback(async () => {
