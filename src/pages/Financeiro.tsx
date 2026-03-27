@@ -523,10 +523,12 @@ export default function Financeiro() {
               <Select value={epFormaPgto} onValueChange={setEpFormaPgto}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pix">Pix</SelectItem>
-                  <SelectItem value="boleto">Boleto</SelectItem>
-                  <SelectItem value="transferencia">Transferência</SelectItem>
-                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                   <SelectItem value="pix">PIX</SelectItem>
+                   <SelectItem value="boleto">Boleto</SelectItem>
+                   <SelectItem value="transferencia">Transferência</SelectItem>
+                   <SelectItem value="cartao">Cartão</SelectItem>
+                   <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                   <SelectItem value="outros">Outros</SelectItem>
                 </SelectContent>
               </Select>
             </div>
