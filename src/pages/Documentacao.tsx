@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { FolderPlus, Upload, Trash2, Eye, Folder, FileText, Image, X } from 'lucide-react';
+import { FolderPlus, Upload, Trash2, Eye, Folder, FileText, Image, X, Pencil } from 'lucide-react';
 
 type Pasta = { id: string; obra_id: string; nome_pasta: string; created_at: string };
 type Arquivo = { id: string; pasta_id: string; nome_arquivo: string; tipo: string; url_arquivo: string; tamanho: number; created_at: string };
@@ -34,6 +34,8 @@ export default function Documentacao() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewTipo, setPreviewTipo] = useState<string>('');
   const [uploading, setUploading] = useState(false);
+  const [editPastaId, setEditPastaId] = useState<string | null>(null);
+  const [editPastaNome, setEditPastaNome] = useState('');
 
   // Load obras
   useEffect(() => {
@@ -91,7 +93,18 @@ export default function Documentacao() {
     setPastas((data as Pasta[]) || []);
   };
 
-  const excluirPasta = async () => {
+  const renomearPasta = async () => {
+    if (!editPastaId || !editPastaNome.trim()) return;
+    const { error } = await supabase.from('documentos_pastas').update({ nome_pasta: editPastaNome.trim() }).eq('id', editPastaId);
+    if (error) { toast.error('Erro ao renomear pasta'); return; }
+    toast.success('Nome da pasta atualizado com sucesso');
+    setEditPastaId(null);
+    setEditPastaNome('');
+    const { data } = await supabase.from('documentos_pastas').select('*').eq('obra_id', obraSelecionada).order('created_at');
+    setPastas((data as Pasta[]) || []);
+  };
+
+
     if (!deletePastaId) return;
     // Check if has files
     const { data: files } = await supabase.from('documentos_arquivos').select('id').eq('pasta_id', deletePastaId);
@@ -237,14 +250,24 @@ export default function Documentacao() {
                     <span className="text-sm truncate">{p.nome_pasta}</span>
                   </div>
                   {canManage && (
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7 shrink-0"
-                      onClick={(e) => { e.stopPropagation(); setDeletePastaId(p.id); }}
-                    >
-                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                    </Button>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        onClick={(e) => { e.stopPropagation(); setEditPastaId(p.id); setEditPastaNome(p.nome_pasta); }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7"
+                        onClick={(e) => { e.stopPropagation(); setDeletePastaId(p.id); }}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </div>
                   )}
                 </div>
               ))}
@@ -394,6 +417,24 @@ export default function Documentacao() {
           {previewTipo === 'pdf' && previewUrl && (
             <iframe src={previewUrl} className="w-full h-[70vh] rounded-lg" title="PDF Preview" />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Editar Pasta */}
+      <Dialog open={!!editPastaId} onOpenChange={() => setEditPastaId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar nome da pasta</DialogTitle>
+          </DialogHeader>
+          <Input
+            placeholder="Nome da pasta"
+            value={editPastaNome}
+            onChange={e => setEditPastaNome(e.target.value)}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditPastaId(null)}>Cancelar</Button>
+            <Button onClick={renomearPasta} disabled={!editPastaNome.trim()}>Salvar</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
