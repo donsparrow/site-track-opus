@@ -5,16 +5,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { ArrowLeft, DollarSign, TrendingUp, TrendingDown, Wallet, Check, ClipboardList, FileText, Edit2, Clock, Timer, Download, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, ClipboardList, FileText, Clock, Timer, Download, Trash2 } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import NovaReceitaDialog from '@/components/NovaReceitaDialog';
-import NovaDespesaDialog from '@/components/NovaDespesaDialog';
 import AnotacoesObra from '@/components/AnotacoesObra';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { gerarDashboardPDF } from '@/lib/pdfDashboard';
@@ -46,42 +40,14 @@ export default function ObraDetail() {
   const [despesas, setDespesas] = useState<Despesa[]>([]);
   const [financeiro, setFinanceiro] = useState({ contrato: 0, recebido: 0, aReceber: 0, gasto: 0, saldo: 0 });
   const [loading, setLoading] = useState(true);
-  const [receitaOpen, setReceitaOpen] = useState(false);
-  const [despesaOpen, setDespesaOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
   const [saldoPrazo, setSaldoPrazo] = useState<number | null>(null);
   const chartRef = useRef<HTMLDivElement>(null);
 
-  // Edit parcela
-  const [editParcelaOpen, setEditParcelaOpen] = useState(false);
-  const [editParcela, setEditParcela] = useState<Parcela | null>(null);
-  const [epValor, setEpValor] = useState('');
-  const [epVencimento, setEpVencimento] = useState('');
-  const [epFormaPgto, setEpFormaPgto] = useState('');
-
-  // Delete parcela
-  const [deleteParcelaId, setDeleteParcelaId] = useState<string | null>(null);
-  const [deleteParcelaRecebido, setDeleteParcelaRecebido] = useState(false);
-
-  // Edit despesa
-  const [editDespesaOpen, setEditDespesaOpen] = useState(false);
-  const [editDespesaItem, setEditDespesaItem] = useState<Despesa | null>(null);
-  const [edValor, setEdValor] = useState('');
-  const [edDescricao, setEdDescricao] = useState('');
-  const [edData, setEdData] = useState('');
-  const [edTipo, setEdTipo] = useState('');
-  const [edFormaPgto, setEdFormaPgto] = useState('');
-
-  // Delete despesa
-  const [deleteDespesaId, setDeleteDespesaId] = useState<string | null>(null);
-
-  // Edit obra form
-  const [editStatus, setEditStatus] = useState('');
-  const [editDataInicio, setEditDataInicio] = useState('');
-  const [editDataFim, setEditDataFim] = useState('');
-  const [editEndereco, setEditEndereco] = useState('');
-  const [editResponsavel, setEditResponsavel] = useState('');
+  // Delete obra
+  const [deleteObraOpen, setDeleteObraOpen] = useState(false);
+  const [deleteObraBlocked, setDeleteObraBlocked] = useState(false);
+  const [deleteObraMsg, setDeleteObraMsg] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -98,13 +64,6 @@ export default function ObraDetail() {
       .single();
     setObra(obraData);
 
-    if (obraData) {
-      setEditStatus(obraData.status);
-      setEditDataInicio(obraData.data_inicio || '');
-      setEditDataFim(obraData.data_fim_prevista || '');
-      setEditEndereco(obraData.endereco || '');
-      setEditResponsavel(obraData.responsavel || '');
-    }
 
     const { data: latestRelatorio } = await supabase
       .from('relatorios')
@@ -154,95 +113,36 @@ export default function ObraDetail() {
     setLoading(false);
   };
 
-  const registrarPagamento = async (parcelaId: string, formaPagamento: string) => {
-    const { error } = await supabase
-      .from('parcelas')
-      .update({ data_recebimento: new Date().toISOString().split('T')[0], status: 'recebido', forma_pagamento: formaPagamento })
-      .eq('id', parcelaId);
+  // --- DELETE OBRA ---
+  const handleCheckDeleteObra = async () => {
+    if (!id) return;
+    const checks = await Promise.all([
+      supabase.from('receitas').select('id', { count: 'exact', head: true }).eq('obra_id', id),
+      supabase.from('despesas').select('id', { count: 'exact', head: true }).eq('obra_id', id),
+      supabase.from('diario_obra').select('id', { count: 'exact', head: true }).eq('obra_id', id),
+      supabase.from('relatorios').select('id', { count: 'exact', head: true }).eq('obra_id', id),
+      supabase.from('documentos_pastas').select('id', { count: 'exact', head: true }).eq('obra_id', id),
+    ]);
+    const hasData = checks.some(c => (c.count ?? 0) > 0);
+    if (hasData) {
+      setDeleteObraBlocked(true);
+      setDeleteObraMsg('Não é possível excluir esta obra pois existem dados vinculados (financeiro, diário, relatórios ou documentos).');
+    } else {
+      setDeleteObraBlocked(false);
+      setDeleteObraMsg('Tem certeza que deseja excluir esta obra? Esta ação não pode ser desfeita.');
+    }
+    setDeleteObraOpen(true);
+  };
+
+  const handleDeleteObra = async () => {
+    if (!id) return;
+    const { error } = await supabase.from('obras').delete().eq('id', id);
     if (error) toast.error('Erro: ' + error.message);
-    else { toast.success('Pagamento registrado!'); fetchData(); }
-  };
-
-  // --- EDIT PARCELA ---
-  const openEditParcela = (p: Parcela) => {
-    setEditParcela(p);
-    setEpValor(String(p.valor));
-    setEpVencimento(p.data_vencimento);
-    setEpFormaPgto(p.forma_pagamento || 'pix');
-    setEditParcelaOpen(true);
-  };
-
-  const handleEditParcela = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editParcela) return;
-    const { error } = await supabase.from('parcelas').update({
-      valor: parseFloat(epValor),
-      data_vencimento: epVencimento,
-      forma_pagamento: epFormaPgto || null,
-    }).eq('id', editParcela.id);
-    if (error) toast.error('Erro: ' + error.message);
-    else { toast.success('Parcela atualizada com sucesso!'); setEditParcelaOpen(false); fetchData(); }
-  };
-
-  // --- DELETE PARCELA ---
-  const confirmDeleteParcela = (p: Parcela) => {
-    setDeleteParcelaId(p.id);
-    setDeleteParcelaRecebido(p.status === 'recebido');
-  };
-
-  const handleDeleteParcela = async () => {
-    if (!deleteParcelaId) return;
-    const { error } = await supabase.from('parcelas').delete().eq('id', deleteParcelaId);
-    if (error) toast.error('Erro: ' + error.message);
-    else { toast.success('Parcela excluída com sucesso!'); fetchData(); }
-    setDeleteParcelaId(null);
-  };
-
-  // --- EDIT DESPESA ---
-  const openEditDespesa = (d: Despesa) => {
-    setEditDespesaItem(d);
-    setEdValor(String(d.valor));
-    setEdDescricao(d.descricao);
-    setEdData(d.data);
-    setEdTipo(d.tipo);
-    setEdFormaPgto(d.forma_pagamento || '');
-    setEditDespesaOpen(true);
-  };
-
-  const handleEditDespesa = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editDespesaItem) return;
-    const { error } = await supabase.from('despesas').update({
-      valor: parseFloat(edValor),
-      descricao: edDescricao,
-      data: edData,
-      tipo: edTipo,
-      forma_pagamento: edFormaPgto || null,
-    }).eq('id', editDespesaItem.id);
-    if (error) toast.error('Erro: ' + error.message);
-    else { toast.success('Despesa atualizada com sucesso!'); setEditDespesaOpen(false); fetchData(); }
-  };
-
-  // --- DELETE DESPESA ---
-  const handleDeleteDespesa = async () => {
-    if (!deleteDespesaId) return;
-    const { error } = await supabase.from('despesas').delete().eq('id', deleteDespesaId);
-    if (error) toast.error('Erro: ' + error.message);
-    else { toast.success('Despesa excluída com sucesso!'); fetchData(); }
-    setDeleteDespesaId(null);
-  };
-
-  const handleEditObra = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const { error } = await supabase.from('obras').update({
-      status: editStatus,
-      data_inicio: editDataInicio || null,
-      data_fim_prevista: editDataFim || null,
-      endereco: editEndereco || null,
-      responsavel: editResponsavel || null,
-    }).eq('id', id!);
-    if (error) toast.error('Erro: ' + error.message);
-    else { toast.success('Obra atualizada!'); setEditOpen(false); fetchData(); }
+    else {
+      toast.success('Obra excluída com sucesso!');
+      window.location.href = '/dashboard';
+    }
+    setDeleteObraOpen(false);
   };
 
   const handleExportPDF = useCallback(async () => {
@@ -352,9 +252,9 @@ export default function ObraDetail() {
           <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={exportingPdf}>
             <Download className="h-4 w-4 mr-1" /> {exportingPdf ? 'Exportando...' : 'Exportar PDF'}
           </Button>
-          {canEdit && (
-            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
-              <Edit2 className="h-4 w-4 mr-1" /> Editar
+          {isAdmin && (
+            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={handleCheckDeleteObra}>
+              <Trash2 className="h-4 w-4 mr-1" /> Excluir Obra
             </Button>
           )}
           <Link to={`/diario?obra=${id}`}>
@@ -431,19 +331,7 @@ export default function ObraDetail() {
         </Card>
       )}
 
-      {/* Action buttons */}
-      {canEdit && (
-        <div className="flex gap-3 mb-6">
-          <Button onClick={() => setReceitaOpen(true)} className="bg-accent text-accent-foreground hover:bg-accent/90" size="sm">
-            <TrendingUp className="h-4 w-4 mr-1" /> Nova Receita
-          </Button>
-          <Button onClick={() => setDespesaOpen(true)} variant="outline" size="sm">
-            <TrendingDown className="h-4 w-4 mr-1" /> Nova Despesa
-          </Button>
-        </div>
-      )}
-
-      {/* Parcelas table */}
+      {/* Parcelas table - read only */}
       <Card className="mb-8">
         <CardHeader><CardTitle className="font-display">Parcelas</CardTitle></CardHeader>
         <CardContent>
@@ -459,7 +347,6 @@ export default function ObraDetail() {
                   <TableHead>Recebimento</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Forma Pgto</TableHead>
-                  {canEdit && <TableHead>Ações</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -471,23 +358,6 @@ export default function ObraDetail() {
                     <TableCell>{p.data_recebimento ? new Date(p.data_recebimento + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
                     <TableCell>{statusBadge(p.status)}</TableCell>
                     <TableCell className="capitalize">{p.forma_pagamento || '—'}</TableCell>
-                    {canEdit && (
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          {p.status !== 'recebido' && (
-                            <ParcelaPayAction onPay={(forma) => registrarPagamento(p.id, forma)} />
-                          )}
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEditParcela(p)} title="Editar">
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          {isAdmin && (
-                            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => confirmDeleteParcela(p)} title="Excluir">
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -496,7 +366,7 @@ export default function ObraDetail() {
         </CardContent>
       </Card>
 
-      {/* Despesas table */}
+      {/* Despesas table - read only */}
       <Card className="mb-8">
         <CardHeader><CardTitle className="font-display">Despesas</CardTitle></CardHeader>
         <CardContent>
@@ -511,7 +381,6 @@ export default function ObraDetail() {
                   <TableHead>Descrição</TableHead>
                   <TableHead>Valor</TableHead>
                   <TableHead>Forma Pgto</TableHead>
-                  {canEdit && <TableHead>Ações</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -522,20 +391,6 @@ export default function ObraDetail() {
                     <TableCell>{d.descricao}</TableCell>
                     <TableCell className="font-medium text-destructive">{fmt(Number(d.valor))}</TableCell>
                     <TableCell className="capitalize">{d.forma_pagamento || '—'}</TableCell>
-                    {canEdit && (
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEditDespesa(d)} title="Editar">
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          {isAdmin && (
-                            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteDespesaId(d.id)} title="Excluir">
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
-                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -544,166 +399,27 @@ export default function ObraDetail() {
         </CardContent>
       </Card>
 
-      {/* ===== DIALOGS ===== */}
-
-      {/* Edit Obra */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle className="font-display">Editar Obra</DialogTitle></DialogHeader>
-          <form onSubmit={handleEditObra} className="space-y-4">
-            <div>
-              <Label>Status</Label>
-              <Select value={editStatus} onValueChange={setEditStatus}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="planejamento">Planejamento</SelectItem>
-                  <SelectItem value="andamento">Em andamento</SelectItem>
-                  <SelectItem value="concluida">Concluída</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div><Label>Endereço</Label><Input value={editEndereco} onChange={e => setEditEndereco(e.target.value)} /></div>
-            <div><Label>Responsável</Label><Input value={editResponsavel} onChange={e => setEditResponsavel(e.target.value)} /></div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><Label>Data de Início</Label><Input type="date" value={editDataInicio} onChange={e => setEditDataInicio(e.target.value)} /></div>
-              <div><Label>Previsão de Término</Label><Input type="date" value={editDataFim} onChange={e => setEditDataFim(e.target.value)} /></div>
-            </div>
-            <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">Salvar</Button>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Parcela */}
-      <Dialog open={editParcelaOpen} onOpenChange={setEditParcelaOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle className="font-display">Editar Parcela</DialogTitle></DialogHeader>
-          <form onSubmit={handleEditParcela} className="space-y-4">
-            <div>
-              <Label>Valor (R$)</Label>
-              <Input type="number" step="0.01" min="0" value={epValor} onChange={e => setEpValor(e.target.value)} required />
-            </div>
-            <div>
-              <Label>Data de Vencimento</Label>
-              <Input type="date" value={epVencimento} onChange={e => setEpVencimento(e.target.value)} required />
-            </div>
-            <div>
-              <Label>Forma de Pagamento</Label>
-              <Select value={epFormaPgto} onValueChange={setEpFormaPgto}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pix">Pix</SelectItem>
-                  <SelectItem value="boleto">Boleto</SelectItem>
-                  <SelectItem value="transferencia">Transferência</SelectItem>
-                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">Salvar Alterações</Button>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Parcela Confirm */}
-      <AlertDialog open={!!deleteParcelaId} onOpenChange={(open) => !open && setDeleteParcelaId(null)}>
+      {/* Delete Obra Confirm */}
+      <AlertDialog open={deleteObraOpen} onOpenChange={setDeleteObraOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Parcela</AlertDialogTitle>
-            <AlertDialogDescription>
-              {deleteParcelaRecebido
-                ? 'Esta parcela já foi marcada como recebida. Tem certeza que deseja excluí-la? Esta ação não pode ser desfeita.'
-                : 'Tem certeza que deseja excluir esta parcela? Esta ação não pode ser desfeita.'}
-            </AlertDialogDescription>
+            <AlertDialogTitle>Excluir Obra</AlertDialogTitle>
+            <AlertDialogDescription>{deleteObraMsg}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteParcela} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Excluir
-            </AlertDialogAction>
+            {!deleteObraBlocked && (
+              <AlertDialogAction onClick={handleDeleteObra} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                Excluir
+              </AlertDialogAction>
+            )}
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Edit Despesa */}
-      <Dialog open={editDespesaOpen} onOpenChange={setEditDespesaOpen}>
-        <DialogContent>
-          <DialogHeader><DialogTitle className="font-display">Editar Despesa</DialogTitle></DialogHeader>
-          <form onSubmit={handleEditDespesa} className="space-y-4">
-            <div>
-              <Label>Tipo</Label>
-              <Select value={edTipo} onValueChange={setEdTipo}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="material">Material</SelectItem>
-                  <SelectItem value="mao_obra">Mão de Obra</SelectItem>
-                  <SelectItem value="ferramenta">Ferramenta</SelectItem>
-                  <SelectItem value="manutencao">Manutenção</SelectItem>
-                  <SelectItem value="outros">Outros</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Descrição</Label>
-              <Input value={edDescricao} onChange={e => setEdDescricao(e.target.value)} required />
-            </div>
-            <div>
-              <Label>Valor (R$)</Label>
-              <Input type="number" step="0.01" min="0" value={edValor} onChange={e => setEdValor(e.target.value)} required />
-            </div>
-            <div>
-              <Label>Data</Label>
-              <Input type="date" value={edData} onChange={e => setEdData(e.target.value)} required />
-            </div>
-            <div>
-              <Label>Forma de Pagamento</Label>
-              <Input value={edFormaPgto} onChange={e => setEdFormaPgto(e.target.value)} placeholder="Ex: Pix, Cartão..." />
-            </div>
-            <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">Salvar Alterações</Button>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Despesa Confirm */}
-      <AlertDialog open={!!deleteDespesaId} onOpenChange={(open) => !open && setDeleteDespesaId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Despesa</AlertDialogTitle>
-            <AlertDialogDescription>Tem certeza que deseja excluir esta despesa? Esta ação não pode ser desfeita.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteDespesa} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <NovaReceitaDialog open={receitaOpen} onOpenChange={setReceitaOpen} onCreated={fetchData} />
-      <NovaDespesaDialog open={despesaOpen} onOpenChange={setDespesaOpen} onCreated={fetchData} />
 
       {(role === 'admin' || role === 'trabalhador') && (
         <AnotacoesObra obraId={id!} initialContent={(obra as any)?.anotacoes} />
       )}
-    </div>
-  );
-}
-
-function ParcelaPayAction({ onPay }: { onPay: (forma: string) => void }) {
-  const [forma, setForma] = useState('pix');
-  return (
-    <div className="flex items-center gap-2">
-      <Select value={forma} onValueChange={setForma}>
-        <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="pix">Pix</SelectItem>
-          <SelectItem value="boleto">Boleto</SelectItem>
-          <SelectItem value="transferencia">Transferência</SelectItem>
-          <SelectItem value="dinheiro">Dinheiro</SelectItem>
-        </SelectContent>
-      </Select>
-      <Button size="sm" variant="outline" className="h-8" onClick={() => onPay(forma)}>
-        <Check className="h-3 w-3 mr-1" /> Receber
-      </Button>
     </div>
   );
 }

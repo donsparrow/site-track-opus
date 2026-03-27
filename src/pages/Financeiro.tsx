@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { ChevronDown, ChevronRight, Plus, DollarSign, TrendingDown, Pencil, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, DollarSign, TrendingDown, Pencil, Trash2, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import NovaReceitaDialog from '@/components/NovaReceitaDialog';
 import NovaDespesaDialog from '@/components/NovaDespesaDialog';
@@ -225,6 +225,24 @@ export default function Financeiro() {
     setDeleteDespesaId(null);
   };
 
+  // --- RECEBER PARCELA ---
+  const registrarPagamento = async (parcelaId: string, receitaId: string) => {
+    const { error } = await supabase
+      .from('parcelas')
+      .update({ data_recebimento: new Date().toISOString().split('T')[0], status: 'recebido' })
+      .eq('id', parcelaId);
+    if (error) toast.error('Erro: ' + error.message);
+    else {
+      toast.success('Parcela marcada como recebida!');
+      setParcelas(prev => { const copy = { ...prev }; delete copy[receitaId]; return copy; });
+      if (expandedReceita === receitaId) {
+        const { data } = await supabase.from('parcelas').select('*').eq('receita_id', receitaId).order('numero_parcela');
+        setParcelas(prev => ({ ...prev, [receitaId]: data || [] }));
+      }
+      fetchData();
+    }
+  };
+
   const fmt = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
   const tipoLabels: Record<string, string> = {
@@ -375,6 +393,11 @@ export default function Financeiro() {
                                       {canEdit && (
                                         <TableCell>
                                           <div className="flex items-center gap-1">
+                                            {st !== 'recebido' && (
+                                              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => registrarPagamento(p.id, r.id)}>
+                                                <Check className="h-3 w-3 mr-1" /> Receber
+                                              </Button>
+                                            )}
                                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEditParcela(p)} title="Editar">
                                               <Pencil className="h-3.5 w-3.5" />
                                             </Button>
