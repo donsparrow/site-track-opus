@@ -53,35 +53,10 @@ export default function ObraDetail() {
   const [saldoPrazo, setSaldoPrazo] = useState<number | null>(null);
   const chartRef = useRef<HTMLDivElement>(null);
 
-  // Edit parcela
-  const [editParcelaOpen, setEditParcelaOpen] = useState(false);
-  const [editParcela, setEditParcela] = useState<Parcela | null>(null);
-  const [epValor, setEpValor] = useState('');
-  const [epVencimento, setEpVencimento] = useState('');
-  const [epFormaPgto, setEpFormaPgto] = useState('');
-
-  // Delete parcela
-  const [deleteParcelaId, setDeleteParcelaId] = useState<string | null>(null);
-  const [deleteParcelaRecebido, setDeleteParcelaRecebido] = useState(false);
-
-  // Edit despesa
-  const [editDespesaOpen, setEditDespesaOpen] = useState(false);
-  const [editDespesaItem, setEditDespesaItem] = useState<Despesa | null>(null);
-  const [edValor, setEdValor] = useState('');
-  const [edDescricao, setEdDescricao] = useState('');
-  const [edData, setEdData] = useState('');
-  const [edTipo, setEdTipo] = useState('');
-  const [edFormaPgto, setEdFormaPgto] = useState('');
-
-  // Delete despesa
-  const [deleteDespesaId, setDeleteDespesaId] = useState<string | null>(null);
-
-  // Edit obra form
-  const [editStatus, setEditStatus] = useState('');
-  const [editDataInicio, setEditDataInicio] = useState('');
-  const [editDataFim, setEditDataFim] = useState('');
-  const [editEndereco, setEditEndereco] = useState('');
-  const [editResponsavel, setEditResponsavel] = useState('');
+  // Delete obra
+  const [deleteObraOpen, setDeleteObraOpen] = useState(false);
+  const [deleteObraBlocked, setDeleteObraBlocked] = useState(false);
+  const [deleteObraMsg, setDeleteObraMsg] = useState('');
 
   useEffect(() => {
     if (!id) return;
