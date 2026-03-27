@@ -380,14 +380,15 @@ export default function Financeiro() {
                           <TableCell colSpan={canEdit ? 7 : 6} className="bg-muted/50 p-4">
                             <Table>
                               <TableHeader>
-                                <TableRow>
-                                  <TableHead>Nº</TableHead>
-                                  <TableHead>Valor</TableHead>
-                                  <TableHead>Vencimento</TableHead>
-                                  <TableHead>Recebimento</TableHead>
-                                  <TableHead>Status</TableHead>
-                                  {canEdit && <TableHead>Ações</TableHead>}
-                                </TableRow>
+                                 <TableRow>
+                                   <TableHead>Nº</TableHead>
+                                   <TableHead>Valor</TableHead>
+                                   <TableHead>Vencimento</TableHead>
+                                   <TableHead>Recebimento</TableHead>
+                                   <TableHead>Forma Pgto</TableHead>
+                                   <TableHead>Status</TableHead>
+                                   {canEdit && <TableHead>Ações</TableHead>}
+                                 </TableRow>
                               </TableHeader>
                               <TableBody>
                                 {parcelas[r.id].map((p: any) => {
