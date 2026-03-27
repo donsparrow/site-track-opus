@@ -73,13 +73,6 @@ export default function ObraDetail() {
       .single();
     setObra(obraData);
 
-    if (obraData) {
-      setEditStatus(obraData.status);
-      setEditDataInicio(obraData.data_inicio || '');
-      setEditDataFim(obraData.data_fim_prevista || '');
-      setEditEndereco(obraData.endereco || '');
-      setEditResponsavel(obraData.responsavel || '');
-    }
 
     const { data: latestRelatorio } = await supabase
       .from('relatorios')
