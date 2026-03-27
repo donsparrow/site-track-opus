@@ -226,18 +226,32 @@ export default function Financeiro() {
   };
 
   // --- RECEBER PARCELA ---
-  const registrarPagamento = async (parcelaId: string, receitaId: string) => {
+  const [receberOpen, setReceberOpen] = useState(false);
+  const [receberParcelaId, setReceberParcelaId] = useState<string | null>(null);
+  const [receberReceitaId, setReceberReceitaId] = useState<string | null>(null);
+  const [receberFormaPgto, setReceberFormaPgto] = useState('pix');
+
+  const openReceber = (parcelaId: string, receitaId: string) => {
+    setReceberParcelaId(parcelaId);
+    setReceberReceitaId(receitaId);
+    setReceberFormaPgto('pix');
+    setReceberOpen(true);
+  };
+
+  const handleReceber = async () => {
+    if (!receberParcelaId || !receberReceitaId) return;
     const { error } = await supabase
       .from('parcelas')
-      .update({ data_recebimento: new Date().toISOString().split('T')[0], status: 'recebido' })
-      .eq('id', parcelaId);
+      .update({ data_recebimento: new Date().toISOString().split('T')[0], status: 'recebido', forma_pagamento: receberFormaPgto })
+      .eq('id', receberParcelaId);
     if (error) toast.error('Erro: ' + error.message);
     else {
       toast.success('Parcela marcada como recebida!');
-      setParcelas(prev => { const copy = { ...prev }; delete copy[receitaId]; return copy; });
-      if (expandedReceita === receitaId) {
-        const { data } = await supabase.from('parcelas').select('*').eq('receita_id', receitaId).order('numero_parcela');
-        setParcelas(prev => ({ ...prev, [receitaId]: data || [] }));
+      setReceberOpen(false);
+      setParcelas(prev => { const copy = { ...prev }; delete copy[receberReceitaId!]; return copy; });
+      if (expandedReceita === receberReceitaId) {
+        const { data } = await supabase.from('parcelas').select('*').eq('receita_id', receberReceitaId!).order('numero_parcela');
+        setParcelas(prev => ({ ...prev, [receberReceitaId!]: data || [] }));
       }
       fetchData();
     }
@@ -366,14 +380,15 @@ export default function Financeiro() {
                           <TableCell colSpan={canEdit ? 7 : 6} className="bg-muted/50 p-4">
                             <Table>
                               <TableHeader>
-                                <TableRow>
-                                  <TableHead>Nº</TableHead>
-                                  <TableHead>Valor</TableHead>
-                                  <TableHead>Vencimento</TableHead>
-                                  <TableHead>Recebimento</TableHead>
-                                  <TableHead>Status</TableHead>
-                                  {canEdit && <TableHead>Ações</TableHead>}
-                                </TableRow>
+                                 <TableRow>
+                                   <TableHead>Nº</TableHead>
+                                   <TableHead>Valor</TableHead>
+                                   <TableHead>Vencimento</TableHead>
+                                   <TableHead>Recebimento</TableHead>
+                                   <TableHead>Forma Pgto</TableHead>
+                                   <TableHead>Status</TableHead>
+                                   {canEdit && <TableHead>Ações</TableHead>}
+                                 </TableRow>
                               </TableHeader>
                               <TableBody>
                                 {parcelas[r.id].map((p: any) => {
@@ -385,6 +400,7 @@ export default function Financeiro() {
                                       <TableCell>{fmt(Number(p.valor))}</TableCell>
                                       <TableCell>{new Date(p.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
                                       <TableCell>{p.data_recebimento ? new Date(p.data_recebimento + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
+                                      <TableCell className="capitalize">{p.forma_pagamento || '—'}</TableCell>
                                       <TableCell>
                                         {st === 'recebido' && <Badge className="bg-success text-success-foreground">Recebido</Badge>}
                                         {st === 'atrasado' && <Badge variant="destructive">Atrasado</Badge>}
@@ -394,9 +410,9 @@ export default function Financeiro() {
                                         <TableCell>
                                           <div className="flex items-center gap-1">
                                             {st !== 'recebido' && (
-                                              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => registrarPagamento(p.id, r.id)}>
-                                                <Check className="h-3 w-3 mr-1" /> Receber
-                                              </Button>
+                                               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => openReceber(p.id, r.id)}>
+                                                 <Check className="h-3 w-3 mr-1" /> Receber
+                                               </Button>
                                             )}
                                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEditParcela(p)} title="Editar">
                                               <Pencil className="h-3.5 w-3.5" />
@@ -507,10 +523,12 @@ export default function Financeiro() {
               <Select value={epFormaPgto} onValueChange={setEpFormaPgto}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pix">Pix</SelectItem>
-                  <SelectItem value="boleto">Boleto</SelectItem>
-                  <SelectItem value="transferencia">Transferência</SelectItem>
-                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                   <SelectItem value="pix">PIX</SelectItem>
+                   <SelectItem value="boleto">Boleto</SelectItem>
+                   <SelectItem value="transferencia">Transferência</SelectItem>
+                   <SelectItem value="cartao">Cartão</SelectItem>
+                   <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                   <SelectItem value="outros">Outros</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -585,9 +603,47 @@ export default function Financeiro() {
             <div><Label>Descrição</Label><Input value={edDescricao} onChange={e => setEdDescricao(e.target.value)} required /></div>
             <div><Label>Valor (R$)</Label><Input type="number" step="0.01" min="0" value={edValor} onChange={e => setEdValor(e.target.value)} required /></div>
             <div><Label>Data</Label><Input type="date" value={edData} onChange={e => setEdData(e.target.value)} required /></div>
-            <div><Label>Forma de Pagamento</Label><Input value={edFormaPgto} onChange={e => setEdFormaPgto(e.target.value)} placeholder="Ex: Pix, Cartão..." /></div>
+            <div>
+              <Label>Forma de Pagamento</Label>
+              <Select value={edFormaPgto || 'pix'} onValueChange={setEdFormaPgto}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pix">PIX</SelectItem>
+                  <SelectItem value="boleto">Boleto</SelectItem>
+                  <SelectItem value="transferencia">Transferência</SelectItem>
+                  <SelectItem value="cartao">Cartão</SelectItem>
+                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                  <SelectItem value="outros">Outros</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">Salvar Alterações</Button>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Receber Parcela */}
+      <Dialog open={receberOpen} onOpenChange={setReceberOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="font-display">Receber Parcela</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Forma de Pagamento</Label>
+              <Select value={receberFormaPgto} onValueChange={setReceberFormaPgto}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pix">PIX</SelectItem>
+                  <SelectItem value="boleto">Boleto</SelectItem>
+                  <SelectItem value="transferencia">Transferência</SelectItem>
+                  <SelectItem value="cartao">Cartão</SelectItem>
+                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                  <SelectItem value="outros">Outros</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-sm text-muted-foreground">A data de recebimento será preenchida com a data de hoje.</p>
+            <Button onClick={handleReceber} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">Confirmar Recebimento</Button>
+          </div>
         </DialogContent>
       </Dialog>
 
