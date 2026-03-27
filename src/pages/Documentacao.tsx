@@ -93,7 +93,18 @@ export default function Documentacao() {
     setPastas((data as Pasta[]) || []);
   };
 
-  const excluirPasta = async () => {
+  const renomearPasta = async () => {
+    if (!editPastaId || !editPastaNome.trim()) return;
+    const { error } = await supabase.from('documentos_pastas').update({ nome_pasta: editPastaNome.trim() }).eq('id', editPastaId);
+    if (error) { toast.error('Erro ao renomear pasta'); return; }
+    toast.success('Nome da pasta atualizado com sucesso');
+    setEditPastaId(null);
+    setEditPastaNome('');
+    const { data } = await supabase.from('documentos_pastas').select('*').eq('obra_id', obraSelecionada).order('created_at');
+    setPastas((data as Pasta[]) || []);
+  };
+
+
     if (!deletePastaId) return;
     // Check if has files
     const { data: files } = await supabase.from('documentos_arquivos').select('id').eq('pasta_id', deletePastaId);
