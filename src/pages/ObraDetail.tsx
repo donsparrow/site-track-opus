@@ -10,8 +10,6 @@ import { ArrowLeft, DollarSign, TrendingUp, TrendingDown, Wallet, Check, Clipboa
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import NovaReceitaDialog from '@/components/NovaReceitaDialog';
-import NovaDespesaDialog from '@/components/NovaDespesaDialog';
 import AnotacoesObra from '@/components/AnotacoesObra';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { gerarDashboardPDF } from '@/lib/pdfDashboard';
