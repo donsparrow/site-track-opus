@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, DollarSign, TrendingUp, TrendingDown, Wallet, Check, ClipboardList, FileText, Edit2 } from 'lucide-react';
+import { ArrowLeft, DollarSign, TrendingUp, TrendingDown, Wallet, Check, ClipboardList, FileText, Edit2, Clock, Timer, Download } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -15,6 +15,8 @@ import { toast } from 'sonner';
 import NovaReceitaDialog from '@/components/NovaReceitaDialog';
 import NovaDespesaDialog from '@/components/NovaDespesaDialog';
 import AnotacoesObra from '@/components/AnotacoesObra';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { gerarDashboardPDF } from '@/lib/pdfDashboard';
 
 interface Parcela {
   id: string;
@@ -36,6 +38,9 @@ export default function ObraDetail() {
   const [receitaOpen, setReceitaOpen] = useState(false);
   const [despesaOpen, setDespesaOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [saldoPrazo, setSaldoPrazo] = useState<number | null>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   // Edit form
   const [editStatus, setEditStatus] = useState('');
@@ -66,6 +71,16 @@ export default function ObraDetail() {
       setEditEndereco(obraData.endereco || '');
       setEditResponsavel(obraData.responsavel || '');
     }
+
+    // Fetch saldo de prazo from latest relatorio
+    const { data: latestRelatorio } = await supabase
+      .from('relatorios')
+      .select('saldo_prazo')
+      .eq('obra_id', id!)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+    setSaldoPrazo(latestRelatorio?.saldo_prazo ?? null);
 
     const { data: receitas } = await supabase.from('receitas').select('id, valor_total').eq('obra_id', id!);
     const totalContrato = (receitas || []).reduce((s, r) => s + Number(r.valor_total), 0);
@@ -138,6 +153,79 @@ export default function ObraDetail() {
     }
   };
 
+  const handleExportPDF = useCallback(async () => {
+    if (!obra) return;
+    setExportingPdf(true);
+    try {
+      // Get company config
+      const { data: empresaData } = await supabase.from('configuracoes_empresa').select('*').limit(1).single();
+
+      // Capture chart as image
+      let chartImage: string | null = null;
+      if (chartRef.current) {
+        const svgElement = chartRef.current.querySelector('svg');
+        if (svgElement) {
+          try {
+            const svgData = new XMLSerializer().serializeToString(svgElement);
+            const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(svgBlob);
+            const img = new Image();
+            await new Promise<void>((resolve) => {
+              img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.naturalWidth * 2;
+                canvas.height = img.naturalHeight * 2;
+                const ctx = canvas.getContext('2d')!;
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                chartImage = canvas.toDataURL('image/png');
+                URL.revokeObjectURL(url);
+                resolve();
+              };
+              img.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+              img.src = url;
+            });
+          } catch { /* skip chart capture */ }
+        }
+      }
+
+      await gerarDashboardPDF({
+        empresa: empresaData,
+        obra: {
+          nome: obra.nome,
+          endereco: obra.endereco,
+          responsavel: obra.responsavel,
+          status: obra.status,
+          data_inicio: obra.data_inicio,
+          data_fim_prevista: obra.data_fim_prevista,
+          cliente_nome: obra.clientes?.nome,
+          anotacoes: (role === 'admin' || role === 'trabalhador') ? obra.anotacoes : undefined,
+        },
+        financeiro,
+        parcelas: parcelas.map(p => ({
+          numero_parcela: p.numero_parcela,
+          valor: p.valor,
+          data_vencimento: p.data_vencimento,
+          status: p.status,
+          forma_pagamento: p.forma_pagamento,
+        })),
+        prazos: {
+          contratual: obra.prazo_contratual_dias,
+          saldoPrazo,
+        },
+        chartImage,
+      });
+
+      toast.success('PDF exportado com sucesso!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Erro ao exportar PDF');
+    } finally {
+      setExportingPdf(false);
+    }
+  }, [obra, financeiro, parcelas, saldoPrazo, role]);
+
   const fmt = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
   const statusBadge = (status: string) => {
@@ -151,6 +239,14 @@ export default function ObraDetail() {
 
   const statusLabels: Record<string, string> = { planejamento: 'Planejamento', andamento: 'Em andamento', concluida: 'Concluída' };
   const atrasadas = parcelas.filter(p => p.status === 'atrasado').length;
+
+  // Chart data
+  const chartData = [
+    { name: 'Recebido', value: financeiro.recebido, color: 'hsl(142, 70%, 40%)' },
+    { name: 'A Receber', value: financeiro.aReceber, color: 'hsl(38, 92%, 50%)' },
+    { name: 'Gastos', value: financeiro.gasto, color: 'hsl(0, 72%, 51%)' },
+    { name: 'Saldo', value: Math.abs(financeiro.saldo), color: financeiro.saldo >= 0 ? 'hsl(142, 70%, 40%)' : 'hsl(0, 72%, 51%)' },
+  ];
 
   return (
     <div>
@@ -174,6 +270,9 @@ export default function ObraDetail() {
           </div>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={exportingPdf}>
+            <Download className="h-4 w-4 mr-1" /> {exportingPdf ? 'Exportando...' : 'Exportar PDF'}
+          </Button>
           {canEdit && (
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
               <Edit2 className="h-4 w-4 mr-1" /> Editar
@@ -192,8 +291,27 @@ export default function ObraDetail() {
         </div>
       </div>
 
-      {/* Financial summary */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+      {/* Prazo + Financial summary */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
+        {/* Prazo cards */}
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Prazo Contratual</p>
+            <p className="text-lg font-display font-bold text-foreground">
+              {obra.prazo_contratual_dias != null ? `${obra.prazo_contratual_dias} dias` : '—'}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs text-muted-foreground flex items-center gap-1"><Timer className="h-3 w-3" /> Saldo de Prazo</p>
+            <p className={`text-lg font-display font-bold ${saldoPrazo != null && saldoPrazo < 0 ? 'text-destructive' : 'text-success'}`}>
+              {saldoPrazo != null ? `${saldoPrazo} dias` : '—'}
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Financial cards */}
         {[
           { label: 'Total Contrato', value: financeiro.contrato, icon: DollarSign, color: 'text-foreground' },
           { label: 'Recebido', value: financeiro.recebido, icon: TrendingUp, color: 'text-success' },
@@ -220,6 +338,32 @@ export default function ObraDetail() {
         <div className="mb-6 rounded-lg border border-warning/30 bg-warning/5 p-4 text-sm text-warning">
           ⏰ {atrasadas} parcela{atrasadas > 1 ? 's' : ''} atrasada{atrasadas > 1 ? 's' : ''}!
         </div>
+      )}
+
+      {/* Financial Chart */}
+      {financeiro.contrato > 0 && (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="font-display text-base">Visão Financeira</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div ref={chartRef} className="w-full h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                  <YAxis tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
+                  <Tooltip formatter={(v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)} />
+                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                    {chartData.map((entry, index) => (
+                      <Cell key={index} fill={entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Action buttons */}
