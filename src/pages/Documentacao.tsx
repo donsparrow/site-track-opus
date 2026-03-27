@@ -457,6 +457,32 @@ export default function Documentacao() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Floating hover preview */}
+      {hoverArquivo && (
+        <div
+          className="fixed z-[100] pointer-events-none"
+          style={{
+            left: Math.min(hoverPos.x + 16, window.innerWidth - 320),
+            top: Math.max(hoverPos.y - 200, 8),
+          }}
+        >
+          {hoverArquivo.tipo === 'imagem' ? (
+            <img
+              src={hoverArquivo.url_arquivo}
+              alt={hoverArquivo.nome_arquivo}
+              className="w-72 max-h-56 object-contain rounded-lg border-2 bg-background shadow-xl"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-2 rounded-lg border-2 bg-background shadow-xl px-6 py-4">
+              <FileText className="h-12 w-12 text-destructive" />
+              <span className="text-sm font-medium text-foreground text-center max-w-[250px] truncate">{hoverArquivo.nome_arquivo}</span>
+              <span className="text-xs text-muted-foreground">Documento PDF</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
