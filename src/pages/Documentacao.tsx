@@ -36,6 +36,8 @@ export default function Documentacao() {
   const [uploading, setUploading] = useState(false);
   const [editPastaId, setEditPastaId] = useState<string | null>(null);
   const [editPastaNome, setEditPastaNome] = useState('');
+  const [hoverArquivo, setHoverArquivo] = useState<Arquivo | null>(null);
+  const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
 
   // Load obras
   useEffect(() => {
@@ -307,7 +309,11 @@ export default function Documentacao() {
               {pastaAberta && arquivos.length > 0 && (
                 <div className="space-y-2">
                   {arquivos.map(arq => (
-                    <div key={arq.id} className="group relative flex items-center justify-between rounded-lg border px-4 py-3">
+                    <div key={arq.id} className="relative flex items-center justify-between rounded-lg border px-4 py-3"
+                      onMouseEnter={(e) => { setHoverArquivo(arq); setHoverPos({ x: e.clientX, y: e.clientY }); }}
+                      onMouseMove={(e) => setHoverPos({ x: e.clientX, y: e.clientY })}
+                      onMouseLeave={() => setHoverArquivo(null)}
+                    >
                       <div className="flex items-center gap-3 min-w-0">
                         {arq.tipo === 'imagem' ? (
                           <Image className="h-5 w-5 shrink-0 text-primary" />
@@ -319,24 +325,6 @@ export default function Documentacao() {
                           <p className="text-xs text-muted-foreground">{formatSize(arq.tamanho)}</p>
                         </div>
                       </div>
-                      {/* Hover preview */}
-                      {arq.tipo === 'imagem' && (
-                        <div className="absolute left-0 bottom-full mb-2 z-50 hidden group-hover:block pointer-events-none">
-                          <img
-                            src={arq.url_arquivo}
-                            alt={arq.nome_arquivo}
-                            className="w-64 max-h-48 object-contain rounded-lg border bg-background shadow-lg"
-                          />
-                        </div>
-                      )}
-                      {arq.tipo === 'pdf' && (
-                        <div className="absolute left-0 bottom-full mb-2 z-50 hidden group-hover:block pointer-events-none">
-                          <div className="flex items-center gap-2 rounded-lg border bg-background shadow-lg px-4 py-3">
-                            <FileText className="h-8 w-8 text-destructive" />
-                            <span className="text-sm text-foreground">{arq.nome_arquivo}</span>
-                          </div>
-                        </div>
-                      )}
                       <div className="flex items-center gap-1">
                         <Button
                           size="icon"
@@ -469,6 +457,32 @@ export default function Documentacao() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Floating hover preview */}
+      {hoverArquivo && (
+        <div
+          className="fixed z-[100] pointer-events-none"
+          style={{
+            left: Math.min(hoverPos.x + 16, window.innerWidth - 320),
+            top: Math.max(hoverPos.y - 200, 8),
+          }}
+        >
+          {hoverArquivo.tipo === 'imagem' ? (
+            <img
+              src={hoverArquivo.url_arquivo}
+              alt={hoverArquivo.nome_arquivo}
+              className="w-72 max-h-56 object-contain rounded-lg border-2 bg-background shadow-xl"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+          ) : (
+            <div className="flex flex-col items-center gap-2 rounded-lg border-2 bg-background shadow-xl px-6 py-4">
+              <FileText className="h-12 w-12 text-destructive" />
+              <span className="text-sm font-medium text-foreground text-center max-w-[250px] truncate">{hoverArquivo.nome_arquivo}</span>
+              <span className="text-xs text-muted-foreground">Documento PDF</span>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
