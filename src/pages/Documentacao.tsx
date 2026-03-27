@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { FolderPlus, Upload, Trash2, Eye, Folder, FileText, Image, X } from 'lucide-react';
+import { FolderPlus, Upload, Trash2, Eye, Folder, FileText, Image, X, Pencil } from 'lucide-react';
 
 type Pasta = { id: string; obra_id: string; nome_pasta: string; created_at: string };
 type Arquivo = { id: string; pasta_id: string; nome_arquivo: string; tipo: string; url_arquivo: string; tamanho: number; created_at: string };
