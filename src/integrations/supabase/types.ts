@@ -767,6 +767,7 @@ export type Database = {
       }
       obras: {
         Row: {
+          anotacoes: string | null
           cliente_id: string | null
           created_at: string
           data_fim_prevista: string | null
@@ -780,6 +781,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          anotacoes?: string | null
           cliente_id?: string | null
           created_at?: string
           data_fim_prevista?: string | null
@@ -793,6 +795,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          anotacoes?: string | null
           cliente_id?: string | null
           created_at?: string
           data_fim_prevista?: string | null

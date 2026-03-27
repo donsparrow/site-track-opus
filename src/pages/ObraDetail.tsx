@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { toast } from 'sonner';
 import NovaReceitaDialog from '@/components/NovaReceitaDialog';
 import NovaDespesaDialog from '@/components/NovaDespesaDialog';
+import AnotacoesObra from '@/components/AnotacoesObra';
 
 interface Parcela {
   id: string;
@@ -27,7 +28,7 @@ interface Parcela {
 
 export default function ObraDetail() {
   const { id } = useParams<{ id: string }>();
-  const { canEdit } = useAuth();
+  const { canEdit, role } = useAuth();
   const [obra, setObra] = useState<any>(null);
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
   const [financeiro, setFinanceiro] = useState({ contrato: 0, recebido: 0, aReceber: 0, gasto: 0, saldo: 0 });
@@ -307,6 +308,10 @@ export default function ObraDetail() {
 
       <NovaReceitaDialog open={receitaOpen} onOpenChange={setReceitaOpen} onCreated={fetchData} />
       <NovaDespesaDialog open={despesaOpen} onOpenChange={setDespesaOpen} onCreated={fetchData} />
+
+      {(role === 'admin' || role === 'trabalhador') && (
+        <AnotacoesObra obraId={id!} initialContent={(obra as any)?.anotacoes} />
+      )}
     </div>
   );
 }
