@@ -104,7 +104,7 @@ export default function Documentacao() {
     setPastas((data as Pasta[]) || []);
   };
 
-
+  const excluirPasta = async () => {
     if (!deletePastaId) return;
     // Check if has files
     const { data: files } = await supabase.from('documentos_arquivos').select('id').eq('pasta_id', deletePastaId);
