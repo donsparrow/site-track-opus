@@ -12,6 +12,7 @@ const navItemsAll = [
   { to: '/financeiro', label: 'Financeiro', icon: Wallet, roles: ['admin', 'trabalhador'] },
   { to: '/diario', label: 'Diário de Obra', icon: ClipboardList, roles: ['admin', 'trabalhador'] },
   { to: '/relatorios', label: 'Relatórios', icon: FileText, roles: ['admin', 'trabalhador', 'cliente', 'sindico'] },
+  { to: '/documentacao', label: 'Documentação', icon: FolderOpen, roles: ['admin', 'trabalhador', 'cliente', 'sindico'] },
   { to: '/usuarios', label: 'Usuários', icon: Users, roles: ['admin'] },
   { to: '/configuracoes', label: 'Configurações', icon: Settings, roles: ['admin'] },
 ];
