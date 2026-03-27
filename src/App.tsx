@@ -14,6 +14,7 @@ import DiarioObra from "./pages/DiarioObra";
 import Configuracoes from "./pages/Configuracoes";
 import Clientes from "./pages/Clientes";
 import Usuarios from "./pages/Usuarios";
+import Documentacao from "./pages/Documentacao";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
