@@ -393,6 +393,11 @@ export default function Financeiro() {
                                       {canEdit && (
                                         <TableCell>
                                           <div className="flex items-center gap-1">
+                                            {st !== 'recebido' && (
+                                              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => registrarPagamento(p.id, r.id)}>
+                                                <Check className="h-3 w-3 mr-1" /> Receber
+                                              </Button>
+                                            )}
                                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEditParcela(p)} title="Editar">
                                               <Pencil className="h-3.5 w-3.5" />
                                             </Button>
