@@ -566,6 +566,73 @@ export type Database = {
           },
         ]
       }
+      documentos_arquivos: {
+        Row: {
+          created_at: string
+          id: string
+          nome_arquivo: string
+          pasta_id: string
+          tamanho: number | null
+          tipo: string
+          url_arquivo: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome_arquivo: string
+          pasta_id: string
+          tamanho?: number | null
+          tipo?: string
+          url_arquivo: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome_arquivo?: string
+          pasta_id?: string
+          tamanho?: number | null
+          tipo?: string
+          url_arquivo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_arquivos_pasta_id_fkey"
+            columns: ["pasta_id"]
+            isOneToOne: false
+            referencedRelation: "documentos_pastas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documentos_pastas: {
+        Row: {
+          created_at: string
+          id: string
+          nome_pasta: string
+          obra_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome_pasta: string
+          obra_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome_pasta?: string
+          obra_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_pastas_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       imagens: {
         Row: {
           created_at: string
