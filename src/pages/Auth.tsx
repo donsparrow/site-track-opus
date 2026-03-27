@@ -43,12 +43,12 @@ export default function Auth() {
       <Card className="relative z-10 w-full max-w-md mx-4 border-0 shadow-2xl">
         <CardHeader className="text-center pb-2">
           <div className="mx-auto mb-3 flex h-[104px] w-[104px] items-center justify-center rounded-xl overflow-hidden">
-            <img src={logoJn} alt="J&N GestãoPro" className="h-full w-full object-contain" />
+            <img src={logoJn} alt="J&N GestãoPro" className="h-full w-full object-contain px-0 py-0" />
           </div>
           <CardTitle className="font-display text-2xl">
             {isLogin ? 'Entrar' : 'Criar conta'}
           </CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">Sistema de Gestão de Obras</p>
+          <p className="text-sm text-muted-foreground mt-1 font-sans font-semibold">J&A GestãoPRO</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
