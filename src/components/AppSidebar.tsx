@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Building2, LayoutDashboard, Wallet, FileText,
-  Users, LogOut, HardHat, UserCircle, ClipboardList, Settings, FolderOpen
+  Users, LogOut, HardHat, UserCircle, ClipboardList, Settings, FolderOpen, CalendarRange
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -11,6 +11,7 @@ const navItemsAll = [
   { to: '/clientes', label: 'Clientes', icon: UserCircle, roles: ['admin', 'trabalhador'] },
   { to: '/financeiro', label: 'Financeiro', icon: Wallet, roles: ['admin', 'trabalhador'] },
   { to: '/diario', label: 'Diário de Obra', icon: ClipboardList, roles: ['admin', 'trabalhador'] },
+  { to: '/cronograma', label: 'Cronograma', icon: CalendarRange, roles: ['admin', 'trabalhador', 'cliente', 'sindico'] },
   { to: '/relatorios', label: 'Relatórios', icon: FileText, roles: ['admin', 'trabalhador', 'cliente', 'sindico'] },
   { to: '/documentacao', label: 'Documentação', icon: FolderOpen, roles: ['admin', 'trabalhador', 'cliente', 'sindico'] },
   { to: '/usuarios', label: 'Usuários', icon: Users, roles: ['admin'] },

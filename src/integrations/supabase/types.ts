@@ -268,6 +268,88 @@ export type Database = {
         }
         Relationships: []
       }
+      cronograma: {
+        Row: {
+          created_at: string
+          data_fim_prevista: string | null
+          data_inicio: string | null
+          id: string
+          obra_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_fim_prevista?: string | null
+          data_inicio?: string | null
+          id?: string
+          obra_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_fim_prevista?: string | null
+          data_inicio?: string | null
+          id?: string
+          obra_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cronograma_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cronograma_atividades: {
+        Row: {
+          created_at: string
+          cronograma_id: string
+          data_fim: string | null
+          data_inicio: string | null
+          id: string
+          nome_atividade: string
+          ordem: number
+          percentual_concluido: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cronograma_id: string
+          data_fim?: string | null
+          data_inicio?: string | null
+          id?: string
+          nome_atividade: string
+          ordem?: number
+          percentual_concluido?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cronograma_id?: string
+          data_fim?: string | null
+          data_inicio?: string | null
+          id?: string
+          nome_atividade?: string
+          ordem?: number
+          percentual_concluido?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cronograma_atividades_cronograma_id_fkey"
+            columns: ["cronograma_id"]
+            isOneToOne: false
+            referencedRelation: "cronograma"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       despesas: {
         Row: {
           anexo: string | null
