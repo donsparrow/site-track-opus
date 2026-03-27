@@ -72,6 +72,13 @@ export default function Cronograma() {
 
   const obraNome = obras.find(o => o.id === obraId)?.nome || '';
 
+  // Fetch obras
+  useEffect(() => {
+    supabase.from('obras').select('id, nome').order('nome').then(({ data }) => {
+      setObras((data || []) as { id: string; nome: string }[]);
+    });
+  }, []);
+
   useEffect(() => {
     if (obraIdParam && obraIdParam !== obraId) setObraId(obraIdParam);
   }, [obraIdParam]);
