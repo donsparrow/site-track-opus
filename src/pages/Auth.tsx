@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import constructionHero from '@/assets/construction-hero.jpg';
-
+import logoJn from '@/assets/logo-jn.jpeg';
 
 export default function Auth() {
   const { user, loading, signIn, signUp } = useAuth();
@@ -42,8 +42,8 @@ export default function Auth() {
       <div className="absolute inset-0 bg-primary/70" />
       <Card className="relative z-10 w-full max-w-md mx-4 border-0 shadow-2xl">
         <CardHeader className="text-center pb-2">
-          <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-xl overflow-hidden">
-            <img src="/lovable-uploads/5de7941a-f8ce-4425-9d90-955832a61eb6.jpg" alt="J&N GestãoPro" className="h-full w-full object-contain" />
+          <div className="mx-auto mb-3 flex h-[104px] w-[104px] items-center justify-center rounded-xl overflow-hidden">
+            <img src={logoJn} alt="J&N GestãoPro" className="h-full w-full object-contain" />
           </div>
           <CardTitle className="font-display text-2xl">
             {isLogin ? 'Entrar' : 'Criar conta'}
