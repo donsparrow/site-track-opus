@@ -48,7 +48,7 @@ export default function Auth() {
           <CardTitle className="font-display text-2xl">
             {isLogin ? 'Entrar' : 'Criar conta'}
           </CardTitle>
-          <p className="text-sm text-muted-foreground mt-1">Sistema de Gestão de Obras</p>
+          <p className="text-sm text-muted-foreground mt-1 font-sans font-semibold">J&A GestãoPRO</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
