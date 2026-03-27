@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { ChevronDown, ChevronRight, Plus, DollarSign, TrendingDown, Pencil, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, DollarSign, TrendingDown, Pencil, Trash2, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import NovaReceitaDialog from '@/components/NovaReceitaDialog';
 import NovaDespesaDialog from '@/components/NovaDespesaDialog';
