@@ -225,6 +225,24 @@ export default function Financeiro() {
     setDeleteDespesaId(null);
   };
 
+  // --- RECEBER PARCELA ---
+  const registrarPagamento = async (parcelaId: string, receitaId: string) => {
+    const { error } = await supabase
+      .from('parcelas')
+      .update({ data_recebimento: new Date().toISOString().split('T')[0], status: 'recebido' })
+      .eq('id', parcelaId);
+    if (error) toast.error('Erro: ' + error.message);
+    else {
+      toast.success('Parcela marcada como recebida!');
+      setParcelas(prev => { const copy = { ...prev }; delete copy[receitaId]; return copy; });
+      if (expandedReceita === receitaId) {
+        const { data } = await supabase.from('parcelas').select('*').eq('receita_id', receitaId).order('numero_parcela');
+        setParcelas(prev => ({ ...prev, [receitaId]: data || [] }));
+      }
+      fetchData();
+    }
+  };
+
   const fmt = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
   const tipoLabels: Record<string, string> = {
