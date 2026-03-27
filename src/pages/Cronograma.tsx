@@ -53,9 +53,9 @@ export default function Cronograma() {
   const { canEdit } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const obraIdParam = searchParams.get('obra');
-  const { obras } = useObrasFiltered();
 
   const [obraId, setObraId] = useState(obraIdParam || '');
+  const [obras, setObras] = useState<{ id: string; nome: string }[]>([]);
   const [cronograma, setCronograma] = useState<Cronograma | null>(null);
   const [atividades, setAtividades] = useState<Atividade[]>([]);
   const [loading, setLoading] = useState(false);
