@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import constructionHero from '@/assets/construction-hero.jpg';
 import logoJn from '@/assets/logo-jn.jpeg';
+import GlobalFooter from '@/components/GlobalFooter';
 
 export default function Auth() {
   const { user, loading, signIn, signUp } = useAuth();
@@ -90,6 +91,9 @@ export default function Auth() {
           </div>
         </CardContent>
       </Card>
+      <div className="absolute bottom-0 left-0 right-0 z-10">
+        <GlobalFooter />
+      </div>
     </div>
   );
 }
