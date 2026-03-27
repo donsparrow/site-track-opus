@@ -12,6 +12,7 @@ import Financeiro from "./pages/Financeiro";
 import Relatorios from "./pages/Relatorios";
 import DiarioObra from "./pages/DiarioObra";
 import Configuracoes from "./pages/Configuracoes";
+import Cronograma from "./pages/Cronograma";
 import Clientes from "./pages/Clientes";
 import Usuarios from "./pages/Usuarios";
 import Documentacao from "./pages/Documentacao";
