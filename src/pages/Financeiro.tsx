@@ -603,7 +603,20 @@ export default function Financeiro() {
             <div><Label>Descrição</Label><Input value={edDescricao} onChange={e => setEdDescricao(e.target.value)} required /></div>
             <div><Label>Valor (R$)</Label><Input type="number" step="0.01" min="0" value={edValor} onChange={e => setEdValor(e.target.value)} required /></div>
             <div><Label>Data</Label><Input type="date" value={edData} onChange={e => setEdData(e.target.value)} required /></div>
-            <div><Label>Forma de Pagamento</Label><Input value={edFormaPgto} onChange={e => setEdFormaPgto(e.target.value)} placeholder="Ex: Pix, Cartão..." /></div>
+            <div>
+              <Label>Forma de Pagamento</Label>
+              <Select value={edFormaPgto || 'pix'} onValueChange={setEdFormaPgto}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pix">PIX</SelectItem>
+                  <SelectItem value="boleto">Boleto</SelectItem>
+                  <SelectItem value="transferencia">Transferência</SelectItem>
+                  <SelectItem value="cartao">Cartão</SelectItem>
+                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                  <SelectItem value="outros">Outros</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">Salvar Alterações</Button>
           </form>
         </DialogContent>
