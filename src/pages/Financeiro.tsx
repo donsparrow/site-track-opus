@@ -226,18 +226,32 @@ export default function Financeiro() {
   };
 
   // --- RECEBER PARCELA ---
-  const registrarPagamento = async (parcelaId: string, receitaId: string) => {
+  const [receberOpen, setReceberOpen] = useState(false);
+  const [receberParcelaId, setReceberParcelaId] = useState<string | null>(null);
+  const [receberReceitaId, setReceberReceitaId] = useState<string | null>(null);
+  const [receberFormaPgto, setReceberFormaPgto] = useState('pix');
+
+  const openReceber = (parcelaId: string, receitaId: string) => {
+    setReceberParcelaId(parcelaId);
+    setReceberReceitaId(receitaId);
+    setReceberFormaPgto('pix');
+    setReceberOpen(true);
+  };
+
+  const handleReceber = async () => {
+    if (!receberParcelaId || !receberReceitaId) return;
     const { error } = await supabase
       .from('parcelas')
-      .update({ data_recebimento: new Date().toISOString().split('T')[0], status: 'recebido' })
-      .eq('id', parcelaId);
+      .update({ data_recebimento: new Date().toISOString().split('T')[0], status: 'recebido', forma_pagamento: receberFormaPgto })
+      .eq('id', receberParcelaId);
     if (error) toast.error('Erro: ' + error.message);
     else {
       toast.success('Parcela marcada como recebida!');
-      setParcelas(prev => { const copy = { ...prev }; delete copy[receitaId]; return copy; });
-      if (expandedReceita === receitaId) {
-        const { data } = await supabase.from('parcelas').select('*').eq('receita_id', receitaId).order('numero_parcela');
-        setParcelas(prev => ({ ...prev, [receitaId]: data || [] }));
+      setReceberOpen(false);
+      setParcelas(prev => { const copy = { ...prev }; delete copy[receberReceitaId!]; return copy; });
+      if (expandedReceita === receberReceitaId) {
+        const { data } = await supabase.from('parcelas').select('*').eq('receita_id', receberReceitaId!).order('numero_parcela');
+        setParcelas(prev => ({ ...prev, [receberReceitaId!]: data || [] }));
       }
       fetchData();
     }
