@@ -639,6 +639,36 @@ export type Database = {
           },
         ]
       }
+      financeiro_anexos: {
+        Row: {
+          created_at: string
+          id: string
+          nome_arquivo: string
+          registro_id: string
+          tipo_anexo: string
+          tipo_registro: string
+          url_arquivo: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          nome_arquivo: string
+          registro_id: string
+          tipo_anexo?: string
+          tipo_registro?: string
+          url_arquivo: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          nome_arquivo?: string
+          registro_id?: string
+          tipo_anexo?: string
+          tipo_registro?: string
+          url_arquivo?: string
+        }
+        Relationships: []
+      }
       imagens: {
         Row: {
           created_at: string
