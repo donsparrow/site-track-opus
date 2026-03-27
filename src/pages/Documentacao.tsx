@@ -39,8 +39,37 @@ export default function Documentacao() {
   const [editPastaNome, setEditPastaNome] = useState('');
   const [hoverArquivo, setHoverArquivo] = useState<Arquivo | null>(null);
   const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const pdfPreviewCache = useRef<Record<string, string>>({});
+  const hoverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load obras
+  // Setup pdf.js worker
+  useEffect(() => {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.worker.min.mjs`;
+  }, []);
+
+  const renderPdfPreview = async (url: string, id: string) => {
+    if (pdfPreviewCache.current[id]) {
+      setPdfPreviewUrl(pdfPreviewCache.current[id]);
+      return;
+    }
+    try {
+      const pdf = await pdfjsLib.getDocument(url).promise;
+      const page = await pdf.getPage(1);
+      const viewport = page.getViewport({ scale: 0.5 });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d')!;
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      const dataUrl = canvas.toDataURL('image/png');
+      pdfPreviewCache.current[id] = dataUrl;
+      setPdfPreviewUrl(dataUrl);
+    } catch {
+      setPdfPreviewUrl(null);
+    }
+  };
+
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase.from('obras').select('id, nome').order('nome');
