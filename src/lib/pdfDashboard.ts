@@ -406,9 +406,5 @@ export async function gerarDashboardPDF(data: DashboardPDFData) {
   const nomeObra = data.obra.nome.toLowerCase().replace(/\s+/g, '_').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const fileName = `relatorio_dashboard_${nomeObra}_${dataFormatada}.pdf`;
 
-  try {
-    doc.save(fileName);
-  } catch {
-    window.open(doc.output('bloburl'), '_blank');
-  }
+  downloadPdf(doc, fileName);
 }

@@ -432,7 +432,7 @@ export default function Financeiro() {
       headStyles: { fillColor: [59, 130, 246] },
     });
 
-    doc.save('relatorio_notas_fiscais.pdf');
+    downloadPdf(doc, 'relatorio_notas_fiscais.pdf');
     toast.success('Relatório gerado com sucesso!');
   };
 

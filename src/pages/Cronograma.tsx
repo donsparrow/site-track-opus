@@ -248,7 +248,7 @@ export default function Cronograma() {
     }
 
     const nome = obraNome.toLowerCase().replace(/[^a-z0-9]/gi, '_');
-    doc.save(`cronograma_${nome}.pdf`);
+    downloadPdf(doc, `cronograma_${nome}.pdf`);
     toast.success('PDF exportado com sucesso');
   };
 
