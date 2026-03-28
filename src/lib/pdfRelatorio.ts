@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { downloadPdf } from './pdfDownload';
 
 interface RelatorioPDFData {
   empresa: {
@@ -623,10 +624,5 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   const nomeObra = data.obra.nome.toLowerCase().replace(/\s+/g, '_').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const fileName = `relatorio_${nomeObra}_${dataFormatada}.pdf`;
 
-  try {
-    doc.save(fileName);
-  } catch {
-    // Fallback: open in new tab
-    window.open(doc.output('bloburl'), '_blank');
-  }
+  downloadPdf(doc, fileName);
 }

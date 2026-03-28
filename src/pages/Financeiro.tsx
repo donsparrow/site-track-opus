@@ -17,6 +17,7 @@ import NovaReceitaDialog from '@/components/NovaReceitaDialog';
 import NovaDespesaDialog from '@/components/NovaDespesaDialog';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { downloadPdf } from '@/lib/pdfDownload';
 
 interface Anexo {
   id: string;
@@ -432,7 +433,7 @@ export default function Financeiro() {
       headStyles: { fillColor: [59, 130, 246] },
     });
 
-    doc.save('relatorio_notas_fiscais.pdf');
+    downloadPdf(doc, 'relatorio_notas_fiscais.pdf');
     toast.success('Relatório gerado com sucesso!');
   };
 
