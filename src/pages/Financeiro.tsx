@@ -17,6 +17,7 @@ import NovaReceitaDialog from '@/components/NovaReceitaDialog';
 import NovaDespesaDialog from '@/components/NovaDespesaDialog';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { downloadPdf } from '@/lib/pdfDownload';
 
 interface Anexo {
   id: string;
