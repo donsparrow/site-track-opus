@@ -108,3 +108,53 @@
     text-wrap: balance;
   }
 }
+
+/* ===== MOBILE RESPONSIVENESS (max-width: 767px) ===== */
+@media (max-width: 767px) {
+  /* Tables: horizontal scroll */
+  .overflow-auto,
+  .overflow-x-auto,
+  [class*="Table"],
+  table {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    white-space: nowrap;
+  }
+
+  /* Forms: single column */
+  .grid-cols-2,
+  .grid-cols-3,
+  .grid-cols-4,
+  .md\:grid-cols-2,
+  .md\:grid-cols-3,
+  .md\:grid-cols-4,
+  .lg\:grid-cols-2,
+  .lg\:grid-cols-3,
+  .lg\:grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Buttons: minimum touch target */
+  button,
+  [role="button"],
+  a[class*="btn"],
+  .btn {
+    min-height: 44px;
+  }
+
+  /* Cards: full width */
+  .card,
+  [class*="Card"] {
+    width: 100% !important;
+  }
+
+  /* Dialog content: better mobile sizing */
+  [role="dialog"] > div {
+    max-width: 95vw !important;
+    max-height: 90vh !important;
+    overflow-y: auto;
+  }
+}
