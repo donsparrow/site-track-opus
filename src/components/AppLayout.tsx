@@ -1,6 +1,7 @@
 import { Outlet, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import AppSidebar from './AppSidebar';
+import MobileSidebar from './MobileSidebar';
 import GlobalFooter from './GlobalFooter';
 
 export default function AppLayout() {
@@ -11,13 +12,23 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <AppSidebar />
-      <main className="ml-64 flex-1">
-        <div className="p-6 lg:p-8">
+      {/* Desktop sidebar - hidden on mobile */}
+      <div className="hidden md:block">
+        <AppSidebar />
+      </div>
+
+      {/* Mobile header/sidebar - hidden on desktop */}
+      <MobileSidebar />
+
+      {/* Main content: ml-64 on desktop, no margin + top padding on mobile */}
+      <main className="flex-1 pt-14 md:pt-0 md:ml-64">
+        <div className="p-4 md:p-6 lg:p-8">
           <Outlet />
         </div>
       </main>
-      <div className="ml-64">
+
+      {/* Footer */}
+      <div className="md:ml-64">
         <GlobalFooter />
       </div>
     </div>
