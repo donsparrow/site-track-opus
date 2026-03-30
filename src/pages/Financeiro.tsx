@@ -11,7 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { ChevronDown, ChevronRight, Plus, DollarSign, TrendingDown, Pencil, Trash2, Check, Paperclip, Download, X, FileText, Upload } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, DollarSign, TrendingDown, Pencil, Trash2, Check, Paperclip, Download, X, FileText, Upload, BarChart3 } from 'lucide-react';
+import ExtratoFinanceiro from '@/components/ExtratoFinanceiro';
 import { toast } from 'sonner';
 import NovaReceitaDialog from '@/components/NovaReceitaDialog';
 import NovaDespesaDialog from '@/components/NovaDespesaDialog';
@@ -508,6 +509,7 @@ export default function Financeiro() {
         <TabsList className="mb-6">
           <TabsTrigger value="receitas">Receitas ({receitas.length})</TabsTrigger>
           <TabsTrigger value="despesas">Despesas ({despesas.length})</TabsTrigger>
+          <TabsTrigger value="extrato"><BarChart3 className="h-4 w-4 mr-1" />Extrato</TabsTrigger>
           <TabsTrigger value="notas">Notas Fiscais</TabsTrigger>
         </TabsList>
 
@@ -719,6 +721,11 @@ export default function Financeiro() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* EXTRATO TAB */}
+        <TabsContent value="extrato">
+          <ExtratoFinanceiro receitas={receitas} despesas={despesas} filterObra={filterObra} />
         </TabsContent>
 
         {/* NOTAS FISCAIS TAB */}
