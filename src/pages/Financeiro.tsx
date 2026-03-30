@@ -723,6 +723,11 @@ export default function Financeiro() {
           </Card>
         </TabsContent>
 
+        {/* EXTRATO TAB */}
+        <TabsContent value="extrato">
+          <ExtratoFinanceiro receitas={receitas} despesas={despesas} filterObra={filterObra} />
+        </TabsContent>
+
         {/* NOTAS FISCAIS TAB */}
         <TabsContent value="notas">
           <div className="flex justify-between items-center mb-4">
