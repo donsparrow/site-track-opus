@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AppSidebar from './AppSidebar';
 import MobileSidebar from './MobileSidebar';
 import GlobalFooter from './GlobalFooter';
+import EmpresaSetup from './EmpresaSetup';
 
 export default function AppLayout() {
   const { user, loading } = useAuth();
