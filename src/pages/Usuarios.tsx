@@ -202,10 +202,23 @@ export default function Usuarios() {
     const { data: roles } = await supabase.from('user_roles').select('*');
     const { data: links } = await supabase.from('usuario_obras').select('*');
 
+    // Fetch empresas names for joining
+    let empresasMap: Record<string, string> = {};
+    if (isSuperAdmin) {
+      const { data: empData } = await supabase.from('empresas').select('id, nome');
+      (empData || []).forEach((e: any) => { empresasMap[e.id] = e.nome; });
+    }
+
     const merged = (profiles || []).map((p: any) => {
       const userRole = (roles || []).find((r: any) => r.user_id === p.user_id);
       const userLinks = (links || []).filter((l: any) => l.user_id === p.user_id);
-      return { ...p, role: userRole?.role || 'trabalhador', role_id: userRole?.id, obras_vinculadas: userLinks };
+      return {
+        ...p,
+        role: userRole?.role || 'trabalhador',
+        role_id: userRole?.id,
+        obras_vinculadas: userLinks,
+        empresa_nome: p.empresa_id ? (empresasMap[p.empresa_id] || '—') : 'Sem empresa',
+      };
     });
     setUsers(merged);
     setLoading(false);
