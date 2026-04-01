@@ -38,7 +38,7 @@ export default function AppSidebar() {
       <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border">
         <img src={logoJa} alt="J&A GestãoPro" className="h-16 w-auto max-w-[120px] rounded-lg object-contain p-1" />
         <div>
-          <h1 className="font-display text-base font-bold text-sidebar-foreground">J&A Engenharia</h1>
+          <h1 className="font-display text-base font-bold text-sidebar-foreground">{empresaNome}</h1>
           <p className="text-xs text-sidebar-foreground/60 capitalize">{{ super_admin: 'Adm. Geral', admin: 'Diretor', trabalhador: 'Funcionário', sindico: 'Síndico', cliente: 'Cliente' }[role || ''] || 'carregando...'}</p>
         </div>
       </div>

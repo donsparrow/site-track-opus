@@ -57,7 +57,7 @@ export default function MobileSidebar() {
                 <HardHat className="h-5 w-5 text-sidebar-primary-foreground" />
               </div>
               <div>
-                <h1 className="font-display text-base font-bold text-sidebar-foreground">J&A Engenharia</h1>
+                <h1 className="font-display text-base font-bold text-sidebar-foreground">{empresaNome}</h1>
                 <p className="text-xs text-sidebar-foreground/60 capitalize">{role || 'carregando...'}</p>
               </div>
             </div>
