@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { toast } from 'sonner';
 import { Settings, Upload } from 'lucide-react';
 
 export default function Configuracoes() {
