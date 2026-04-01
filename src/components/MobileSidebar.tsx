@@ -27,6 +27,7 @@ export default function MobileSidebar() {
   const { signOut, role, user } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const empresaNome = useEmpresaNome();
 
   const handleLogout = async () => {
     setOpen(false);
