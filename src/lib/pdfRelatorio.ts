@@ -622,14 +622,12 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     y += 10;
   }
 
-  // Add footer to last page
-  addFooter(currentPage);
-
-  // Add footers to all intermediate pages (cover already has footer)
+  // Add footers to all pages (single pass, no duplicates)
   const totalPages = doc.getNumberOfPages();
-  for (let i = 2; i < totalPages; i++) {
+  for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    addFooter(i - 1); // page numbering starts at 1 after cover
+    // Cover page (page 1) gets no page number, content pages get numbered
+    addFooter(i === 1 ? undefined : i - 1);
   }
 
   const hoje = new Date();
