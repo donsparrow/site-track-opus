@@ -820,22 +820,31 @@ export type Database = {
         Row: {
           cnpj: string | null
           created_at: string
+          email: string | null
           id: string
           nome: string
+          plano: string
+          status: string
           updated_at: string
         }
         Insert: {
           cnpj?: string | null
           created_at?: string
+          email?: string | null
           id?: string
           nome: string
+          plano?: string
+          status?: string
           updated_at?: string
         }
         Update: {
           cnpj?: string | null
           created_at?: string
+          email?: string | null
           id?: string
           nome?: string
+          plano?: string
+          status?: string
           updated_at?: string
         }
         Relationships: []
