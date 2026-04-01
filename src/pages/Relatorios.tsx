@@ -640,28 +640,15 @@ export default function Relatorios() {
             </Card>
           )}
 
-          {/* Editable Prazo Contratual + Indicators */}
+          {/* Prazo Contratual (read-only, from obra) */}
           <Card className="mb-6">
             <CardHeader className="py-3">
               <CardTitle className="text-sm font-display">Prazo Contratual (dias úteis)</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-4">
-                <Input
-                  type="number"
-                  min={1}
-                  className="w-40"
-                  value={prazoContratualManual !== null ? prazoContratualManual : prazos.contratual}
-                  onChange={e => {
-                    const val = parseInt(e.target.value);
-                    if (val >= 1) setPrazoContratualManual(val);
-                    else if (e.target.value === '') setPrazoContratualManual(null);
-                  }}
-                  placeholder="Dias úteis"
-                />
-                <span className="text-sm text-muted-foreground">
-                  {prazoContratualManual !== null ? '(valor manual)' : '(calculado da obra)'}
-                </span>
+                <span className="text-2xl font-bold">{prazos.contratual}</span>
+                <span className="text-sm text-muted-foreground">(definido na aba Obras)</span>
               </div>
             </CardContent>
           </Card>
