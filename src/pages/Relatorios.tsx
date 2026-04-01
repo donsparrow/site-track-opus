@@ -227,14 +227,44 @@ export default function Relatorios() {
     toast.success('Dados consolidados!');
   };
 
+  // Build a snapshot of the current report content for comparison
+  const buildSnapshot = () => ({
+    prazos,
+    periodo: { inicio: periodoInicio, fim: periodoFim },
+    diarios_count: diarios.length,
+    equipe_count: allEquipe.length,
+    atividades_count: allAtividades.length,
+    materiais_count: allMateriais.length,
+    ocorrencias_count: allOcorrencias.length,
+    imagens_count: allImagens.length,
+  });
+
+  // Compare two snapshots to detect changes and generate summary
+  const detectChanges = (prev: any, curr: any): { hasChanges: boolean; summary: string } => {
+    if (!prev) return { hasChanges: true, summary: 'Criação do relatório' };
+    const changes: string[] = [];
+    if (prev.prazos?.contratual !== curr.prazos?.contratual) changes.push(`Prazo alterado de ${prev.prazos?.contratual || 0} para ${curr.prazos?.contratual || 0} dias`);
+    if (prev.prazos?.parados !== curr.prazos?.parados) changes.push(`Dias parados: ${prev.prazos?.parados || 0} → ${curr.prazos?.parados || 0}`);
+    if (prev.prazos?.trabalhados !== curr.prazos?.trabalhados) changes.push(`Dias trabalhados: ${prev.prazos?.trabalhados || 0} → ${curr.prazos?.trabalhados || 0}`);
+    if (prev.periodo?.inicio !== curr.periodo?.inicio || prev.periodo?.fim !== curr.periodo?.fim) changes.push('Alteração no período');
+    if (prev.imagens_count !== curr.imagens_count) changes.push(`Imagens: ${prev.imagens_count || 0} → ${curr.imagens_count}`);
+    if (prev.atividades_count !== curr.atividades_count) changes.push(`Atividades: ${prev.atividades_count || 0} → ${curr.atividades_count}`);
+    if (prev.equipe_count !== curr.equipe_count) changes.push(`Equipe: ${prev.equipe_count || 0} → ${curr.equipe_count}`);
+    if (prev.materiais_count !== curr.materiais_count) changes.push(`Materiais: ${prev.materiais_count || 0} → ${curr.materiais_count}`);
+    if (prev.ocorrencias_count !== curr.ocorrencias_count) changes.push(`Ocorrências: ${prev.ocorrencias_count || 0} → ${curr.ocorrencias_count}`);
+    return {
+      hasChanges: changes.length > 0,
+      summary: changes.length > 0 ? changes.join('; ') : '',
+    };
+  };
+
   const handleSalvar = async () => {
     if (!relatorioId) { toast.error('Consolide os dados primeiro'); return; }
     setSaving(true);
 
     try {
-      const prazoVal = prazos.contratual;
       await supabase.from('relatorios').update({
-        prazo_contratual_dias_uteis: prazoVal,
+        prazo_contratual_dias_uteis: prazos.contratual,
         dias_parados: prazos.parados,
         dias_trabalhados: prazos.trabalhados,
         prazo_ajustado: prazos.ajustado,
@@ -243,39 +273,42 @@ export default function Relatorios() {
         data_fim: periodoFim,
       }).eq('id', relatorioId);
 
-      // Create new version
-      if (user) {
+      // Check if content actually changed compared to last version
+      const currentSnapshot = buildSnapshot();
+      const lastSnapshot = versoes.length > 0 ? versoes[0]?.snapshot_dados : null;
+      const { hasChanges, summary } = detectChanges(lastSnapshot as any, currentSnapshot);
+
+      if (hasChanges && user) {
         const nextVersion = versoes.length > 0 ? versoes[0].numero_versao + 1 : 1;
         await supabase.from('relatorio_versoes').insert({
           relatorio_id: relatorioId,
           numero_versao: nextVersion,
           criado_por: user.id,
           status: 'rascunho',
-          descricao_alteracao: 'Relatório salvo',
-          snapshot_dados: {
-            prazos,
-            periodo: { inicio: periodoInicio, fim: periodoFim },
-            diarios_count: diarios.length,
-            equipe_count: allEquipe.length,
-            atividades_count: allAtividades.length,
-            materiais_count: allMateriais.length,
-            ocorrencias_count: allOcorrencias.length,
-            imagens_count: allImagens.length,
-          },
+          descricao_alteracao: summary,
+          snapshot_dados: currentSnapshot,
         });
         await supabase.from('relatorio_logs').insert({
           relatorio_id: relatorioId,
           usuario_id: user.id,
-          acao: 'salvou',
+          acao: 'salvou (com alterações)',
         });
+        toast.success('Relatório salvo — nova versão registrada!');
+      } else {
+        if (user) {
+          await supabase.from('relatorio_logs').insert({
+            relatorio_id: relatorioId,
+            usuario_id: user.id,
+            acao: 'salvou (sem alterações)',
+          });
+        }
+        toast.success('Relatório salvo (sem alterações no conteúdo).');
       }
 
       // Reload versions
       const { data: vers } = await supabase.from('relatorio_versoes').select('*').eq('relatorio_id', relatorioId).order('numero_versao', { ascending: false });
       setVersoes(vers || []);
       await loadRelatoriosList();
-
-      toast.success('Relatório salvo com sucesso!');
     } catch (err: any) {
       toast.error('Erro ao salvar: ' + err.message);
     }
@@ -286,25 +319,20 @@ export default function Relatorios() {
     if (!obraData) { toast.error('Selecione uma obra e consolide os dados'); return; }
     if (!empresa) { toast.info('Dados da empresa não configurados. O PDF será gerado sem cabeçalho/logo.'); }
     setGenerating(true);
-    const newRevisao = revisaoPdf;
-    const revLabel = `REV ${String(newRevisao).padStart(2, '0')}`;
+
     try {
-      // Generate change summary by comparing with previous version snapshot
-      let changeSummary = newRevisao === 0 ? 'Relatório inicial criado' : '';
-      if (newRevisao > 0 && versoes.length > 0) {
-        const prevSnapshot = versoes[0]?.snapshot_dados as any;
-        if (prevSnapshot) {
-          const changes: string[] = [];
-          if (prevSnapshot.prazos?.contratual !== prazos.contratual) changes.push(`Prazo alterado de ${prevSnapshot.prazos?.contratual || 0} para ${prazos.contratual} dias`);
-          if (prevSnapshot.imagens_count !== allImagens.length) changes.push(`Imagens: ${prevSnapshot.imagens_count || 0} → ${allImagens.length}`);
-          if (prevSnapshot.atividades_count !== allAtividades.length) changes.push(`Atividades: ${prevSnapshot.atividades_count || 0} → ${allAtividades.length}`);
-          if (prevSnapshot.ocorrencias_count !== allOcorrencias.length) changes.push(`Ocorrências: ${prevSnapshot.ocorrencias_count || 0} → ${allOcorrencias.length}`);
-          if (prevSnapshot.periodo?.inicio !== periodoInicio || prevSnapshot.periodo?.fim !== periodoFim) changes.push('Alteração no período');
-          changeSummary = changes.length > 0 ? changes.join('; ') : 'Geração de nova revisão do PDF';
-        } else {
-          changeSummary = 'Geração de nova revisão do PDF';
-        }
+      // Check if content changed since last version to decide revision increment
+      const currentSnapshot = buildSnapshot();
+      const lastSnapshot = versoes.length > 0 ? versoes[0]?.snapshot_dados : null;
+      const { hasChanges, summary } = detectChanges(lastSnapshot as any, currentSnapshot);
+
+      // Only increment revision if there are actual changes
+      let pdfRevisao = revisaoPdf;
+      if (hasChanges && revisaoPdf > 0) {
+        pdfRevisao = revisaoPdf; // current revision already reflects changes
       }
+      // If first generation (rev 0) or no changes, keep current revision
+      const revLabel = `REV ${String(pdfRevisao).padStart(2, '0')}`;
 
       await gerarRelatorioPDF({
         empresa: empresa || null,
@@ -326,55 +354,59 @@ export default function Relatorios() {
         ocorrencias: allOcorrencias,
         imagens: allImagens,
         assinaturas,
-        versao: newRevisao,
+        versao: pdfRevisao,
         versoes: versoes.map(v => ({
           rev: `REV ${String(v.numero_versao).padStart(2, '0')}`,
           data: new Date(v.data_criacao).toLocaleDateString('pt-BR'),
           resumo: v.descricao_alteracao || '—',
         })),
       });
-      toast.success(`PDF ${revLabel} gerado!`);
 
       if (relatorioId && user) {
-        // Update revisao_pdf and status
-        const nextRevisao = revisaoPdf + 1;
-        const newStatus = `gerado pdf rev${String(newRevisao).padStart(2, '0')}`;
-        await supabase.from('relatorios').update({
-          revisao_pdf: nextRevisao,
-          status: newStatus,
-        } as any).eq('id', relatorioId);
-        setRevisaoPdf(nextRevisao);
+        if (hasChanges) {
+          // Increment revision only on actual changes
+          const nextRevisao = revisaoPdf + 1;
+          const newStatus = `gerado pdf rev${String(nextRevisao).padStart(2, '0')}`;
+          await supabase.from('relatorios').update({
+            revisao_pdf: nextRevisao,
+            status: newStatus,
+          } as any).eq('id', relatorioId);
+          setRevisaoPdf(nextRevisao);
 
-        // Create version entry with change summary
-        const nextVersion = versoes.length > 0 ? versoes[0].numero_versao + 1 : 1;
-        await supabase.from('relatorio_versoes').insert({
-          relatorio_id: relatorioId,
-          numero_versao: nextVersion,
-          criado_por: user.id,
-          status: newStatus,
-          descricao_alteracao: changeSummary,
-          snapshot_dados: {
-            prazos,
-            periodo: { inicio: periodoInicio, fim: periodoFim },
-            diarios_count: diarios.length,
-            equipe_count: allEquipe.length,
-            atividades_count: allAtividades.length,
-            materiais_count: allMateriais.length,
-            ocorrencias_count: allOcorrencias.length,
-            imagens_count: allImagens.length,
-          },
-        });
+          const nextVersion = versoes.length > 0 ? versoes[0].numero_versao + 1 : 1;
+          await supabase.from('relatorio_versoes').insert({
+            relatorio_id: relatorioId,
+            numero_versao: nextVersion,
+            criado_por: user.id,
+            status: newStatus,
+            descricao_alteracao: summary,
+            snapshot_dados: currentSnapshot,
+          });
 
-        await supabase.from('relatorio_logs').insert({
-          relatorio_id: relatorioId,
-          usuario_id: user.id,
-          acao: `gerou PDF ${revLabel}`,
-        });
+          await supabase.from('relatorio_logs').insert({
+            relatorio_id: relatorioId,
+            usuario_id: user.id,
+            acao: `gerou PDF ${revLabel} (com alterações)`,
+          });
+
+          toast.success(`PDF ${revLabel} gerado — nova revisão criada!`);
+        } else {
+          // No changes — just download, no new revision
+          await supabase.from('relatorio_logs').insert({
+            relatorio_id: relatorioId,
+            usuario_id: user.id,
+            acao: `baixou PDF ${revLabel} (sem alterações)`,
+          });
+
+          toast.success(`PDF ${revLabel} gerado (mesma revisão, sem alterações).`);
+        }
 
         // Reload versions
         const { data: vers } = await supabase.from('relatorio_versoes').select('*').eq('relatorio_id', relatorioId).order('numero_versao', { ascending: false });
         setVersoes(vers || []);
         await loadRelatoriosList();
+      } else {
+        toast.success('PDF gerado!');
       }
     } catch (err: any) {
       toast.error('Erro ao gerar PDF: ' + err.message);
