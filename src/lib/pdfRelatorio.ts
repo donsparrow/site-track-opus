@@ -489,7 +489,6 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   // =========== REVISION HISTORY ===========
   if (data.versoes && data.versoes.length > 0) {
-    addFooter(currentPage);
     newPage();
     sectionTitle('10. HISTÓRICO DE REVISÕES');
     autoTable(doc, {
