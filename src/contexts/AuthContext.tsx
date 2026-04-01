@@ -14,6 +14,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   canEdit: boolean;
   isAdmin: boolean;
+  empresaId: string | null;
+  refreshEmpresa: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,6 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [empresaId, setEmpresaId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchRole = async (userId: string) => {
@@ -33,15 +36,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data) setRole(data.role as AppRole);
   };
 
+  const fetchEmpresa = async (userId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('empresa_id')
+      .eq('user_id', userId)
+      .single();
+    setEmpresaId(data?.empresa_id || null);
+  };
+
+  const refreshEmpresa = async () => {
+    if (user) await fetchEmpresa(user.id);
+  };
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          setTimeout(() => fetchRole(session.user.id), 0);
+          setTimeout(() => {
+            fetchRole(session.user.id);
+            fetchEmpresa(session.user.id);
+          }, 0);
         } else {
           setRole(null);
+          setEmpresaId(null);
         }
         setLoading(false);
       }
@@ -50,7 +70,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) fetchRole(session.user.id);
+      if (session?.user) {
+        fetchRole(session.user.id);
+        fetchEmpresa(session.user.id);
+      }
       setLoading(false);
     });
 
@@ -74,13 +97,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setRole(null);
+    setEmpresaId(null);
   };
 
   const canEdit = role === 'admin' || role === 'trabalhador';
   const isAdmin = role === 'admin';
 
   return (
-    <AuthContext.Provider value={{ user, session, role, loading, signIn, signUp, signOut, canEdit, isAdmin }}>
+    <AuthContext.Provider value={{ user, session, role, loading, signIn, signUp, signOut, canEdit, isAdmin, empresaId, refreshEmpresa }}>
       {children}
     </AuthContext.Provider>
   );
