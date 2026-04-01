@@ -105,16 +105,6 @@ export default function Configuracoes() {
                 </label>
               </div>
             </div>
-            <div>
-              <Label>Texto do Rodapé (Termos de Uso / Política)</Label>
-              <Textarea
-                value={form.texto_rodape}
-                onChange={e => setForm({ ...form, texto_rodape: e.target.value })}
-                placeholder="Ex: Todos os direitos reservados. Uso restrito..."
-                rows={3}
-              />
-              <p className="text-xs text-muted-foreground mt-1">Este texto será exibido no rodapé de todas as páginas do sistema.</p>
-            </div>
             <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={saving}>
               {saving ? 'Salvando...' : 'Salvar Configurações'}
             </Button>
