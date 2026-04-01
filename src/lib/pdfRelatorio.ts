@@ -64,8 +64,10 @@ async function loadImageAsDataUrl(url: string): Promise<string | null> {
           canvas.height = img.naturalHeight;
           const ctx = canvas.getContext('2d');
           if (ctx) {
+            // Use transparent background (PNG) to preserve logo transparency
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0);
-            resolve(canvas.toDataURL('image/jpeg', 0.85));
+            resolve(canvas.toDataURL('image/png'));
           } else {
             resolve(null);
           }
