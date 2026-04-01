@@ -534,11 +534,11 @@ export default function Financeiro() {
         </Select>
       </div>
 
-      <Tabs defaultValue="receitas">
+      <Tabs defaultValue="extrato">
         <TabsList className="mb-6">
+          <TabsTrigger value="extrato"><BarChart3 className="h-4 w-4 mr-1" />Extrato</TabsTrigger>
           <TabsTrigger value="receitas">Receitas ({receitas.length})</TabsTrigger>
           <TabsTrigger value="despesas">Despesas ({despesas.length})</TabsTrigger>
-          <TabsTrigger value="extrato"><BarChart3 className="h-4 w-4 mr-1" />Extrato</TabsTrigger>
           <TabsTrigger value="notas">Notas Fiscais</TabsTrigger>
         </TabsList>
 
