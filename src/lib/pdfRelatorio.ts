@@ -437,7 +437,6 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   // =========== PHOTO SECTION ===========
   if (data.imagens.length > 0) {
-    addFooter(currentPage);
     newPage();
     sectionTitle('9. REGISTRO FOTOGRÁFICO');
 
