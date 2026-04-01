@@ -36,13 +36,19 @@ export default function NovaObraDialog({ open, onOpenChange, onCreated }: Props)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    if (!nome || !endereco || !responsavel || !dataInicio || !dataFimPrevista) {
+      toast.error('Preencha todos os campos obrigatórios.');
+      setLoading(false);
+      return;
+    }
     const { error } = await supabase.from('obras').insert({
       nome,
-      endereco: endereco || null,
-      responsavel: responsavel || null,
+      endereco,
+      responsavel,
       cliente_id: clienteId || null,
-      data_inicio: dataInicio || null,
-      data_fim_prevista: dataFimPrevista || null,
+      data_inicio: dataInicio,
+      data_fim_prevista: dataFimPrevista,
+      prazo_contratual_dias: prazoContratual || 0,
       status,
     });
     setLoading(false);
