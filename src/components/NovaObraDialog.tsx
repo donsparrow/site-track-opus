@@ -57,7 +57,7 @@ export default function NovaObraDialog({ open, onOpenChange, onCreated }: Props)
     } else {
       toast.success('Obra criada!');
       setNome(''); setEndereco(''); setResponsavel(''); setClienteId('');
-      setDataInicio(''); setDataFimPrevista(''); setStatus('planejamento');
+      setDataInicio(''); setDataFimPrevista(''); setStatus('planejamento'); setPrazoContratual(0);
       onOpenChange(false);
       onCreated();
     }
