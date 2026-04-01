@@ -124,6 +124,32 @@ export default function Financeiro() {
 
     const { data: d } = await dQuery;
     setDespesas(d || []);
+
+    // Fetch parcelas recebidas para extrato
+    let pQuery = supabase
+      .from('parcelas')
+      .select('*, receitas(descricao, obra_id, obras(nome))')
+      .eq('status', 'recebido')
+      .not('data_recebimento', 'is', null)
+      .order('data_recebimento', { ascending: true });
+
+    if (filterObra !== 'all') {
+      pQuery = pQuery.eq('receitas.obra_id', filterObra);
+    }
+
+    const { data: pData } = await pQuery;
+    const mapped = (pData || [])
+      .filter((p: any) => p.receitas) // filter out nulls from inner join filter
+      .filter((p: any) => filterObra === 'all' || p.receitas?.obra_id === filterObra)
+      .map((p: any) => ({
+        id: p.id,
+        valor: Number(p.valor),
+        data_recebimento: p.data_recebimento,
+        receita_descricao: p.receitas?.descricao || '—',
+        obra_nome: p.receitas?.obras?.nome || '—',
+      }));
+    setParcelasRecebidas(mapped);
+
     setLoading(false);
   };
 
