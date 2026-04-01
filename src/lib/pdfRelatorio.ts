@@ -317,8 +317,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     coverY += 8;
   });
 
-  // Cover footer
-  addFooter();
+  // Footer added in final pass
 
   // =========== PAGE 2+: CONTENT ===========
 
