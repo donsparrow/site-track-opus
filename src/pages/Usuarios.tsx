@@ -189,7 +189,14 @@ export default function Usuarios() {
 
   const fetchUsers = async () => {
     setLoading(true);
-    const { data: profiles } = await supabase.from('profiles').select('*').order('nome');
+    
+    // Filter by empresa_id for non-super_admin users
+    let profilesQuery = supabase.from('profiles').select('*').order('nome');
+    if (!isSuperAdmin && empresaId) {
+      profilesQuery = profilesQuery.eq('empresa_id', empresaId);
+    }
+    
+    const { data: profiles } = await profilesQuery;
     const { data: roles } = await supabase.from('user_roles').select('*');
     const { data: links } = await supabase.from('usuario_obras').select('*');
 
@@ -212,7 +219,7 @@ export default function Usuarios() {
       fetchUsers();
       fetchObras();
     }
-  }, [isAdmin]);
+  }, [isAdmin, empresaId, isSuperAdmin]);
 
   if (!isAdmin) return <Navigate to="/dashboard" replace />;
 
