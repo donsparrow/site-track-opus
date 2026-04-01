@@ -1172,6 +1172,42 @@ export type Database = {
           },
         ]
       }
+      permissoes_usuario: {
+        Row: {
+          created_at: string
+          id: string
+          modulo: string
+          pode_criar: boolean
+          pode_editar: boolean
+          pode_excluir: boolean
+          pode_visualizar: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          modulo: string
+          pode_criar?: boolean
+          pode_editar?: boolean
+          pode_excluir?: boolean
+          pode_visualizar?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          modulo?: string
+          pode_criar?: boolean
+          pode_editar?: boolean
+          pode_excluir?: boolean
+          pode_visualizar?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -1492,6 +1528,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      set_default_permissions: {
+        Args: { _role: string; _user_id: string }
+        Returns: undefined
       }
     }
     Enums: {
