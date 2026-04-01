@@ -11,8 +11,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import { Plus, Link2, KeyRound, Copy, RefreshCw } from 'lucide-react';
+import { Plus, Link2, KeyRound, Copy, RefreshCw, Pencil, Trash2 } from 'lucide-react';
 
 const roleLabels: Record<string, string> = {
   admin: 'Administrador',
@@ -51,6 +52,21 @@ export default function Usuarios() {
   const [novoTipo, setNovoTipo] = useState('cliente');
   const [obrasSelecionadas, setObrasSelecionadas] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+
+  // Edit user
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editUserId, setEditUserId] = useState('');
+  const [editNome, setEditNome] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [editTipo, setEditTipo] = useState('');
+  const [editObrasSelecionadas, setEditObrasSelecionadas] = useState<string[]>([]);
+  const [editSaving, setEditSaving] = useState(false);
+
+  // Delete user
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteUserId, setDeleteUserId] = useState('');
+  const [deleteUserName, setDeleteUserName] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   // Obra linking dialog
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
@@ -160,6 +176,85 @@ export default function Usuarios() {
     }
   };
 
+  // Edit user
+  const openEditDialog = async (u: any) => {
+    setEditUserId(u.user_id);
+    setEditNome(u.nome || '');
+    setEditEmail(u.email || '');
+    setEditTipo(u.role);
+    const linked = (u.obras_vinculadas || []).map((l: any) => l.obra_id);
+    setEditObrasSelecionadas(linked);
+    setEditDialogOpen(true);
+  };
+
+  const handleEditUser = async () => {
+    if (!editNome) {
+      toast.error('Nome é obrigatório');
+      return;
+    }
+    setEditSaving(true);
+    try {
+      // Update profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ nome: editNome, email: editEmail })
+        .eq('user_id', editUserId);
+      if (profileError) throw profileError;
+
+      // Update role
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .update({ role: editTipo as any })
+        .eq('user_id', editUserId);
+      if (roleError) throw roleError;
+
+      // Update obra links
+      await supabase.from('usuario_obras').delete().eq('user_id', editUserId);
+      if (editObrasSelecionadas.length > 0) {
+        const inserts = editObrasSelecionadas.map(obra_id => ({
+          user_id: editUserId,
+          obra_id,
+        }));
+        await supabase.from('usuario_obras').insert(inserts);
+      }
+
+      toast.success('Usuário atualizado com sucesso!');
+      setEditDialogOpen(false);
+      fetchUsers();
+    } catch (err: any) {
+      toast.error('Erro ao atualizar: ' + err.message);
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  // Delete user
+  const openDeleteDialog = (userId: string, userName: string) => {
+    setDeleteUserId(userId);
+    setDeleteUserName(userName);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteUser = async () => {
+    setDeleting(true);
+    try {
+      const response = await supabase.functions.invoke('admin-delete-user', {
+        body: { user_id: deleteUserId },
+      });
+
+      if (response.error) throw new Error(response.error.message);
+      if (response.data?.error) throw new Error(response.data.error);
+
+      toast.success('Usuário excluído com sucesso!');
+      setDeleteDialogOpen(false);
+      fetchUsers();
+    } catch (err: any) {
+      toast.error('Erro ao excluir: ' + err.message);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const openLinkDialog = async (userId: string, userName: string) => {
     setLinkUserId(userId);
     setLinkUserName(userName);
@@ -218,7 +313,6 @@ export default function Usuarios() {
 
     setResetting(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
       const response = await supabase.functions.invoke('admin-reset-password', {
         body: { user_id: resetUserId, new_password: newPassword },
       });
@@ -258,7 +352,7 @@ export default function Usuarios() {
         </div>
       ) : (
         <Card>
-          <CardContent className="p-0">
+          <CardContent className="p-0 overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -266,7 +360,6 @@ export default function Usuarios() {
                   <TableHead>E-mail (Login)</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Obras Vinculadas</TableHead>
-                  <TableHead>Alterar Tipo</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -297,30 +390,23 @@ export default function Usuarios() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {u.user_id === user?.id ? (
-                        <span className="text-xs text-muted-foreground">Você</span>
-                      ) : (
-                        <Select value={u.role} onValueChange={(val) => changeRole(u.user_id, val)}>
-                          <SelectTrigger className="w-36">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="admin">Administrador</SelectItem>
-                            <SelectItem value="trabalhador">Trabalhador</SelectItem>
-                            <SelectItem value="sindico">Síndico</SelectItem>
-                            <SelectItem value="cliente">Cliente</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1 flex-wrap">
                         {u.user_id !== user?.id && (
                           <>
                             <Button
                               variant="outline"
                               size="sm"
+                              onClick={() => openEditDialog(u)}
+                              title="Editar usuário"
+                            >
+                              <Pencil className="h-4 w-4 mr-1" />
+                              Editar
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
                               onClick={() => openLinkDialog(u.user_id, u.nome)}
+                              title="Vincular obras"
                             >
                               <Link2 className="h-4 w-4 mr-1" />
                               Obras
@@ -329,11 +415,24 @@ export default function Usuarios() {
                               variant="outline"
                               size="sm"
                               onClick={() => openResetDialog(u.user_id, u.nome)}
+                              title="Redefinir senha"
                             >
                               <KeyRound className="h-4 w-4 mr-1" />
                               Senha
                             </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => openDeleteDialog(u.user_id, u.nome)}
+                              title="Excluir usuário"
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              Excluir
+                            </Button>
                           </>
+                        )}
+                        {u.user_id === user?.id && (
+                          <span className="text-xs text-muted-foreground">Você</span>
                         )}
                       </div>
                     </TableCell>
@@ -407,6 +506,82 @@ export default function Usuarios() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog: Editar Usuário */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Usuário</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Nome *</Label>
+              <Input value={editNome} onChange={e => setEditNome(e.target.value)} placeholder="Nome completo" />
+            </div>
+            <div>
+              <Label>E-mail</Label>
+              <Input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)} placeholder="email@exemplo.com" />
+            </div>
+            <div>
+              <Label>Tipo de Usuário</Label>
+              <Select value={editTipo} onValueChange={setEditTipo}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Administrador</SelectItem>
+                  <SelectItem value="trabalhador">Trabalhador</SelectItem>
+                  <SelectItem value="sindico">Síndico</SelectItem>
+                  <SelectItem value="cliente">Cliente</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Obras Vinculadas</Label>
+              <div className="border rounded-md p-3 max-h-48 overflow-y-auto space-y-2 mt-1">
+                {obras.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Nenhuma obra cadastrada</p>
+                ) : (
+                  obras.map(obra => (
+                    <label key={obra.id} className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={editObrasSelecionadas.includes(obra.id)}
+                        onCheckedChange={() => toggleObra(obra.id, editObrasSelecionadas, setEditObrasSelecionadas)}
+                      />
+                      <span className="text-sm">{obra.nome}</span>
+                    </label>
+                  ))
+                )}
+              </div>
+            </div>
+            <Button onClick={handleEditUser} disabled={editSaving} className="w-full">
+              {editSaving ? 'Salvando...' : 'Salvar Alterações'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Confirmar Exclusão */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Usuário</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o usuário <strong>{deleteUserName}</strong>? Esta ação não pode ser desfeita. Todos os dados e vínculos do usuário serão removidos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? 'Excluindo...' : 'Excluir'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Dialog: Vincular Obras */}
       <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
