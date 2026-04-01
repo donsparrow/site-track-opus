@@ -110,13 +110,28 @@ export default function NovaObraDialog({ open, onOpenChange, onCreated }: Props)
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Data de Início</Label>
-              <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} />
+              <Label>Data de Início *</Label>
+              <Input type="date" value={dataInicio} onChange={(e) => {
+                setDataInicio(e.target.value);
+                if (e.target.value && dataFimPrevista) {
+                  setPrazoContratual(calcBizDays(e.target.value, dataFimPrevista));
+                }
+              }} required />
             </div>
             <div>
-              <Label>Previsão de Término</Label>
-              <Input type="date" value={dataFimPrevista} onChange={(e) => setDataFimPrevista(e.target.value)} />
+              <Label>Previsão de Término *</Label>
+              <Input type="date" value={dataFimPrevista} onChange={(e) => {
+                setDataFimPrevista(e.target.value);
+                if (dataInicio && e.target.value) {
+                  setPrazoContratual(calcBizDays(dataInicio, e.target.value));
+                }
+              }} required />
             </div>
+          </div>
+          <div>
+            <Label>Prazo Contratual (dias úteis)</Label>
+            <Input type="number" min={1} value={prazoContratual || ''} onChange={(e) => setPrazoContratual(parseInt(e.target.value) || 0)} />
+            <p className="text-xs text-muted-foreground mt-1">Calculado automaticamente, mas pode ser ajustado.</p>
           </div>
           <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={loading}>
             {loading ? 'Criando...' : 'Criar Obra'}
