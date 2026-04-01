@@ -225,6 +225,10 @@ export default function Usuarios() {
       toast.error('Senha deve ter no mínimo 6 caracteres');
       return;
     }
+    if (novoTipo === 'super_admin' && !isSuperAdmin) {
+      toast.error('Apenas Administrador Geral pode criar outro Administrador Geral');
+      return;
+    }
     setSaving(true);
     try {
       const { data: authData, error: authError } = await supabase.auth.signUp({
