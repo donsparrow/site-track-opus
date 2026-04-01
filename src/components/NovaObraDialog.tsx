@@ -21,6 +21,7 @@ export default function NovaObraDialog({ open, onOpenChange, onCreated }: Props)
   const [dataInicio, setDataInicio] = useState('');
   const [dataFimPrevista, setDataFimPrevista] = useState('');
   const [status, setStatus] = useState('planejamento');
+  const [prazoContratual, setPrazoContratual] = useState(0);
   const [clientes, setClientes] = useState<{ id: string; nome: string }[]>([]);
   const [loading, setLoading] = useState(false);
 
