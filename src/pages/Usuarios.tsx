@@ -10,23 +10,60 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Plus, Link2, KeyRound, Copy, RefreshCw, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Link2, KeyRound, Copy, RefreshCw, Pencil, Trash2, Shield } from 'lucide-react';
+import { MODULOS, MODULO_LABELS, type Modulo, type Permissao } from '@/hooks/usePermissions';
 
 const roleLabels: Record<string, string> = {
-  admin: 'Administrador',
-  trabalhador: 'Trabalhador',
+  super_admin: 'Administrador Geral',
+  admin: 'Diretor',
+  trabalhador: 'Funcionário',
   sindico: 'Síndico',
   cliente: 'Cliente',
 };
 
 const roleBadgeVariant: Record<string, 'default' | 'secondary' | 'destructive'> = {
+  super_admin: 'destructive',
   admin: 'destructive',
   trabalhador: 'default',
   sindico: 'secondary',
   cliente: 'secondary',
+};
+
+const DEFAULT_PERMISSIONS: Record<string, Record<Modulo, { v: boolean; c: boolean; e: boolean; x: boolean }>> = {
+  super_admin: Object.fromEntries(MODULOS.map(m => [m, { v: true, c: true, e: true, x: true }])) as any,
+  admin: Object.fromEntries(MODULOS.map(m => [m, { v: true, c: true, e: true, x: true }])) as any,
+  trabalhador: {
+    dashboard: { v: true, c: false, e: false, x: false },
+    financeiro: { v: false, c: false, e: false, x: false },
+    diario_obra: { v: true, c: true, e: false, x: false },
+    cronograma: { v: true, c: false, e: false, x: false },
+    relatorios: { v: true, c: false, e: false, x: false },
+    documentos: { v: true, c: false, e: false, x: false },
+    usuarios: { v: false, c: false, e: false, x: false },
+  },
+  sindico: {
+    dashboard: { v: true, c: false, e: false, x: false },
+    financeiro: { v: false, c: false, e: false, x: false },
+    diario_obra: { v: true, c: false, e: false, x: false },
+    cronograma: { v: true, c: false, e: false, x: false },
+    relatorios: { v: true, c: false, e: false, x: false },
+    documentos: { v: true, c: false, e: false, x: false },
+    usuarios: { v: false, c: false, e: false, x: false },
+  },
+  cliente: {
+    dashboard: { v: true, c: false, e: false, x: false },
+    financeiro: { v: false, c: false, e: false, x: false },
+    diario_obra: { v: true, c: false, e: false, x: false },
+    cronograma: { v: true, c: false, e: false, x: false },
+    relatorios: { v: true, c: false, e: false, x: false },
+    documentos: { v: true, c: false, e: false, x: false },
+    usuarios: { v: false, c: false, e: false, x: false },
+  },
 };
 
 function generatePassword(length = 10): string {
@@ -38,8 +75,66 @@ function generatePassword(length = 10): string {
   return pwd;
 }
 
+interface PermissaoState {
+  [modulo: string]: { v: boolean; c: boolean; e: boolean; x: boolean };
+}
+
+function getDefaultPermsForRole(role: string): PermissaoState {
+  return DEFAULT_PERMISSIONS[role] || DEFAULT_PERMISSIONS['cliente'];
+}
+
+function PermissoesEditor({ perms, setPerms, disabled }: { perms: PermissaoState; setPerms: (p: PermissaoState) => void; disabled?: boolean }) {
+  const toggle = (modulo: string, field: 'v' | 'c' | 'e' | 'x') => {
+    setPerms({
+      ...perms,
+      [modulo]: { ...perms[modulo], [field]: !perms[modulo][field] },
+    });
+  };
+
+  return (
+    <div className="border rounded-md overflow-hidden">
+      <div className="bg-muted px-3 py-2 flex items-center gap-2">
+        <Shield className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm font-medium">Permissões de Acesso</span>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b bg-muted/50">
+              <th className="text-left px-3 py-2 font-medium">Módulo</th>
+              <th className="text-center px-2 py-2 font-medium">Ver</th>
+              <th className="text-center px-2 py-2 font-medium">Criar</th>
+              <th className="text-center px-2 py-2 font-medium">Editar</th>
+              <th className="text-center px-2 py-2 font-medium">Excluir</th>
+            </tr>
+          </thead>
+          <tbody>
+            {MODULOS.map(m => (
+              <tr key={m} className="border-b last:border-b-0">
+                <td className="px-3 py-2 text-muted-foreground">{MODULO_LABELS[m]}</td>
+                <td className="text-center px-2 py-2">
+                  <Switch checked={perms[m]?.v || false} onCheckedChange={() => toggle(m, 'v')} disabled={disabled} />
+                </td>
+                <td className="text-center px-2 py-2">
+                  <Switch checked={perms[m]?.c || false} onCheckedChange={() => toggle(m, 'c')} disabled={disabled} />
+                </td>
+                <td className="text-center px-2 py-2">
+                  <Switch checked={perms[m]?.e || false} onCheckedChange={() => toggle(m, 'e')} disabled={disabled} />
+                </td>
+                <td className="text-center px-2 py-2">
+                  <Switch checked={perms[m]?.x || false} onCheckedChange={() => toggle(m, 'x')} disabled={disabled} />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export default function Usuarios() {
-  const { isAdmin, user, empresaId } = useAuth();
+  const { isAdmin, isSuperAdmin, user, empresaId } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
   const [obras, setObras] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +146,7 @@ export default function Usuarios() {
   const [novoSenha, setNovoSenha] = useState('');
   const [novoTipo, setNovoTipo] = useState('cliente');
   const [obrasSelecionadas, setObrasSelecionadas] = useState<string[]>([]);
+  const [novoPerms, setNovoPerms] = useState<PermissaoState>(getDefaultPermsForRole('cliente'));
   const [saving, setSaving] = useState(false);
 
   // Edit user
@@ -60,6 +156,7 @@ export default function Usuarios() {
   const [editEmail, setEditEmail] = useState('');
   const [editTipo, setEditTipo] = useState('');
   const [editObrasSelecionadas, setEditObrasSelecionadas] = useState<string[]>([]);
+  const [editPerms, setEditPerms] = useState<PermissaoState>(getDefaultPermsForRole('cliente'));
   const [editSaving, setEditSaving] = useState(false);
 
   // Delete user
@@ -81,6 +178,14 @@ export default function Usuarios() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [resetting, setResetting] = useState(false);
+
+  // Permissions dialog
+  const [permsDialogOpen, setPermsDialogOpen] = useState(false);
+  const [permsUserId, setPermsUserId] = useState('');
+  const [permsUserName, setPermsUserName] = useState('');
+  const [permsUserRole, setPermsUserRole] = useState('');
+  const [permsState, setPermsState] = useState<PermissaoState>(getDefaultPermsForRole('cliente'));
+  const [permsSaving, setPermsSaving] = useState(false);
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -110,18 +215,6 @@ export default function Usuarios() {
   }, [isAdmin]);
 
   if (!isAdmin) return <Navigate to="/dashboard" replace />;
-
-  const changeRole = async (userId: string, newRole: string) => {
-    const { error } = await supabase
-      .from('user_roles')
-      .update({ role: newRole as any })
-      .eq('user_id', userId);
-    if (error) toast.error('Erro: ' + error.message);
-    else {
-      toast.success('Papel atualizado!');
-      fetchUsers();
-    }
-  };
 
   const handleCreateUser = async () => {
     if (!novoNome || !novoEmail || !novoSenha) {
@@ -161,6 +254,9 @@ export default function Usuarios() {
         await supabase.from('usuario_obras').insert(inserts);
       }
 
+      // Save custom permissions
+      await savePermissions(newUserId, novoPerms);
+
       toast.success('Usuário cadastrado com sucesso!');
       setDialogOpen(false);
       setNovoNome('');
@@ -168,12 +264,28 @@ export default function Usuarios() {
       setNovoSenha('');
       setNovoTipo('cliente');
       setObrasSelecionadas([]);
+      setNovoPerms(getDefaultPermsForRole('cliente'));
       fetchUsers();
     } catch (err: any) {
       toast.error('Erro ao criar usuário: ' + err.message);
     } finally {
       setSaving(false);
     }
+  };
+
+  const savePermissions = async (userId: string, perms: PermissaoState) => {
+    // Delete existing
+    await supabase.from('permissoes_usuario').delete().eq('user_id', userId);
+    // Insert new
+    const rows = MODULOS.map(m => ({
+      user_id: userId,
+      modulo: m,
+      pode_visualizar: perms[m]?.v || false,
+      pode_criar: perms[m]?.c || false,
+      pode_editar: perms[m]?.e || false,
+      pode_excluir: perms[m]?.x || false,
+    }));
+    await supabase.from('permissoes_usuario').insert(rows);
   };
 
   // Edit user
@@ -184,6 +296,27 @@ export default function Usuarios() {
     setEditTipo(u.role);
     const linked = (u.obras_vinculadas || []).map((l: any) => l.obra_id);
     setEditObrasSelecionadas(linked);
+
+    // Load permissions
+    const { data: permsData } = await supabase
+      .from('permissoes_usuario')
+      .select('modulo, pode_visualizar, pode_criar, pode_editar, pode_excluir')
+      .eq('user_id', u.user_id);
+
+    if (permsData && permsData.length > 0) {
+      const state: PermissaoState = {};
+      permsData.forEach((p: any) => {
+        state[p.modulo] = { v: p.pode_visualizar, c: p.pode_criar, e: p.pode_editar, x: p.pode_excluir };
+      });
+      // Fill missing modules
+      MODULOS.forEach(m => {
+        if (!state[m]) state[m] = { v: false, c: false, e: false, x: false };
+      });
+      setEditPerms(state);
+    } else {
+      setEditPerms(getDefaultPermsForRole(u.role));
+    }
+
     setEditDialogOpen(true);
   };
 
@@ -194,21 +327,18 @@ export default function Usuarios() {
     }
     setEditSaving(true);
     try {
-      // Update profile
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ nome: editNome, email: editEmail })
         .eq('user_id', editUserId);
       if (profileError) throw profileError;
 
-      // Update role
       const { error: roleError } = await supabase
         .from('user_roles')
         .update({ role: editTipo as any })
         .eq('user_id', editUserId);
       if (roleError) throw roleError;
 
-      // Update obra links
       await supabase.from('usuario_obras').delete().eq('user_id', editUserId);
       if (editObrasSelecionadas.length > 0) {
         const inserts = editObrasSelecionadas.map(obra_id => ({
@@ -218,6 +348,9 @@ export default function Usuarios() {
         await supabase.from('usuario_obras').insert(inserts);
       }
 
+      // Save permissions
+      await savePermissions(editUserId, editPerms);
+
       toast.success('Usuário atualizado com sucesso!');
       setEditDialogOpen(false);
       fetchUsers();
@@ -225,6 +358,46 @@ export default function Usuarios() {
       toast.error('Erro ao atualizar: ' + err.message);
     } finally {
       setEditSaving(false);
+    }
+  };
+
+  // Permissions dialog
+  const openPermsDialog = async (u: any) => {
+    setPermsUserId(u.user_id);
+    setPermsUserName(u.nome || '');
+    setPermsUserRole(u.role);
+
+    const { data: permsData } = await supabase
+      .from('permissoes_usuario')
+      .select('modulo, pode_visualizar, pode_criar, pode_editar, pode_excluir')
+      .eq('user_id', u.user_id);
+
+    if (permsData && permsData.length > 0) {
+      const state: PermissaoState = {};
+      permsData.forEach((p: any) => {
+        state[p.modulo] = { v: p.pode_visualizar, c: p.pode_criar, e: p.pode_editar, x: p.pode_excluir };
+      });
+      MODULOS.forEach(m => {
+        if (!state[m]) state[m] = { v: false, c: false, e: false, x: false };
+      });
+      setPermsState(state);
+    } else {
+      setPermsState(getDefaultPermsForRole(u.role));
+    }
+
+    setPermsDialogOpen(true);
+  };
+
+  const handleSavePerms = async () => {
+    setPermsSaving(true);
+    try {
+      await savePermissions(permsUserId, permsState);
+      toast.success('Permissões atualizadas!');
+      setPermsDialogOpen(false);
+    } catch (err: any) {
+      toast.error('Erro: ' + err.message);
+    } finally {
+      setPermsSaving(false);
     }
   };
 
@@ -241,10 +414,8 @@ export default function Usuarios() {
       const response = await supabase.functions.invoke('admin-delete-user', {
         body: { user_id: deleteUserId },
       });
-
       if (response.error) throw new Error(response.error.message);
       if (response.data?.error) throw new Error(response.data.error);
-
       toast.success('Usuário excluído com sucesso!');
       setDeleteDialogOpen(false);
       fetchUsers();
@@ -259,18 +430,14 @@ export default function Usuarios() {
     setLinkUserId(userId);
     setLinkUserName(userName);
     const { data } = await supabase.from('usuario_obras').select('obra_id').eq('user_id', userId);
-    const linked = (data || []).map((d: any) => d.obra_id);
-    setLinkObrasSelecionadas(linked);
+    setLinkObrasSelecionadas((data || []).map((d: any) => d.obra_id));
     setLinkDialogOpen(true);
   };
 
   const saveLinkObras = async () => {
     await supabase.from('usuario_obras').delete().eq('user_id', linkUserId);
     if (linkObrasSelecionadas.length > 0) {
-      const inserts = linkObrasSelecionadas.map(obra_id => ({
-        user_id: linkUserId,
-        obra_id,
-      }));
+      const inserts = linkObrasSelecionadas.map(obra_id => ({ user_id: linkUserId, obra_id }));
       await supabase.from('usuario_obras').insert(inserts);
     }
     toast.success('Obras vinculadas atualizadas!');
@@ -298,28 +465,16 @@ export default function Usuarios() {
   };
 
   const handleResetPassword = async () => {
-    if (!newPassword || !confirmPassword) {
-      toast.error('Preencha os campos de senha');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      toast.error('As senhas não coincidem');
-      return;
-    }
-    if (newPassword.length < 6) {
-      toast.error('Senha deve ter no mínimo 6 caracteres');
-      return;
-    }
-
+    if (!newPassword || !confirmPassword) { toast.error('Preencha os campos de senha'); return; }
+    if (newPassword !== confirmPassword) { toast.error('As senhas não coincidem'); return; }
+    if (newPassword.length < 6) { toast.error('Senha deve ter no mínimo 6 caracteres'); return; }
     setResetting(true);
     try {
       const response = await supabase.functions.invoke('admin-reset-password', {
         body: { user_id: resetUserId, new_password: newPassword },
       });
-
       if (response.error) throw new Error(response.error.message);
       if (response.data?.error) throw new Error(response.data.error);
-
       toast.success('Senha redefinida com sucesso!');
       setResetDialogOpen(false);
     } catch (err: any) {
@@ -332,6 +487,8 @@ export default function Usuarios() {
   const toggleObra = (obraId: string, list: string[], setList: (v: string[]) => void) => {
     setList(list.includes(obraId) ? list.filter(id => id !== obraId) : [...list, obraId]);
   };
+
+  const isFullAccessRole = (role: string) => role === 'super_admin' || role === 'admin';
 
   return (
     <div>
@@ -393,41 +550,20 @@ export default function Usuarios() {
                       <div className="flex gap-1 flex-wrap">
                         {u.user_id !== user?.id && (
                           <>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openEditDialog(u)}
-                              title="Editar usuário"
-                            >
-                              <Pencil className="h-4 w-4 mr-1" />
-                              Editar
+                            <Button variant="outline" size="sm" onClick={() => openEditDialog(u)} title="Editar usuário">
+                              <Pencil className="h-4 w-4 mr-1" /> Editar
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openLinkDialog(u.user_id, u.nome)}
-                              title="Vincular obras"
-                            >
-                              <Link2 className="h-4 w-4 mr-1" />
-                              Obras
+                            <Button variant="outline" size="sm" onClick={() => openPermsDialog(u)} title="Permissões">
+                              <Shield className="h-4 w-4 mr-1" /> Permissões
                             </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openResetDialog(u.user_id, u.nome)}
-                              title="Redefinir senha"
-                            >
-                              <KeyRound className="h-4 w-4 mr-1" />
-                              Senha
+                            <Button variant="outline" size="sm" onClick={() => openLinkDialog(u.user_id, u.nome)} title="Vincular obras">
+                              <Link2 className="h-4 w-4 mr-1" /> Obras
                             </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => openDeleteDialog(u.user_id, u.nome)}
-                              title="Excluir usuário"
-                            >
-                              <Trash2 className="h-4 w-4 mr-1" />
-                              Excluir
+                            <Button variant="outline" size="sm" onClick={() => openResetDialog(u.user_id, u.nome)} title="Redefinir senha">
+                              <KeyRound className="h-4 w-4 mr-1" /> Senha
+                            </Button>
+                            <Button variant="destructive" size="sm" onClick={() => openDeleteDialog(u.user_id, u.nome)} title="Excluir usuário">
+                              <Trash2 className="h-4 w-4 mr-1" /> Excluir
                             </Button>
                           </>
                         )}
@@ -470,13 +606,13 @@ export default function Usuarios() {
             </div>
             <div>
               <Label>Tipo de Usuário</Label>
-              <Select value={novoTipo} onValueChange={setNovoTipo}>
+              <Select value={novoTipo} onValueChange={(v) => { setNovoTipo(v); setNovoPerms(getDefaultPermsForRole(v)); }}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Administrador</SelectItem>
-                  <SelectItem value="trabalhador">Trabalhador</SelectItem>
+                  <SelectItem value="admin">Diretor</SelectItem>
+                  <SelectItem value="trabalhador">Funcionário</SelectItem>
                   <SelectItem value="sindico">Síndico</SelectItem>
                   <SelectItem value="cliente">Cliente</SelectItem>
                 </SelectContent>
@@ -500,6 +636,15 @@ export default function Usuarios() {
                 )}
               </div>
             </div>
+            <Separator />
+            <PermissoesEditor
+              perms={novoPerms}
+              setPerms={setNovoPerms}
+              disabled={isFullAccessRole(novoTipo)}
+            />
+            {isFullAccessRole(novoTipo) && (
+              <p className="text-xs text-muted-foreground">Diretores sempre possuem acesso total.</p>
+            )}
             <Button onClick={handleCreateUser} disabled={saving} className="w-full">
               {saving ? 'Cadastrando...' : 'Cadastrar Usuário'}
             </Button>
@@ -524,13 +669,13 @@ export default function Usuarios() {
             </div>
             <div>
               <Label>Tipo de Usuário</Label>
-              <Select value={editTipo} onValueChange={setEditTipo}>
+              <Select value={editTipo} onValueChange={(v) => { setEditTipo(v); if (isFullAccessRole(v)) setEditPerms(getDefaultPermsForRole(v)); }}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="admin">Administrador</SelectItem>
-                  <SelectItem value="trabalhador">Trabalhador</SelectItem>
+                  <SelectItem value="admin">Diretor</SelectItem>
+                  <SelectItem value="trabalhador">Funcionário</SelectItem>
                   <SelectItem value="sindico">Síndico</SelectItem>
                   <SelectItem value="cliente">Cliente</SelectItem>
                 </SelectContent>
@@ -554,8 +699,44 @@ export default function Usuarios() {
                 )}
               </div>
             </div>
+            <Separator />
+            <PermissoesEditor
+              perms={editPerms}
+              setPerms={setEditPerms}
+              disabled={isFullAccessRole(editTipo)}
+            />
+            {isFullAccessRole(editTipo) && (
+              <p className="text-xs text-muted-foreground">Diretores sempre possuem acesso total.</p>
+            )}
             <Button onClick={handleEditUser} disabled={editSaving} className="w-full">
               {editSaving ? 'Salvando...' : 'Salvar Alterações'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Permissões */}
+      <Dialog open={permsDialogOpen} onOpenChange={setPermsDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Permissões — {permsUserName}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Badge variant={roleBadgeVariant[permsUserRole] || 'secondary'}>
+                {roleLabels[permsUserRole] || permsUserRole}
+              </Badge>
+            </div>
+            <PermissoesEditor
+              perms={permsState}
+              setPerms={setPermsState}
+              disabled={isFullAccessRole(permsUserRole)}
+            />
+            {isFullAccessRole(permsUserRole) && (
+              <p className="text-xs text-muted-foreground">Este tipo de usuário sempre possui acesso total.</p>
+            )}
+            <Button onClick={handleSavePerms} disabled={permsSaving || isFullAccessRole(permsUserRole)} className="w-full">
+              {permsSaving ? 'Salvando...' : 'Salvar Permissões'}
             </Button>
           </div>
         </DialogContent>
@@ -567,16 +748,12 @@ export default function Usuarios() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir Usuário</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir o usuário <strong>{deleteUserName}</strong>? Esta ação não pode ser desfeita. Todos os dados e vínculos do usuário serão removidos.
+              Tem certeza que deseja excluir o usuário <strong>{deleteUserName}</strong>? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteUser}
-              disabled={deleting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
+            <AlertDialogAction onClick={handleDeleteUser} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {deleting ? 'Excluindo...' : 'Excluir'}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -614,12 +791,7 @@ export default function Usuarios() {
             <div>
               <Label>Nova Senha *</Label>
               <div className="flex gap-2">
-                <Input
-                  type="text"
-                  value={newPassword}
-                  onChange={e => setNewPassword(e.target.value)}
-                  placeholder="Mínimo 6 caracteres"
-                />
+                <Input type="text" value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="Mínimo 6 caracteres" />
                 <Button type="button" variant="outline" size="icon" onClick={handleGeneratePassword} title="Gerar senha automática">
                   <RefreshCw className="h-4 w-4" />
                 </Button>
@@ -632,21 +804,12 @@ export default function Usuarios() {
             </div>
             <div>
               <Label>Confirmar Senha *</Label>
-              <Input
-                type="text"
-                value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
-                placeholder="Repita a senha"
-              />
+              <Input type="text" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Repita a senha" />
             </div>
             {newPassword && confirmPassword && newPassword !== confirmPassword && (
               <p className="text-sm text-destructive">As senhas não coincidem</p>
             )}
-            <Button
-              onClick={handleResetPassword}
-              disabled={resetting || !newPassword || newPassword !== confirmPassword}
-              className="w-full"
-            >
+            <Button onClick={handleResetPassword} disabled={resetting || !newPassword || newPassword !== confirmPassword} className="w-full">
               {resetting ? 'Redefinindo...' : 'Redefinir Senha'}
             </Button>
           </div>
