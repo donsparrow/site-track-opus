@@ -22,6 +22,7 @@ import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { downloadPdf } from '@/lib/pdfDownload';
+import { setupPDFHelpers, MARGIN, BLUE } from '@/lib/pdfShared';
 
 interface Atividade {
   id: string;
