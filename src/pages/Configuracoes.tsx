@@ -42,7 +42,6 @@ export default function Configuracoes() {
         logo_url: data.logo_url || '',
         site: data.site || '',
         instagram: data.instagram || '',
-        texto_rodape: (data as any).texto_rodape || '',
       });
     }
     setLoading(false);
