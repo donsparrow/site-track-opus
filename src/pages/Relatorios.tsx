@@ -44,8 +44,7 @@ export default function Relatorios() {
   const [periodoInicio, setPeriodoInicio] = useState('');
   const [periodoFim, setPeriodoFim] = useState('');
 
-  // Editable prazo contratual
-  const [prazoContratualManual, setPrazoContratualManual] = useState<number | null>(null);
+  // Prazo contratual comes from obra (read-only)
 
   // Computed data
   const [prazos, setPrazos] = useState({ contratual: 0, parados: 0, ajustado: 0, trabalhados: 0, saldo: 0 });
@@ -97,32 +96,8 @@ export default function Relatorios() {
       setObraData(obra);
       if (obra?.data_inicio) setPeriodoInicio(obra.data_inicio);
       if (obra?.data_fim_prevista) setPeriodoFim(obra.data_fim_prevista);
-      // Use centralized prazo from obra
-      if (obra?.prazo_contratual_dias && obra.prazo_contratual_dias > 0) {
-        setPrazoContratualManual(obra.prazo_contratual_dias);
-      } else {
-        setPrazoContratualManual(null);
-      }
     }
   }, [selectedObra, obras]);
-
-  // Recalculate prazos when manual prazo changes
-  useEffect(() => {
-    if (prazoContratualManual !== null && prazoContratualManual >= 1) {
-      const ajustado = prazoContratualManual + prazos.parados;
-      const saldo = ajustado - prazos.trabalhados;
-      setPrazos(prev => ({
-        ...prev,
-        contratual: prazoContratualManual,
-        ajustado,
-        saldo,
-      }));
-      // Sync to obras table
-      if (selectedObra) {
-        supabase.from('obras').update({ prazo_contratual_dias: prazoContratualManual } as any).eq('id', selectedObra);
-      }
-    }
-  }, [prazoContratualManual]);
 
   const consolidar = async () => {
     if (!selectedObra || !periodoInicio || !periodoFim) return;
@@ -159,12 +134,11 @@ export default function Relatorios() {
     }
 
     const obra = obras.find(o => o.id === selectedObra);
-    let prazoContratual = prazoContratualManual;
-    if (prazoContratual === null) {
-      prazoContratual = obra?.data_inicio && obra?.data_fim_prevista
+    const prazoContratual = (obra?.prazo_contratual_dias && obra.prazo_contratual_dias > 0)
+      ? obra.prazo_contratual_dias
+      : (obra?.data_inicio && obra?.data_fim_prevista
         ? calcBusinessDays(obra.data_inicio, obra.data_fim_prevista)
-        : 0;
-    }
+        : 0);
 
     let diasParados = 0;
     if (diarioIds.length > 0) {
@@ -230,11 +204,7 @@ export default function Relatorios() {
         });
       }
     } else {
-      // Always use prazo from obras (single source of truth), not from saved relatorio
-      const obraRef = obras.find(o => o.id === selectedObra);
-      if (prazoContratualManual === null && obraRef?.prazo_contratual_dias && obraRef.prazo_contratual_dias > 0) {
-        setPrazoContratualManual(obraRef.prazo_contratual_dias);
-      }
+      // Prazo comes from obra (single source of truth)
       setRevisaoPdf((relatorio as any).revisao_pdf || 0);
 
       await supabase.from('relatorios').update({
@@ -262,7 +232,7 @@ export default function Relatorios() {
     setSaving(true);
 
     try {
-      const prazoVal = prazoContratualManual !== null ? prazoContratualManual : prazos.contratual;
+      const prazoVal = prazos.contratual;
       await supabase.from('relatorios').update({
         prazo_contratual_dias_uteis: prazoVal,
         dias_parados: prazos.parados,
@@ -416,13 +386,7 @@ export default function Relatorios() {
     setSelectedObra(rel.obra_id);
     setPeriodoInicio(rel.data_inicio || '');
     setPeriodoFim(rel.data_fim || '');
-    // Always fetch prazo from obras (single source of truth)
-    const { data: obraAtual } = await supabase.from('obras').select('prazo_contratual_dias').eq('id', rel.obra_id).single();
-    if (obraAtual?.prazo_contratual_dias && obraAtual.prazo_contratual_dias > 0) {
-      setPrazoContratualManual(obraAtual.prazo_contratual_dias);
-    } else {
-      setPrazoContratualManual(null);
-    }
+    // Prazo will be fetched from obra during consolidation
     setViewMode('edit');
     // Wait for obra data to load then consolidate
     setTimeout(() => consolidar(), 500);
@@ -496,7 +460,7 @@ export default function Relatorios() {
       <div>
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-display font-bold">Relatórios</h1>
-          <Button onClick={() => { setRelatorioId(null); setSelectedObra(''); setPeriodoInicio(''); setPeriodoFim(''); setPrazoContratualManual(null); setViewMode('edit'); }} className="bg-accent text-accent-foreground hover:bg-accent/90">
+          <Button onClick={() => { setRelatorioId(null); setSelectedObra(''); setPeriodoInicio(''); setPeriodoFim(''); setViewMode('edit'); }} className="bg-accent text-accent-foreground hover:bg-accent/90">
             <FileText className="h-4 w-4 mr-2" />Novo Relatório
           </Button>
         </div>
@@ -640,28 +604,15 @@ export default function Relatorios() {
             </Card>
           )}
 
-          {/* Editable Prazo Contratual + Indicators */}
+          {/* Prazo Contratual (read-only, from obra) */}
           <Card className="mb-6">
             <CardHeader className="py-3">
               <CardTitle className="text-sm font-display">Prazo Contratual (dias úteis)</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-4">
-                <Input
-                  type="number"
-                  min={1}
-                  className="w-40"
-                  value={prazoContratualManual !== null ? prazoContratualManual : prazos.contratual}
-                  onChange={e => {
-                    const val = parseInt(e.target.value);
-                    if (val >= 1) setPrazoContratualManual(val);
-                    else if (e.target.value === '') setPrazoContratualManual(null);
-                  }}
-                  placeholder="Dias úteis"
-                />
-                <span className="text-sm text-muted-foreground">
-                  {prazoContratualManual !== null ? '(valor manual)' : '(calculado da obra)'}
-                </span>
+                <span className="text-2xl font-bold">{prazos.contratual}</span>
+                <span className="text-sm text-muted-foreground">(definido na aba Obras)</span>
               </div>
             </CardContent>
           </Card>

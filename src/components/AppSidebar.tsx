@@ -11,6 +11,7 @@ import { useEmpresaNome } from '@/hooks/useEmpresaNome';
 const navItemsAll = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
   { to: '/empresas', label: 'Empresas', icon: Building2, roles: ['super_admin'] },
+  { to: '/obras', label: 'Obras', icon: HardHat, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
   { to: '/clientes', label: 'Clientes', icon: UserCircle, roles: ['admin', 'trabalhador', 'super_admin'] },
   { to: '/financeiro', label: 'Financeiro', icon: Wallet, roles: ['admin', 'trabalhador', 'super_admin'] },
   { to: '/diario', label: 'Diário de Obra', icon: ClipboardList, roles: ['admin', 'trabalhador', 'super_admin'] },

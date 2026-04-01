@@ -7,6 +7,19 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
+function calcBizDays(start: string, end: string): number {
+  const s = new Date(start + 'T00:00:00');
+  const e = new Date(end + 'T00:00:00');
+  let count = 0;
+  const cur = new Date(s);
+  while (cur <= e) {
+    const day = cur.getDay();
+    if (day !== 0 && day !== 6) count++;
+    cur.setDate(cur.getDate() + 1);
+  }
+  return count;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -21,6 +34,7 @@ export default function NovaObraDialog({ open, onOpenChange, onCreated }: Props)
   const [dataInicio, setDataInicio] = useState('');
   const [dataFimPrevista, setDataFimPrevista] = useState('');
   const [status, setStatus] = useState('planejamento');
+  const [prazoContratual, setPrazoContratual] = useState(0);
   const [clientes, setClientes] = useState<{ id: string; nome: string }[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -35,13 +49,19 @@ export default function NovaObraDialog({ open, onOpenChange, onCreated }: Props)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    if (!nome || !endereco || !responsavel || !dataInicio || !dataFimPrevista) {
+      toast.error('Preencha todos os campos obrigatórios.');
+      setLoading(false);
+      return;
+    }
     const { error } = await supabase.from('obras').insert({
       nome,
-      endereco: endereco || null,
-      responsavel: responsavel || null,
+      endereco,
+      responsavel,
       cliente_id: clienteId || null,
-      data_inicio: dataInicio || null,
-      data_fim_prevista: dataFimPrevista || null,
+      data_inicio: dataInicio,
+      data_fim_prevista: dataFimPrevista,
+      prazo_contratual_dias: prazoContratual || 0,
       status,
     });
     setLoading(false);
@@ -50,7 +70,7 @@ export default function NovaObraDialog({ open, onOpenChange, onCreated }: Props)
     } else {
       toast.success('Obra criada!');
       setNome(''); setEndereco(''); setResponsavel(''); setClienteId('');
-      setDataInicio(''); setDataFimPrevista(''); setStatus('planejamento');
+      setDataInicio(''); setDataFimPrevista(''); setStatus('planejamento'); setPrazoContratual(0);
       onOpenChange(false);
       onCreated();
     }
@@ -103,13 +123,28 @@ export default function NovaObraDialog({ open, onOpenChange, onCreated }: Props)
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Data de Início</Label>
-              <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} />
+              <Label>Data de Início *</Label>
+              <Input type="date" value={dataInicio} onChange={(e) => {
+                setDataInicio(e.target.value);
+                if (e.target.value && dataFimPrevista) {
+                  setPrazoContratual(calcBizDays(e.target.value, dataFimPrevista));
+                }
+              }} required />
             </div>
             <div>
-              <Label>Previsão de Término</Label>
-              <Input type="date" value={dataFimPrevista} onChange={(e) => setDataFimPrevista(e.target.value)} />
+              <Label>Previsão de Término *</Label>
+              <Input type="date" value={dataFimPrevista} onChange={(e) => {
+                setDataFimPrevista(e.target.value);
+                if (dataInicio && e.target.value) {
+                  setPrazoContratual(calcBizDays(dataInicio, e.target.value));
+                }
+              }} required />
             </div>
+          </div>
+          <div>
+            <Label>Prazo Contratual (dias úteis)</Label>
+            <Input type="number" min={1} value={prazoContratual || ''} onChange={(e) => setPrazoContratual(parseInt(e.target.value) || 0)} />
+            <p className="text-xs text-muted-foreground mt-1">Calculado automaticamente, mas pode ser ajustado.</p>
           </div>
           <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={loading}>
             {loading ? 'Criando...' : 'Criar Obra'}
