@@ -100,8 +100,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setEmpresaId(null);
   };
 
-  const canEdit = role === 'admin' || role === 'trabalhador';
-  const isAdmin = role === 'admin';
+  const canEdit = role === 'admin' || role === 'trabalhador' || role === 'super_admin';
+  const isAdmin = role === 'admin' || role === 'super_admin';
+  const isSuperAdmin = role === 'super_admin';
 
   return (
     <AuthContext.Provider value={{ user, session, role, loading, signIn, signUp, signOut, canEdit, isAdmin, empresaId, refreshEmpresa }}>
