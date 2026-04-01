@@ -206,7 +206,6 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   const checkPage = (needed: number) => {
     if (y + needed > pageH - 18) {
-      addFooter(currentPage);
       newPage();
     }
   };
