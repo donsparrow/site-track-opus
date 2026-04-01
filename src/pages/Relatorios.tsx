@@ -460,7 +460,7 @@ export default function Relatorios() {
       <div>
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-display font-bold">Relatórios</h1>
-          <Button onClick={() => { setRelatorioId(null); setSelectedObra(''); setPeriodoInicio(''); setPeriodoFim(''); setPrazoContratualManual(null); setViewMode('edit'); }} className="bg-accent text-accent-foreground hover:bg-accent/90">
+          <Button onClick={() => { setRelatorioId(null); setSelectedObra(''); setPeriodoInicio(''); setPeriodoFim(''); setViewMode('edit'); }} className="bg-accent text-accent-foreground hover:bg-accent/90">
             <FileText className="h-4 w-4 mr-2" />Novo Relatório
           </Button>
         </div>
