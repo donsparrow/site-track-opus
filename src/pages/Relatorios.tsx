@@ -96,32 +96,8 @@ export default function Relatorios() {
       setObraData(obra);
       if (obra?.data_inicio) setPeriodoInicio(obra.data_inicio);
       if (obra?.data_fim_prevista) setPeriodoFim(obra.data_fim_prevista);
-      // Use centralized prazo from obra
-      if (obra?.prazo_contratual_dias && obra.prazo_contratual_dias > 0) {
-        setPrazoContratualManual(obra.prazo_contratual_dias);
-      } else {
-        setPrazoContratualManual(null);
-      }
     }
   }, [selectedObra, obras]);
-
-  // Recalculate prazos when manual prazo changes
-  useEffect(() => {
-    if (prazoContratualManual !== null && prazoContratualManual >= 1) {
-      const ajustado = prazoContratualManual + prazos.parados;
-      const saldo = ajustado - prazos.trabalhados;
-      setPrazos(prev => ({
-        ...prev,
-        contratual: prazoContratualManual,
-        ajustado,
-        saldo,
-      }));
-      // Sync to obras table
-      if (selectedObra) {
-        supabase.from('obras').update({ prazo_contratual_dias: prazoContratualManual } as any).eq('id', selectedObra);
-      }
-    }
-  }, [prazoContratualManual]);
 
   const consolidar = async () => {
     if (!selectedObra || !periodoInicio || !periodoFim) return;
