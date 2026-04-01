@@ -765,19 +765,6 @@ export default function Financeiro() {
           </Card>
         </TabsContent>
 
-        {/* EXTRATO TAB */}
-        <TabsContent value="extrato">
-          <ExtratoFinanceiro
-            parcelasRecebidas={parcelasRecebidas}
-            despesas={despesas.map(d => ({
-              id: d.id,
-              valor: Number(d.valor),
-              data: d.data,
-              descricao: d.descricao,
-              obra_nome: d.obras?.nome || '—',
-            }))}
-          />
-        </TabsContent>
 
         {/* NOTAS FISCAIS TAB */}
         <TabsContent value="notas">
