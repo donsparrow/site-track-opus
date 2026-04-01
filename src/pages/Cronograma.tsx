@@ -54,7 +54,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function Cronograma() {
-  const { canEdit } = useAuth();
+  const { canEdit, empresaId } = useAuth();
   const { filterObras } = useObrasFiltered();
   const [searchParams, setSearchParams] = useSearchParams();
   const obraIdParam = searchParams.get('obra');
