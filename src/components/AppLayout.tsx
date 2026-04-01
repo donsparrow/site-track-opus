@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import AppSidebar from './AppSidebar';
 import MobileSidebar from './MobileSidebar';
 import GlobalFooter from './GlobalFooter';
+import EmpresaSetup from './EmpresaSetup';
 
 export default function AppLayout() {
   const { user, loading } = useAuth();
@@ -31,6 +32,9 @@ export default function AppLayout() {
       <div className="md:ml-64">
         <GlobalFooter />
       </div>
+
+      {/* Empresa setup modal for admin without empresa */}
+      <EmpresaSetup />
     </div>
   );
 }

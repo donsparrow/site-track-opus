@@ -38,7 +38,7 @@ function generatePassword(length = 10): string {
 }
 
 export default function Usuarios() {
-  const { isAdmin, user } = useAuth();
+  const { isAdmin, user, empresaId } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
   const [obras, setObras] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -121,7 +121,7 @@ export default function Usuarios() {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: novoEmail,
         password: novoSenha,
-        options: { data: { nome: novoNome } },
+        options: { data: { nome: novoNome, empresa_id: empresaId } },
       });
 
       if (authError) throw authError;
