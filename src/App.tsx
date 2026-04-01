@@ -17,6 +17,7 @@ import Clientes from "./pages/Clientes";
 import Usuarios from "./pages/Usuarios";
 import Documentacao from "./pages/Documentacao";
 import Empresas from "./pages/Empresas";
+import Obras from "./pages/Obras";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
