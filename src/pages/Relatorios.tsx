@@ -54,6 +54,7 @@ export default function Relatorios() {
   const [allMateriais, setAllMateriais] = useState<any[]>([]);
   const [allOcorrencias, setAllOcorrencias] = useState<any[]>([]);
   const [allImagens, setAllImagens] = useState<any[]>([]);
+  const [cronogramaAtividades, setCronogramaAtividades] = useState<any[]>([]);
   const [paralisacoes, setParalisacoes] = useState<any[]>([]);
 
   // Versions & signatures
@@ -130,7 +131,24 @@ export default function Relatorios() {
       setAllImagens(im.data || []);
       setParalisacoes(pa.data || []);
     } else {
-      setAllEquipe([]); setAllAtividades([]); setAllMateriais([]); setAllOcorrencias([]); setAllImagens([]); setParalisacoes([]);
+      setAllEquipe([]); setAllAtividades([]); setAllMateriais([]); setAllOcorrencias([]); setAllImagens([]); setParalisacoes([]); 
+    }
+
+    // Fetch cronograma activities for this obra
+    const { data: cronData } = await supabase
+      .from('cronograma')
+      .select('id')
+      .eq('obra_id', selectedObra)
+      .maybeSingle();
+    if (cronData) {
+      const { data: cronAtivs } = await supabase
+        .from('cronograma_atividades')
+        .select('nome_atividade, data_inicio, data_fim, percentual_concluido, status')
+        .eq('cronograma_id', cronData.id)
+        .order('ordem');
+      setCronogramaAtividades(cronAtivs || []);
+    } else {
+      setCronogramaAtividades([]);
     }
 
     const obra = obras.find(o => o.id === selectedObra);
@@ -358,6 +376,7 @@ export default function Relatorios() {
         materiais: allMateriais,
         ocorrencias: allOcorrencias,
         imagens: allImagens,
+        cronograma: cronogramaAtividades,
         assinaturas,
         versao: pdfRevisao,
         versoes: versoes.map(v => ({

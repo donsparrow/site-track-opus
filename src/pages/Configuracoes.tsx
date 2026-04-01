@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Settings, Upload } from 'lucide-react';
 
@@ -23,7 +22,6 @@ export default function Configuracoes() {
     logo_url: '',
     site: '',
     instagram: '',
-    texto_rodape: '',
   });
 
   useEffect(() => {
@@ -43,7 +41,6 @@ export default function Configuracoes() {
         logo_url: data.logo_url || '',
         site: data.site || '',
         instagram: data.instagram || '',
-        texto_rodape: (data as any).texto_rodape || '',
       });
     }
     setLoading(false);
@@ -106,16 +103,6 @@ export default function Configuracoes() {
                   <Button type="button" variant="outline" size="sm" asChild><span><Upload className="h-4 w-4 mr-1" />Enviar Logo</span></Button>
                 </label>
               </div>
-            </div>
-            <div>
-              <Label>Texto do Rodapé (Termos de Uso / Política)</Label>
-              <Textarea
-                value={form.texto_rodape}
-                onChange={e => setForm({ ...form, texto_rodape: e.target.value })}
-                placeholder="Ex: Todos os direitos reservados. Uso restrito..."
-                rows={3}
-              />
-              <p className="text-xs text-muted-foreground mt-1">Este texto será exibido no rodapé de todas as páginas do sistema.</p>
             </div>
             <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={saving}>
               {saving ? 'Salvando...' : 'Salvar Configurações'}

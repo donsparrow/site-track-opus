@@ -21,6 +21,7 @@ import { ptBR } from 'date-fns/locale';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { downloadPdf } from '@/lib/pdfDownload';
+import { setupPDFHelpers, MARGIN, BLUE } from '@/lib/pdfShared';
 
 interface Atividade {
   id: string;
@@ -52,7 +53,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function Cronograma() {
-  const { canEdit } = useAuth();
+  const { canEdit, empresaId } = useAuth();
   const { filterObras } = useObrasFiltered();
   const [searchParams, setSearchParams] = useSearchParams();
   const obraIdParam = searchParams.get('obra');
@@ -186,25 +187,46 @@ export default function Cronograma() {
 
   // PDF Export
   const exportPDF = async () => {
+    // Load empresa config for header/footer
+    const { data: empresaConfig } = await supabase.from('configuracoes_empresa').select('*').limit(1).single();
+
     const doc = new jsPDF('landscape', 'mm', 'a4');
     const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const contentW = pageWidth - MARGIN * 2;
 
-    doc.setFontSize(18);
-    doc.text(`Cronograma - ${obraNome}`, 14, 20);
+    const helpers = await setupPDFHelpers(doc, empresaConfig as any);
+
+    // First page header
+    let y = helpers.addHeader();
+    y += 4;
+
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
+    doc.text(`Cronograma - ${obraNome}`, MARGIN, y);
+    y += 8;
+
     doc.setFontSize(10);
-    doc.text(`Data: ${format(new Date(), 'dd/MM/yyyy', { locale: ptBR })}`, 14, 28);
-    doc.text(`Progresso Geral: ${progressoGeral}%`, 14, 34);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60);
+    doc.text(`Data: ${format(new Date(), 'dd/MM/yyyy', { locale: ptBR })}`, MARGIN, y);
+    doc.text(`Progresso Geral: ${progressoGeral}%`, MARGIN + 80, y);
+    y += 6;
 
     // Progress bar visual
-    const barX = 14, barY = 38, barW = pageWidth - 28, barH = 6;
+    const barW = contentW, barH = 6;
     doc.setFillColor(229, 231, 235);
-    doc.roundedRect(barX, barY, barW, barH, 2, 2, 'F');
+    doc.roundedRect(MARGIN, y, barW, barH, 2, 2, 'F');
     doc.setFillColor(34, 197, 94);
-    doc.roundedRect(barX, barY, barW * (progressoGeral / 100), barH, 2, 2, 'F');
+    doc.roundedRect(MARGIN, y, barW * (progressoGeral / 100), barH, 2, 2, 'F');
+    y += 12;
+
+    doc.setTextColor(0);
 
     // Activities table
     autoTable(doc, {
-      startY: 50,
+      startY: y,
       head: [['#', 'Atividade', 'Início', 'Fim', 'Progresso', 'Status']],
       body: atividades.map((a, i) => [
         i + 1,
@@ -215,40 +237,58 @@ export default function Cronograma() {
         statusLabels[a.status] || a.status,
       ]),
       styles: { fontSize: 9 },
-      headStyles: { fillColor: [59, 130, 246] },
+      headStyles: { fillColor: [BLUE[0], BLUE[1], BLUE[2]], textColor: 255 },
+      margin: { left: MARGIN, right: MARGIN },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      theme: 'striped',
     });
 
     const finalY = (doc as any).lastAutoTable?.finalY || 100;
 
     // Simple Gantt in PDF
     if (ganttData) {
-      const gY = finalY + 10;
-      if (gY < doc.internal.pageSize.getHeight() - 40) {
-        doc.setFontSize(12);
-        doc.text('Gráfico de Gantt', 14, gY);
-        const chartX = 14, chartW = pageWidth - 28;
-        const rowH = 8;
-        ganttData.validAtivs.forEach((a, i) => {
-          const y = gY + 6 + i * (rowH + 2);
-          if (y > doc.internal.pageSize.getHeight() - 20) return;
-          const start = differenceInDays(parseISO(a.data_inicio!), ganttData.minDate);
-          const duration = Math.max(differenceInDays(parseISO(a.data_fim!), parseISO(a.data_inicio!)), 1);
-          const barStart = chartX + (start / ganttData.totalDays) * chartW;
-          const barWidth = Math.max((duration / ganttData.totalDays) * chartW, 4);
-
-          doc.setFillColor(219, 234, 254);
-          doc.roundedRect(barStart, y, barWidth, rowH, 1, 1, 'F');
-          const fillW = barWidth * (a.percentual_concluido / 100);
-          if (fillW > 0) {
-            doc.setFillColor(59, 130, 246);
-            doc.roundedRect(barStart, y, fillW, rowH, 1, 1, 'F');
-          }
-          doc.setFontSize(7);
-          doc.setTextColor(0);
-          doc.text(a.nome_atividade, barStart + 2, y + 5.5);
-        });
+      let gY = finalY + 10;
+      if (gY > pageHeight - 40) {
+        doc.addPage();
+        gY = helpers.addHeader() + 4;
       }
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
+      doc.text('Gráfico de Gantt', MARGIN, gY);
+      doc.setTextColor(0);
+      doc.setFont('helvetica', 'normal');
+      gY += 6;
+
+      const chartX = MARGIN + 50;
+      const chartW = contentW - 50;
+      const rowH = 8;
+      ganttData.validAtivs.forEach((a, i) => {
+        const barY = gY + i * (rowH + 2);
+        if (barY > pageHeight - 20) return;
+        const start = differenceInDays(parseISO(a.data_inicio!), ganttData.minDate);
+        const duration = Math.max(differenceInDays(parseISO(a.data_fim!), parseISO(a.data_inicio!)), 1);
+        const barStart = chartX + (start / ganttData.totalDays) * chartW;
+        const barWidth = Math.max((duration / ganttData.totalDays) * chartW, 4);
+
+        doc.setFontSize(7);
+        doc.text(a.nome_atividade, MARGIN, barY + 5.5, { maxWidth: 48 });
+
+        doc.setFillColor(219, 234, 254);
+        doc.roundedRect(barStart, barY, barWidth, rowH, 1, 1, 'F');
+        const fillW = barWidth * (a.percentual_concluido / 100);
+        if (fillW > 0) {
+          doc.setFillColor(BLUE[0], BLUE[1], BLUE[2]);
+          doc.roundedRect(barStart, barY, fillW, rowH, 1, 1, 'F');
+        }
+        doc.setFontSize(7);
+        doc.setTextColor(0);
+        doc.text(`${a.percentual_concluido}%`, barStart + barWidth + 2, barY + 5.5);
+      });
     }
+
+    // Add footers to all pages
+    helpers.addAllFooters();
 
     const nome = obraNome.toLowerCase().replace(/[^a-z0-9]/gi, '_');
     downloadPdf(doc, `cronograma_${nome}.pdf`);

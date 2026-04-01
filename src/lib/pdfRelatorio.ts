@@ -36,6 +36,7 @@ interface RelatorioPDFData {
   materiais: any[];
   ocorrencias: any[];
   imagens: any[];
+  cronograma: { nome_atividade: string; data_inicio: string | null; data_fim: string | null; percentual_concluido: number; status: string }[];
   assinaturas: any[];
   versao?: number;
   versoes?: { rev: string; data: string; resumo: string }[];
@@ -445,10 +446,91 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     y = (doc as any).lastAutoTable.finalY + 8;
   }
 
+  // =========== CRONOGRAMA ===========
+  if (data.cronograma.length > 0) {
+    newPage();
+    sectionTitle('9. CRONOGRAMA DA OBRA');
+    checkPage(20);
+
+    const statusMap: Record<string, string> = { nao_iniciado: 'Não Iniciado', em_andamento: 'Em Andamento', concluido: 'Concluído' };
+
+    autoTable(doc, {
+      startY: y,
+      head: [['Atividade', 'Início', 'Fim', 'Progresso', 'Status']],
+      body: data.cronograma.map(c => [
+        c.nome_atividade,
+        c.data_inicio ? fmt(c.data_inicio) : '—',
+        c.data_fim ? fmt(c.data_fim) : '—',
+        `${c.percentual_concluido}%`,
+        statusMap[c.status] || c.status,
+      ]),
+      margin: { left: MARGIN, right: MARGIN },
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [BLUE[0], BLUE[1], BLUE[2]], textColor: 255 },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      theme: 'striped',
+    });
+    y = (doc as any).lastAutoTable.finalY + 8;
+
+    // Simple Gantt bars
+    const validCron = data.cronograma.filter(c => c.data_inicio && c.data_fim);
+    if (validCron.length > 0) {
+      checkPage(validCron.length * 10 + 15);
+      y += 2;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
+      doc.text('Gráfico de Gantt', MARGIN, y);
+      doc.setTextColor(0);
+      doc.setFont('helvetica', 'normal');
+      y += 6;
+
+      const allDates = validCron.flatMap(c => [new Date(c.data_inicio + 'T00:00:00'), new Date(c.data_fim + 'T00:00:00')]);
+      const minD = new Date(Math.min(...allDates.map(d => d.getTime())));
+      const maxD = new Date(Math.max(...allDates.map(d => d.getTime())));
+      const totalDays = Math.max(Math.round((maxD.getTime() - minD.getTime()) / 86400000), 1);
+      const chartX = MARGIN + 50;
+      const chartW = contentW - 50;
+      const rowH = 7;
+
+      validCron.forEach(c => {
+        if (y > pageH - 25) return;
+        const s = new Date(c.data_inicio + 'T00:00:00');
+        const e = new Date(c.data_fim + 'T00:00:00');
+        const startOff = Math.round((s.getTime() - minD.getTime()) / 86400000);
+        const dur = Math.max(Math.round((e.getTime() - s.getTime()) / 86400000), 1);
+        const barStart = chartX + (startOff / totalDays) * chartW;
+        const barWidth = Math.max((dur / totalDays) * chartW, 4);
+
+        // Label
+        doc.setFontSize(7);
+        doc.text(c.nome_atividade, MARGIN, y + 4.5, { maxWidth: 48 });
+
+        // Background bar
+        doc.setFillColor(219, 234, 254);
+        doc.roundedRect(barStart, y, barWidth, rowH, 1, 1, 'F');
+
+        // Progress fill
+        const fillW = barWidth * (c.percentual_concluido / 100);
+        if (fillW > 0) {
+          doc.setFillColor(BLUE[0], BLUE[1], BLUE[2]);
+          doc.roundedRect(barStart, y, fillW, rowH, 1, 1, 'F');
+        }
+
+        // Percentage text
+        doc.setFontSize(6);
+        doc.setTextColor(0);
+        doc.text(`${c.percentual_concluido}%`, barStart + barWidth + 2, y + 4.5);
+        y += rowH + 2;
+      });
+      y += 4;
+    }
+  }
+
   // =========== PHOTO SECTION ===========
   if (data.imagens.length > 0) {
     newPage();
-    sectionTitle('9. REGISTRO FOTOGRÁFICO');
+    sectionTitle('10. REGISTRO FOTOGRÁFICO');
 
     const imgW = (contentW - 8) / 2; // 2 per row with 8mm gap
     const imgH = imgW * 0.75;
@@ -500,7 +582,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   // =========== REVISION HISTORY ===========
   if (data.versoes && data.versoes.length > 0) {
     newPage();
-    sectionTitle('10. HISTÓRICO DE REVISÕES');
+    sectionTitle('11. HISTÓRICO DE REVISÕES');
     autoTable(doc, {
       startY: y,
       head: [['Revisão', 'Data', 'Resumo das Alterações']],
@@ -516,7 +598,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   // =========== SIGNATURES ===========
   newPage();
-  sectionTitle('11. ASSINATURAS');
+  sectionTitle('12. ASSINATURAS');
   y += 5;
 
   if (data.assinaturas.length > 0) {
