@@ -5,6 +5,7 @@ import {
   Users, LogOut, HardHat, UserCircle, ClipboardList, Settings, FolderOpen, CalendarRange
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import logoJa from '@/assets/logo-ja-gestaopro.jpeg';
 
 const navItemsAll = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
