@@ -224,7 +224,12 @@ export default function ObraDetail() {
   };
 
   if (loading) return <div className="flex justify-center py-12"><div className="animate-spin h-8 w-8 border-4 border-accent border-t-transparent rounded-full" /></div>;
-  if (!obra) return <p>Obra não encontrada</p>;
+  if (!obra) return (
+    <div className="flex flex-col items-center justify-center py-12 gap-4">
+      <p className="text-muted-foreground">Obra não encontrada ou acesso não autorizado.</p>
+      <Link to="/dashboard" className="text-sm text-primary hover:underline">Voltar ao Dashboard</Link>
+    </div>
+  );
 
   const statusLabels: Record<string, string> = { planejamento: 'Planejamento', andamento: 'Em andamento', concluida: 'Concluída' };
   const atrasadas = parcelas.filter(p => p.status === 'atrasado').length;
