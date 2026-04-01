@@ -8,6 +8,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import logoJa from '@/assets/logo-ja-gestaopro.jpeg';
+import { useEmpresaNome } from '@/hooks/useEmpresaNome';
 
 const navItemsAll = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
@@ -26,6 +27,7 @@ export default function MobileSidebar() {
   const { signOut, role, user } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const empresaNome = useEmpresaNome();
 
   const handleLogout = async () => {
     setOpen(false);
@@ -40,7 +42,7 @@ export default function MobileSidebar() {
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
           <img src={logoJa} alt="J&A GestãoPro" className="h-12 w-auto max-w-[100px] rounded-lg object-contain p-0.5" />
-          <h1 className="font-display text-sm font-bold text-sidebar-foreground">J&A Engenharia</h1>
+          <h1 className="font-display text-sm font-bold text-sidebar-foreground">{empresaNome}</h1>
         </div>
 
         <Sheet open={open} onOpenChange={setOpen}>
@@ -55,7 +57,7 @@ export default function MobileSidebar() {
                 <HardHat className="h-5 w-5 text-sidebar-primary-foreground" />
               </div>
               <div>
-                <h1 className="font-display text-base font-bold text-sidebar-foreground">J&A Engenharia</h1>
+                <h1 className="font-display text-base font-bold text-sidebar-foreground">{empresaNome}</h1>
                 <p className="text-xs text-sidebar-foreground/60 capitalize">{role || 'carregando...'}</p>
               </div>
             </div>
