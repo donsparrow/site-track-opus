@@ -582,7 +582,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   // =========== REVISION HISTORY ===========
   if (data.versoes && data.versoes.length > 0) {
     newPage();
-    sectionTitle('10. HISTÓRICO DE REVISÕES');
+    sectionTitle('11. HISTÓRICO DE REVISÕES');
     autoTable(doc, {
       startY: y,
       head: [['Revisão', 'Data', 'Resumo das Alterações']],
@@ -598,7 +598,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   // =========== SIGNATURES ===========
   newPage();
-  sectionTitle('11. ASSINATURAS');
+  sectionTitle('12. ASSINATURAS');
   y += 5;
 
   if (data.assinaturas.length > 0) {
