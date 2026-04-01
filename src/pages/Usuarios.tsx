@@ -427,6 +427,21 @@ export default function Usuarios() {
   };
 
   const handleDeleteUser = async () => {
+    // Prevent deleting a super_admin if not super_admin
+    const targetUser = users.find(u => u.user_id === deleteUserId);
+    if (targetUser?.role === 'super_admin' && !isSuperAdmin) {
+      toast.error('Apenas Administrador Geral pode excluir outro Administrador Geral');
+      setDeleteDialogOpen(false);
+      return;
+    }
+    if (targetUser?.role === 'super_admin') {
+      const superAdminCount = users.filter(u => u.role === 'super_admin').length;
+      if (superAdminCount <= 1) {
+        toast.error('Não é possível excluir o último Administrador Geral do sistema');
+        setDeleteDialogOpen(false);
+        return;
+      }
+    }
     setDeleting(true);
     try {
       const response = await supabase.functions.invoke('admin-delete-user', {
