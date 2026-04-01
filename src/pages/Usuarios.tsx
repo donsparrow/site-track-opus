@@ -569,6 +569,23 @@ export default function Usuarios() {
         </Button>
       </div>
 
+      {isSuperAdmin && (
+        <div className="mb-4 flex items-center gap-3">
+          <Label className="text-sm font-medium">Filtrar por empresa:</Label>
+          <Select value={filtroEmpresa} onValueChange={setFiltroEmpresa}>
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder="Todas as empresas" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas as empresas</SelectItem>
+              {empresas.map(e => (
+                <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+
       {loading ? (
         <div className="flex justify-center py-12">
           <div className="animate-spin h-8 w-8 border-4 border-accent border-t-transparent rounded-full" />
@@ -582,6 +599,7 @@ export default function Usuarios() {
                   <TableHead>Nome</TableHead>
                   <TableHead>E-mail (Login)</TableHead>
                   <TableHead>Tipo</TableHead>
+                  {isSuperAdmin && <TableHead>Empresa</TableHead>}
                   <TableHead>Obras Vinculadas</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
