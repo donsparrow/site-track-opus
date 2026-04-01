@@ -204,11 +204,7 @@ export default function Relatorios() {
         });
       }
     } else {
-      // Always use prazo from obras (single source of truth), not from saved relatorio
-      const obraRef = obras.find(o => o.id === selectedObra);
-      if (prazoContratualManual === null && obraRef?.prazo_contratual_dias && obraRef.prazo_contratual_dias > 0) {
-        setPrazoContratualManual(obraRef.prazo_contratual_dias);
-      }
+      // Prazo comes from obra (single source of truth)
       setRevisaoPdf((relatorio as any).revisao_pdf || 0);
 
       await supabase.from('relatorios').update({
