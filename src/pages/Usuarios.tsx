@@ -552,6 +552,10 @@ export default function Usuarios() {
 
   const isFullAccessRole = (role: string) => role === 'super_admin' || role === 'admin';
 
+  const filteredUsers = isSuperAdmin && filtroEmpresa !== 'todas'
+    ? users.filter(u => u.empresa_id === filtroEmpresa)
+    : users;
+
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
