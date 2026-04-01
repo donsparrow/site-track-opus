@@ -22,20 +22,12 @@ export default function EmpresaSetup() {
     setSaving(true);
 
     try {
-      const { data: empresa, error: empErr } = await supabase
-        .from('empresas')
-        .insert({ nome: nome.trim(), cnpj: cnpj || null } as any)
-        .select('id')
-        .single();
+      const { data, error } = await supabase.rpc('create_empresa_and_link', {
+        _nome: nome.trim(),
+        _cnpj: cnpj || null,
+      });
 
-      if (empErr) throw empErr;
-
-      const { error: profErr } = await supabase
-        .from('profiles')
-        .update({ empresa_id: empresa.id } as any)
-        .eq('user_id', user.id);
-
-      if (profErr) throw profErr;
+      if (error) throw error;
 
       toast.success('Empresa configurada com sucesso!');
       await refreshEmpresa();
