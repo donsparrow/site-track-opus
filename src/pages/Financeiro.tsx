@@ -96,6 +96,9 @@ export default function Financeiro() {
   const [receberReceitaId, setReceberReceitaId] = useState<string | null>(null);
   const [receberFormaPgto, setReceberFormaPgto] = useState('pix');
 
+  // Parcelas recebidas para extrato
+  const [parcelasRecebidas, setParcelasRecebidas] = useState<any[]>([]);
+
   const isAdmin = role === 'admin';
 
   const fetchAnexos = async () => {
@@ -121,6 +124,32 @@ export default function Financeiro() {
 
     const { data: d } = await dQuery;
     setDespesas(d || []);
+
+    // Fetch parcelas recebidas para extrato
+    let pQuery = supabase
+      .from('parcelas')
+      .select('*, receitas(descricao, obra_id, obras(nome))')
+      .eq('status', 'recebido')
+      .not('data_recebimento', 'is', null)
+      .order('data_recebimento', { ascending: true });
+
+    if (filterObra !== 'all') {
+      pQuery = pQuery.eq('receitas.obra_id', filterObra);
+    }
+
+    const { data: pData } = await pQuery;
+    const mapped = (pData || [])
+      .filter((p: any) => p.receitas) // filter out nulls from inner join filter
+      .filter((p: any) => filterObra === 'all' || p.receitas?.obra_id === filterObra)
+      .map((p: any) => ({
+        id: p.id,
+        valor: Number(p.valor),
+        data_recebimento: p.data_recebimento,
+        receita_descricao: p.receitas?.descricao || '—',
+        obra_nome: p.receitas?.obras?.nome || '—',
+      }));
+    setParcelasRecebidas(mapped);
+
     setLoading(false);
   };
 
@@ -505,13 +534,27 @@ export default function Financeiro() {
         </Select>
       </div>
 
-      <Tabs defaultValue="receitas">
+      <Tabs defaultValue="extrato">
         <TabsList className="mb-6">
+          <TabsTrigger value="extrato"><BarChart3 className="h-4 w-4 mr-1" />Extrato</TabsTrigger>
           <TabsTrigger value="receitas">Receitas ({receitas.length})</TabsTrigger>
           <TabsTrigger value="despesas">Despesas ({despesas.length})</TabsTrigger>
-          <TabsTrigger value="extrato"><BarChart3 className="h-4 w-4 mr-1" />Extrato</TabsTrigger>
           <TabsTrigger value="notas">Notas Fiscais</TabsTrigger>
         </TabsList>
+
+        {/* EXTRATO TAB */}
+        <TabsContent value="extrato">
+          <ExtratoFinanceiro
+            parcelasRecebidas={parcelasRecebidas}
+            despesas={despesas.map(d => ({
+              id: d.id,
+              valor: Number(d.valor),
+              data: d.data,
+              descricao: d.descricao,
+              obra_nome: d.obras?.nome || '—',
+            }))}
+          />
+        </TabsContent>
 
         <TabsContent value="receitas">
           <div className="flex justify-between items-center mb-4">
@@ -723,10 +766,6 @@ export default function Financeiro() {
           </Card>
         </TabsContent>
 
-        {/* EXTRATO TAB */}
-        <TabsContent value="extrato">
-          <ExtratoFinanceiro receitas={receitas} despesas={despesas} filterObra={filterObra} />
-        </TabsContent>
 
         {/* NOTAS FISCAIS TAB */}
         <TabsContent value="notas">
