@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useObrasFiltered } from '@/hooks/useObrasFiltered';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +33,7 @@ interface Anexo {
 
 export default function Financeiro() {
   const { canEdit, role } = useAuth();
+  const { filterObras } = useObrasFiltered();
   const [receitas, setReceitas] = useState<any[]>([]);
   const [despesas, setDespesas] = useState<any[]>([]);
   const [expandedReceita, setExpandedReceita] = useState<string | null>(null);
@@ -109,7 +111,7 @@ export default function Financeiro() {
   const fetchData = async () => {
     setLoading(true);
     const { data: obrasData } = await supabase.from('obras').select('id, nome').order('nome');
-    setObras(obrasData || []);
+    setObras(filterObras(obrasData || []));
 
     let rQuery = supabase.from('receitas').select('*, obras(nome)').order('created_at', { ascending: false });
     let dQuery = supabase.from('despesas').select('*, obras(nome)').order('data', { ascending: false });

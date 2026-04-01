@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useObrasFiltered } from '@/hooks/useObrasFiltered';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -49,6 +50,8 @@ export default function ObraDetail() {
   const [deleteObraBlocked, setDeleteObraBlocked] = useState(false);
   const [deleteObraMsg, setDeleteObraMsg] = useState('');
 
+  const { isObraAllowed, loading: obrasFilterLoading } = useObrasFiltered();
+
   useEffect(() => {
     if (!id) return;
     fetchData();
@@ -62,6 +65,13 @@ export default function ObraDetail() {
       .select('*, clientes(nome)')
       .eq('id', id!)
       .single();
+
+    if (obraData && !isObraAllowed(obraData.id)) {
+      setObra(null);
+      setLoading(false);
+      return;
+    }
+
     setObra(obraData);
 
 
@@ -214,7 +224,12 @@ export default function ObraDetail() {
   };
 
   if (loading) return <div className="flex justify-center py-12"><div className="animate-spin h-8 w-8 border-4 border-accent border-t-transparent rounded-full" /></div>;
-  if (!obra) return <p>Obra não encontrada</p>;
+  if (!obra) return (
+    <div className="flex flex-col items-center justify-center py-12 gap-4">
+      <p className="text-muted-foreground">Obra não encontrada ou acesso não autorizado.</p>
+      <Link to="/dashboard" className="text-sm text-primary hover:underline">Voltar ao Dashboard</Link>
+    </div>
+  );
 
   const statusLabels: Record<string, string> = { planejamento: 'Planejamento', andamento: 'Em andamento', concluida: 'Concluída' };
   const atrasadas = parcelas.filter(p => p.status === 'atrasado').length;

@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useObrasFiltered } from '@/hooks/useObrasFiltered';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -52,6 +53,7 @@ const statusColors: Record<string, string> = {
 
 export default function Cronograma() {
   const { canEdit } = useAuth();
+  const { filterObras } = useObrasFiltered();
   const [searchParams, setSearchParams] = useSearchParams();
   const obraIdParam = searchParams.get('obra');
 
@@ -76,7 +78,7 @@ export default function Cronograma() {
   // Fetch obras
   useEffect(() => {
     supabase.from('obras').select('id, nome').order('nome').then(({ data }) => {
-      setObras((data || []) as { id: string; nome: string }[]);
+      setObras(filterObras((data || []) as { id: string; nome: string }[]));
     });
   }, []);
 
