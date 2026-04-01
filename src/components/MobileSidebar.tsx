@@ -39,7 +39,7 @@ export default function MobileSidebar() {
     <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-sidebar border-b border-sidebar-border">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
-          <img src={logoJa} alt="J&A GestãoPro" className="h-10 w-10 rounded-lg object-contain" />
+          <img src={logoJa} alt="J&A GestãoPro" className="h-12 w-auto max-w-[100px] rounded-lg object-contain p-0.5" />
           <h1 className="font-display text-sm font-bold text-sidebar-foreground">J&A Engenharia</h1>
         </div>
 
