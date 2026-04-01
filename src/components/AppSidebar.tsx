@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import logoJa from '@/assets/logo-ja-gestaopro.jpeg';
+import { useEmpresaNome } from '@/hooks/useEmpresaNome';
 
 const navItemsAll = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
