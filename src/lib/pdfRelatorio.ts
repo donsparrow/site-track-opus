@@ -64,8 +64,10 @@ async function loadImageAsDataUrl(url: string): Promise<string | null> {
           canvas.height = img.naturalHeight;
           const ctx = canvas.getContext('2d');
           if (ctx) {
+            // Use transparent background (PNG) to preserve logo transparency
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0);
-            resolve(canvas.toDataURL('image/jpeg', 0.85));
+            resolve(canvas.toDataURL('image/png'));
           } else {
             resolve(null);
           }
@@ -138,31 +140,46 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
       return 20;
     }
     let hx = MARGIN;
+    const logoMaxH = 18; // mm
+    const logoMaxW = 30; // mm
     if (logoDataUrl) {
       try {
-        doc.addImage(logoDataUrl, 'JPEG', MARGIN, 8, 18, 18);
-        hx = MARGIN + 22;
+        // Calculate proportional logo size
+        const tmpImg = new Image();
+        tmpImg.src = logoDataUrl;
+        const ratio = tmpImg.naturalWidth / tmpImg.naturalHeight;
+        let logoW = logoMaxH * ratio;
+        let logoH = logoMaxH;
+        if (logoW > logoMaxW) {
+          logoW = logoMaxW;
+          logoH = logoMaxW / ratio;
+        }
+        doc.addImage(logoDataUrl, 'PNG', MARGIN, 6, logoW, logoH);
+        hx = MARGIN + logoW + 4;
       } catch { /* skip */ }
     }
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
-    doc.text(emp.nome_empresa || '', hx, 15);
+    doc.text(emp.nome_empresa || '', hx, 14);
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(80);
-    const infoLine = [
+    const infoParts = [
       emp.cnpj ? `CNPJ: ${emp.cnpj}` : '',
       emp.telefone ? `Tel: ${emp.telefone}` : '',
       emp.email || '',
-    ].filter(Boolean).join('  |  ');
-    doc.text(infoLine, hx, 20);
+    ].filter(Boolean);
+    doc.text(infoParts.join('  |  '), hx, 19);
+    if (emp.endereco) {
+      doc.text(emp.endereco, hx, 23);
+    }
     doc.setTextColor(0);
     doc.setDrawColor(BLUE[0], BLUE[1], BLUE[2]);
     doc.setLineWidth(0.5);
-    doc.line(MARGIN, 25, pageW - MARGIN, 25);
+    doc.line(MARGIN, 27, pageW - MARGIN, 27);
     doc.setLineWidth(0.2);
-    return 30;
+    return 32;
   };
 
   const addFooter = (pageNum?: number) => {
@@ -171,7 +188,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     doc.line(MARGIN, footerY - 4, pageW - MARGIN, footerY - 4);
     doc.setFontSize(7);
     doc.setTextColor(120);
-    doc.text(`${siteTxt} | ${instaTxt}`, pageW / 2, footerY, { align: 'center' });
+    doc.text(`${siteTxt} | ${instaTxt}`, MARGIN, footerY);
     if (pageNum) {
       doc.text(`Página ${pageNum}`, pageW - MARGIN, footerY, { align: 'right' });
     }
@@ -189,7 +206,6 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   const checkPage = (needed: number) => {
     if (y + needed > pageH - 18) {
-      addFooter(currentPage);
       newPage();
     }
   };
@@ -233,7 +249,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   let coverY = 40;
   if (logoDataUrl) {
     try {
-      doc.addImage(logoDataUrl, 'JPEG', pageW / 2 - 20, coverY, 40, 40);
+      doc.addImage(logoDataUrl, 'PNG', pageW / 2 - 20, coverY, 40, 40);
       coverY += 48;
     } catch {
       coverY += 10;
@@ -301,8 +317,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     coverY += 8;
   });
 
-  // Cover footer
-  addFooter();
+  // Footer added in final pass
 
   // =========== PAGE 2+: CONTENT ===========
 
@@ -421,7 +436,6 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   // =========== PHOTO SECTION ===========
   if (data.imagens.length > 0) {
-    addFooter(currentPage);
     newPage();
     sectionTitle('9. REGISTRO FOTOGRÁFICO');
 
@@ -445,7 +459,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
             // Draw border
             doc.setDrawColor(200);
             doc.rect(xPos, y, imgW, imgH);
-            doc.addImage(imgDataUrl, 'JPEG', xPos + 0.5, y + 0.5, imgW - 1, imgH - 1);
+            doc.addImage(imgDataUrl, 'PNG', xPos + 0.5, y + 0.5, imgW - 1, imgH - 1);
           }
         } catch {
           // Draw placeholder
@@ -474,7 +488,6 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   // =========== REVISION HISTORY ===========
   if (data.versoes && data.versoes.length > 0) {
-    addFooter(currentPage);
     newPage();
     sectionTitle('10. HISTÓRICO DE REVISÕES');
     autoTable(doc, {
@@ -491,7 +504,6 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   }
 
   // =========== SIGNATURES ===========
-  addFooter(currentPage);
   newPage();
   sectionTitle('11. ASSINATURAS');
   y += 5;
@@ -609,14 +621,12 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     y += 10;
   }
 
-  // Add footer to last page
-  addFooter(currentPage);
-
-  // Add footers to all intermediate pages (cover already has footer)
+  // Add footers to all pages (single pass, no duplicates)
   const totalPages = doc.getNumberOfPages();
-  for (let i = 2; i < totalPages; i++) {
+  for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    addFooter(i - 1); // page numbering starts at 1 after cover
+    // Cover page (page 1) gets no page number, content pages get numbered
+    addFooter(i === 1 ? undefined : i - 1);
   }
 
   const hoje = new Date();
