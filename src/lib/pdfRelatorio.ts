@@ -505,7 +505,6 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   }
 
   // =========== SIGNATURES ===========
-  addFooter(currentPage);
   newPage();
   sectionTitle('11. ASSINATURAS');
   y += 5;
