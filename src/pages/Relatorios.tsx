@@ -54,6 +54,7 @@ export default function Relatorios() {
   const [allMateriais, setAllMateriais] = useState<any[]>([]);
   const [allOcorrencias, setAllOcorrencias] = useState<any[]>([]);
   const [allImagens, setAllImagens] = useState<any[]>([]);
+  const [cronogramaAtividades, setCronogramaAtividades] = useState<any[]>([]);
   const [paralisacoes, setParalisacoes] = useState<any[]>([]);
 
   // Versions & signatures
