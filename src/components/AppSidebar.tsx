@@ -38,7 +38,7 @@ export default function AppSidebar() {
         </div>
         <div>
           <h1 className="font-display text-base font-bold text-sidebar-foreground">J&A Engenharia</h1>
-          <p className="text-xs text-sidebar-foreground/60 capitalize">{role || 'carregando...'}</p>
+          <p className="text-xs text-sidebar-foreground/60 capitalize">{{ super_admin: 'Adm. Geral', admin: 'Diretor', trabalhador: 'Funcionário', sindico: 'Síndico', cliente: 'Cliente' }[role || ''] || 'carregando...'}</p>
         </div>
       </div>
 
