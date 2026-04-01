@@ -216,10 +216,17 @@ export default function Usuarios() {
     setObras(data || []);
   };
 
+  const fetchEmpresas = async () => {
+    if (!isSuperAdmin) return;
+    const { data } = await supabase.from('empresas').select('id, nome').order('nome');
+    setEmpresas(data || []);
+  };
+
   useEffect(() => {
     if (isAdmin) {
       fetchUsers();
       fetchObras();
+      fetchEmpresas();
     }
   }, [isAdmin, empresaId, isSuperAdmin]);
 
