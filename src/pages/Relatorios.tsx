@@ -44,8 +44,7 @@ export default function Relatorios() {
   const [periodoInicio, setPeriodoInicio] = useState('');
   const [periodoFim, setPeriodoFim] = useState('');
 
-  // Editable prazo contratual
-  const [prazoContratualManual, setPrazoContratualManual] = useState<number | null>(null);
+  // Prazo contratual comes from obra (read-only)
 
   // Computed data
   const [prazos, setPrazos] = useState({ contratual: 0, parados: 0, ajustado: 0, trabalhados: 0, saldo: 0 });
