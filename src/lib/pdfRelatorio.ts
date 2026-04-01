@@ -36,6 +36,7 @@ interface RelatorioPDFData {
   materiais: any[];
   ocorrencias: any[];
   imagens: any[];
+  cronograma: { nome_atividade: string; data_inicio: string | null; data_fim: string | null; percentual_concluido: number; status: string }[];
   assinaturas: any[];
   versao?: number;
   versoes?: { rev: string; data: string; resumo: string }[];
