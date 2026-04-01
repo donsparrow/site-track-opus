@@ -37,10 +37,6 @@ export default function Empresas() {
   const [selected, setSelected] = useState<Empresa | null>(null);
   const [editForm, setEditForm] = useState({ nome: '', cnpj: '', email: '', plano: 'basico', status: 'ativo' });
 
-  if (role !== 'super_admin') {
-    return <Navigate to="/dashboard" replace />;
-  }
-
   const fetchEmpresas = async () => {
     setLoading(true);
     const { data: empresasData } = await supabase
