@@ -556,7 +556,8 @@ export default function Financeiro() {
           />
         </TabsContent>
 
-          <div className="flex justify-between items-center mb-4">
+        <TabsContent value="receitas">
+
             <h2 className="text-lg font-display font-semibold">Receitas</h2>
             {canEdit && (
               <Button onClick={() => setReceitaOpen(true)} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90">
