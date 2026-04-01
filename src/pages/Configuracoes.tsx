@@ -23,7 +23,6 @@ export default function Configuracoes() {
     logo_url: '',
     site: '',
     instagram: '',
-    texto_rodape: '',
   });
 
   useEffect(() => {
