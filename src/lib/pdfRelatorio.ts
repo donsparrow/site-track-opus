@@ -156,12 +156,9 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     let hx = MARGIN;
     const logoMaxH = 18; // mm
     const logoMaxW = 30; // mm
-    if (logoDataUrl) {
+    if (logoDataUrl && logoNatW > 0 && logoNatH > 0) {
       try {
-        // Calculate proportional logo size
-        const tmpImg = new Image();
-        tmpImg.src = logoDataUrl;
-        const ratio = tmpImg.naturalWidth / tmpImg.naturalHeight;
+        const ratio = logoNatW / logoNatH;
         let logoW = logoMaxH * ratio;
         let logoH = logoMaxH;
         if (logoW > logoMaxW) {
