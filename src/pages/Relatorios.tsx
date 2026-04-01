@@ -134,12 +134,11 @@ export default function Relatorios() {
     }
 
     const obra = obras.find(o => o.id === selectedObra);
-    let prazoContratual = prazoContratualManual;
-    if (prazoContratual === null) {
-      prazoContratual = obra?.data_inicio && obra?.data_fim_prevista
+    const prazoContratual = (obra?.prazo_contratual_dias && obra.prazo_contratual_dias > 0)
+      ? obra.prazo_contratual_dias
+      : (obra?.data_inicio && obra?.data_fim_prevista
         ? calcBusinessDays(obra.data_inicio, obra.data_fim_prevista)
-        : 0;
-    }
+        : 0);
 
     let diasParados = 0;
     if (diarioIds.length > 0) {
