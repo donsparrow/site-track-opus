@@ -50,6 +50,8 @@ export default function ObraDetail() {
   const [deleteObraBlocked, setDeleteObraBlocked] = useState(false);
   const [deleteObraMsg, setDeleteObraMsg] = useState('');
 
+  const { isObraAllowed, loading: obrasFilterLoading } = useObrasFiltered();
+
   useEffect(() => {
     if (!id) return;
     fetchData();
@@ -63,6 +65,13 @@ export default function ObraDetail() {
       .select('*, clientes(nome)')
       .eq('id', id!)
       .single();
+
+    if (obraData && !isObraAllowed(obraData.id)) {
+      setObra(null);
+      setLoading(false);
+      return;
+    }
+
     setObra(obraData);
 
 

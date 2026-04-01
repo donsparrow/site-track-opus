@@ -111,7 +111,7 @@ export default function Financeiro() {
   const fetchData = async () => {
     setLoading(true);
     const { data: obrasData } = await supabase.from('obras').select('id, nome').order('nome');
-    setObras(obrasData || []);
+    setObras(filterObras(obrasData || []));
 
     let rQuery = supabase.from('receitas').select('*, obras(nome)').order('created_at', { ascending: false });
     let dQuery = supabase.from('despesas').select('*, obras(nome)').order('data', { ascending: false });
