@@ -125,10 +125,24 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   const siteTxt = emp.site || 'www.engenhariajf.com.br';
   const instaTxt = emp.instagram || '@engenhariajf';
 
-  // Pre-load logo
+  // Pre-load logo and cache dimensions
   let logoDataUrl: string | null = null;
+  let logoNatW = 0;
+  let logoNatH = 0;
   if (emp.logo_url) {
     logoDataUrl = await loadImageAsDataUrl(emp.logo_url);
+    if (logoDataUrl) {
+      await new Promise<void>((resolve) => {
+        const tmpImg = new Image();
+        tmpImg.onload = () => {
+          logoNatW = tmpImg.naturalWidth;
+          logoNatH = tmpImg.naturalHeight;
+          resolve();
+        };
+        tmpImg.onerror = () => resolve();
+        tmpImg.src = logoDataUrl!;
+      });
+    }
   }
 
   // =========== HELPER FUNCTIONS ===========
