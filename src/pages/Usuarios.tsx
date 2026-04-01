@@ -329,6 +329,20 @@ export default function Usuarios() {
       toast.error('Nome é obrigatório');
       return;
     }
+    if (editTipo === 'super_admin' && !isSuperAdmin) {
+      toast.error('Apenas Administrador Geral pode promover a Administrador Geral');
+      return;
+    }
+    // Find current role of edited user
+    const editedUser = users.find(u => u.user_id === editUserId);
+    if (editedUser?.role === 'super_admin' && editTipo !== 'super_admin') {
+      // Check if this is the last super_admin
+      const superAdminCount = users.filter(u => u.role === 'super_admin').length;
+      if (superAdminCount <= 1) {
+        toast.error('Não é possível remover o último Administrador Geral do sistema');
+        return;
+      }
+    }
     setEditSaving(true);
     try {
       const { error: profileError } = await supabase
