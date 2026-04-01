@@ -14,6 +14,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   canEdit: boolean;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   empresaId: string | null;
   refreshEmpresa: () => Promise<void>;
 }
