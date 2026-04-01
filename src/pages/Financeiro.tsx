@@ -96,6 +96,9 @@ export default function Financeiro() {
   const [receberReceitaId, setReceberReceitaId] = useState<string | null>(null);
   const [receberFormaPgto, setReceberFormaPgto] = useState('pix');
 
+  // Parcelas recebidas para extrato
+  const [parcelasRecebidas, setParcelasRecebidas] = useState<any[]>([]);
+
   const isAdmin = role === 'admin';
 
   const fetchAnexos = async () => {
