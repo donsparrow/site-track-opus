@@ -16,6 +16,7 @@ import Cronograma from "./pages/Cronograma";
 import Clientes from "./pages/Clientes";
 import Usuarios from "./pages/Usuarios";
 import Documentacao from "./pages/Documentacao";
+import Empresas from "./pages/Empresas";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
               <Route path="/clientes" element={<Clientes />} />
               <Route path="/documentacao" element={<Documentacao />} />
               <Route path="/usuarios" element={<Usuarios />} />
+              <Route path="/empresas" element={<Empresas />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

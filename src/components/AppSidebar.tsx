@@ -7,7 +7,8 @@ import {
 import { cn } from '@/lib/utils';
 
 const navItemsAll = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'trabalhador', 'cliente', 'sindico'] },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
+  { to: '/empresas', label: 'Empresas', icon: Building2, roles: ['super_admin'] },
   { to: '/clientes', label: 'Clientes', icon: UserCircle, roles: ['admin', 'trabalhador'] },
   { to: '/financeiro', label: 'Financeiro', icon: Wallet, roles: ['admin', 'trabalhador'] },
   { to: '/diario', label: 'Diário de Obra', icon: ClipboardList, roles: ['admin', 'trabalhador'] },

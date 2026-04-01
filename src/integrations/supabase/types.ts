@@ -820,22 +820,31 @@ export type Database = {
         Row: {
           cnpj: string | null
           created_at: string
+          email: string | null
           id: string
           nome: string
+          plano: string
+          status: string
           updated_at: string
         }
         Insert: {
           cnpj?: string | null
           created_at?: string
+          email?: string | null
           id?: string
           nome: string
+          plano?: string
+          status?: string
           updated_at?: string
         }
         Update: {
           cnpj?: string | null
           created_at?: string
+          email?: string | null
           id?: string
           nome?: string
+          plano?: string
+          status?: string
           updated_at?: string
         }
         Relationships: []
@@ -1482,7 +1491,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "trabalhador" | "sindico" | "cliente"
+      app_role: "admin" | "trabalhador" | "sindico" | "cliente" | "super_admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1610,7 +1619,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "trabalhador", "sindico", "cliente"],
+      app_role: ["admin", "trabalhador", "sindico", "cliente", "super_admin"],
     },
   },
 } as const
