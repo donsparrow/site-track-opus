@@ -24,6 +24,7 @@ const navItemsAll = [
 export default function AppSidebar() {
   const { signOut, role, isAdmin, user } = useAuth();
   const navigate = useNavigate();
+  const empresaNome = useEmpresaNome();
 
   const handleLogout = async () => {
     await signOut();
