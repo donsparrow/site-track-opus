@@ -11,10 +11,25 @@ import autoTable from 'jspdf-autotable';
 import { downloadPdf } from '@/lib/pdfDownload';
 import { toast } from 'sonner';
 
+interface ParcelaRecebida {
+  id: string;
+  valor: number;
+  data_recebimento: string;
+  receita_descricao: string;
+  obra_nome: string;
+}
+
+interface DespesaItem {
+  id: string;
+  valor: number;
+  data: string;
+  descricao: string;
+  obra_nome: string;
+}
+
 interface ExtratoFinanceiroProps {
-  receitas: any[];
-  despesas: any[];
-  filterObra: string;
+  parcelasRecebidas: ParcelaRecebida[];
+  despesas: DespesaItem[];
 }
 
 interface ExtratoItem {
@@ -28,21 +43,20 @@ interface ExtratoItem {
 
 const fmt = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
-export default function ExtratoFinanceiro({ receitas, despesas, filterObra }: ExtratoFinanceiroProps) {
+export default function ExtratoFinanceiro({ parcelasRecebidas, despesas }: ExtratoFinanceiroProps) {
   const [dataInicio, setDataInicio] = useState('');
   const [dataFim, setDataFim] = useState('');
 
-  // Build all entries sorted by date
   const allEntries = useMemo(() => {
     const entries: Omit<ExtratoItem, 'saldo'>[] = [];
 
-    receitas.forEach(r => {
+    parcelasRecebidas.forEach(p => {
       entries.push({
-        data: r.created_at?.split('T')[0] || '',
+        data: p.data_recebimento,
         tipo: 'receita',
-        descricao: r.descricao,
-        obra: r.obras?.nome || '—',
-        valor: Number(r.valor_total),
+        descricao: p.receita_descricao,
+        obra: p.obra_nome,
+        valor: Number(p.valor),
       });
     });
 
@@ -51,27 +65,24 @@ export default function ExtratoFinanceiro({ receitas, despesas, filterObra }: Ex
         data: d.data,
         tipo: 'despesa',
         descricao: d.descricao,
-        obra: d.obras?.nome || '—',
+        obra: d.obra_nome,
         valor: Number(d.valor),
       });
     });
 
     entries.sort((a, b) => a.data.localeCompare(b.data));
     return entries;
-  }, [receitas, despesas]);
+  }, [parcelasRecebidas, despesas]);
 
-  // Split into before-period and in-period
   const { saldoAnterior, extrato, totalReceitas, totalDespesas } = useMemo(() => {
     let saldoAnterior = 0;
     const filtered: ExtratoItem[] = [];
     let totR = 0;
     let totD = 0;
-
     let runningBalance = 0;
 
     for (const entry of allEntries) {
       const amount = entry.tipo === 'receita' ? entry.valor : -entry.valor;
-
       const beforeStart = dataInicio && entry.data < dataInicio;
       const afterEnd = dataFim && entry.data > dataFim;
 
@@ -119,7 +130,7 @@ export default function ExtratoFinanceiro({ receitas, despesas, filterObra }: Ex
       subtitleY += 6;
     }
 
-    doc.text(`Total Receitas: ${fmt(totalReceitas)} | Total Despesas: ${fmt(totalDespesas)} | Saldo: ${fmt(saldoPeriodo)}`, 14, subtitleY);
+    doc.text(`Total Recebido: ${fmt(totalReceitas)} | Total Pago: ${fmt(totalDespesas)} | Saldo: ${fmt(saldoPeriodo)}`, 14, subtitleY);
     subtitleY += 4;
 
     autoTable(doc, {
@@ -154,7 +165,6 @@ export default function ExtratoFinanceiro({ receitas, despesas, filterObra }: Ex
 
   return (
     <div className="space-y-6">
-      {/* Filtro por período */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-wrap items-end gap-4">
@@ -180,7 +190,6 @@ export default function ExtratoFinanceiro({ receitas, despesas, filterObra }: Ex
         </CardContent>
       </Card>
 
-      {/* Resumo */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {dataInicio && (
           <Card>
@@ -196,7 +205,7 @@ export default function ExtratoFinanceiro({ receitas, despesas, filterObra }: Ex
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Receitas do Período</p>
+                <p className="text-xs text-muted-foreground">Total Recebido</p>
                 <p className="text-xl font-display font-bold text-success">{fmt(totalReceitas)}</p>
               </div>
               <TrendingUp className="h-6 w-6 text-success" />
@@ -207,7 +216,7 @@ export default function ExtratoFinanceiro({ receitas, despesas, filterObra }: Ex
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs text-muted-foreground">Despesas do Período</p>
+                <p className="text-xs text-muted-foreground">Total Pago</p>
                 <p className="text-xl font-display font-bold text-destructive">{fmt(totalDespesas)}</p>
               </div>
               <TrendingDown className="h-6 w-6 text-destructive" />
@@ -229,7 +238,6 @@ export default function ExtratoFinanceiro({ receitas, despesas, filterObra }: Ex
         </Card>
       </div>
 
-      {/* Tabela extrato */}
       <Card>
         <CardContent className="p-0">
           <Table>
