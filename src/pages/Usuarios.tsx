@@ -225,6 +225,10 @@ export default function Usuarios() {
       toast.error('Senha deve ter no mínimo 6 caracteres');
       return;
     }
+    if (novoTipo === 'super_admin' && !isSuperAdmin) {
+      toast.error('Apenas Administrador Geral pode criar outro Administrador Geral');
+      return;
+    }
     setSaving(true);
     try {
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -325,6 +329,20 @@ export default function Usuarios() {
       toast.error('Nome é obrigatório');
       return;
     }
+    if (editTipo === 'super_admin' && !isSuperAdmin) {
+      toast.error('Apenas Administrador Geral pode promover a Administrador Geral');
+      return;
+    }
+    // Find current role of edited user
+    const editedUser = users.find(u => u.user_id === editUserId);
+    if (editedUser?.role === 'super_admin' && editTipo !== 'super_admin') {
+      // Check if this is the last super_admin
+      const superAdminCount = users.filter(u => u.role === 'super_admin').length;
+      if (superAdminCount <= 1) {
+        toast.error('Não é possível remover o último Administrador Geral do sistema');
+        return;
+      }
+    }
     setEditSaving(true);
     try {
       const { error: profileError } = await supabase
@@ -409,6 +427,21 @@ export default function Usuarios() {
   };
 
   const handleDeleteUser = async () => {
+    // Prevent deleting a super_admin if not super_admin
+    const targetUser = users.find(u => u.user_id === deleteUserId);
+    if (targetUser?.role === 'super_admin' && !isSuperAdmin) {
+      toast.error('Apenas Administrador Geral pode excluir outro Administrador Geral');
+      setDeleteDialogOpen(false);
+      return;
+    }
+    if (targetUser?.role === 'super_admin') {
+      const superAdminCount = users.filter(u => u.role === 'super_admin').length;
+      if (superAdminCount <= 1) {
+        toast.error('Não é possível excluir o último Administrador Geral do sistema');
+        setDeleteDialogOpen(false);
+        return;
+      }
+    }
     setDeleting(true);
     try {
       const response = await supabase.functions.invoke('admin-delete-user', {
@@ -611,6 +644,7 @@ export default function Usuarios() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  {isSuperAdmin && <SelectItem value="super_admin">Administrador Geral</SelectItem>}
                   <SelectItem value="admin">Diretor</SelectItem>
                   <SelectItem value="trabalhador">Funcionário</SelectItem>
                   <SelectItem value="sindico">Síndico</SelectItem>
@@ -674,6 +708,7 @@ export default function Usuarios() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  {isSuperAdmin && <SelectItem value="super_admin">Administrador Geral</SelectItem>}
                   <SelectItem value="admin">Diretor</SelectItem>
                   <SelectItem value="trabalhador">Funcionário</SelectItem>
                   <SelectItem value="sindico">Síndico</SelectItem>
