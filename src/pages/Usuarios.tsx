@@ -219,7 +219,7 @@ export default function Usuarios() {
       fetchUsers();
       fetchObras();
     }
-  }, [isAdmin]);
+  }, [isAdmin, empresaId, isSuperAdmin]);
 
   if (!isAdmin) return <Navigate to="/dashboard" replace />;
 
