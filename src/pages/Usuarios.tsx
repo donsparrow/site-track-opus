@@ -611,6 +611,7 @@ export default function Usuarios() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  {isSuperAdmin && <SelectItem value="super_admin">Administrador Geral</SelectItem>}
                   <SelectItem value="admin">Diretor</SelectItem>
                   <SelectItem value="trabalhador">Funcionário</SelectItem>
                   <SelectItem value="sindico">Síndico</SelectItem>
