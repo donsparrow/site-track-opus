@@ -140,31 +140,46 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
       return 20;
     }
     let hx = MARGIN;
+    const logoMaxH = 18; // mm
+    const logoMaxW = 30; // mm
     if (logoDataUrl) {
       try {
-        doc.addImage(logoDataUrl, 'JPEG', MARGIN, 8, 18, 18);
-        hx = MARGIN + 22;
+        // Calculate proportional logo size
+        const tmpImg = new Image();
+        tmpImg.src = logoDataUrl;
+        const ratio = tmpImg.naturalWidth / tmpImg.naturalHeight;
+        let logoW = logoMaxH * ratio;
+        let logoH = logoMaxH;
+        if (logoW > logoMaxW) {
+          logoW = logoMaxW;
+          logoH = logoMaxW / ratio;
+        }
+        doc.addImage(logoDataUrl, 'PNG', MARGIN, 6, logoW, logoH);
+        hx = MARGIN + logoW + 4;
       } catch { /* skip */ }
     }
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
-    doc.text(emp.nome_empresa || '', hx, 15);
+    doc.text(emp.nome_empresa || '', hx, 14);
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(80);
-    const infoLine = [
+    const infoParts = [
       emp.cnpj ? `CNPJ: ${emp.cnpj}` : '',
       emp.telefone ? `Tel: ${emp.telefone}` : '',
       emp.email || '',
-    ].filter(Boolean).join('  |  ');
-    doc.text(infoLine, hx, 20);
+    ].filter(Boolean);
+    doc.text(infoParts.join('  |  '), hx, 19);
+    if (emp.endereco) {
+      doc.text(emp.endereco, hx, 23);
+    }
     doc.setTextColor(0);
     doc.setDrawColor(BLUE[0], BLUE[1], BLUE[2]);
     doc.setLineWidth(0.5);
-    doc.line(MARGIN, 25, pageW - MARGIN, 25);
+    doc.line(MARGIN, 27, pageW - MARGIN, 27);
     doc.setLineWidth(0.2);
-    return 30;
+    return 32;
   };
 
   const addFooter = (pageNum?: number) => {
