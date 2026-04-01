@@ -188,7 +188,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     doc.line(MARGIN, footerY - 4, pageW - MARGIN, footerY - 4);
     doc.setFontSize(7);
     doc.setTextColor(120);
-    doc.text(`${siteTxt} | ${instaTxt}`, pageW / 2, footerY, { align: 'center' });
+    doc.text(`${siteTxt} | ${instaTxt}`, MARGIN, footerY);
     if (pageNum) {
       doc.text(`Página ${pageNum}`, pageW - MARGIN, footerY, { align: 'right' });
     }
