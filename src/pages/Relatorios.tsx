@@ -232,7 +232,7 @@ export default function Relatorios() {
     setSaving(true);
 
     try {
-      const prazoVal = prazoContratualManual !== null ? prazoContratualManual : prazos.contratual;
+      const prazoVal = prazos.contratual;
       await supabase.from('relatorios').update({
         prazo_contratual_dias_uteis: prazoVal,
         dias_parados: prazos.parados,
