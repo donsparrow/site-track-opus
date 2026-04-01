@@ -11,14 +11,14 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 const navItemsAll = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
   { to: '/empresas', label: 'Empresas', icon: Building2, roles: ['super_admin'] },
-  { to: '/clientes', label: 'Clientes', icon: UserCircle, roles: ['admin', 'trabalhador'] },
-  { to: '/financeiro', label: 'Financeiro', icon: Wallet, roles: ['admin', 'trabalhador'] },
-  { to: '/diario', label: 'Diário de Obra', icon: ClipboardList, roles: ['admin', 'trabalhador'] },
-  { to: '/cronograma', label: 'Cronograma', icon: CalendarRange, roles: ['admin', 'trabalhador', 'cliente', 'sindico'] },
-  { to: '/relatorios', label: 'Relatórios', icon: FileText, roles: ['admin', 'trabalhador', 'cliente', 'sindico'] },
-  { to: '/documentacao', label: 'Documentação', icon: FolderOpen, roles: ['admin', 'trabalhador', 'cliente', 'sindico'] },
-  { to: '/usuarios', label: 'Usuários', icon: Users, roles: ['admin'] },
-  { to: '/configuracoes', label: 'Configurações', icon: Settings, roles: ['admin'] },
+  { to: '/clientes', label: 'Clientes', icon: UserCircle, roles: ['admin', 'trabalhador', 'super_admin'] },
+  { to: '/financeiro', label: 'Financeiro', icon: Wallet, roles: ['admin', 'trabalhador', 'super_admin'] },
+  { to: '/diario', label: 'Diário de Obra', icon: ClipboardList, roles: ['admin', 'trabalhador', 'super_admin'] },
+  { to: '/cronograma', label: 'Cronograma', icon: CalendarRange, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
+  { to: '/relatorios', label: 'Relatórios', icon: FileText, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
+  { to: '/documentacao', label: 'Documentação', icon: FolderOpen, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
+  { to: '/usuarios', label: 'Usuários', icon: Users, roles: ['admin', 'super_admin'] },
+  { to: '/configuracoes', label: 'Configurações', icon: Settings, roles: ['admin', 'super_admin'] },
 ];
 
 export default function MobileSidebar() {

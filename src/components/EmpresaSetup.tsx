@@ -9,12 +9,13 @@ import { toast } from 'sonner';
 import { Building2 } from 'lucide-react';
 
 export default function EmpresaSetup() {
-  const { user, isAdmin, empresaId, refreshEmpresa } = useAuth();
+  const { user, isAdmin, isSuperAdmin, empresaId, refreshEmpresa } = useAuth();
   const [nome, setNome] = useState('');
   const [cnpj, setCnpj] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const open = isAdmin && !empresaId;
+  // Super admin doesn't need an empresa to use the system
+  const open = isAdmin && !isSuperAdmin && !empresaId;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
