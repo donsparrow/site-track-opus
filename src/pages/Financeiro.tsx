@@ -542,7 +542,20 @@ export default function Financeiro() {
           <TabsTrigger value="notas">Notas Fiscais</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="receitas">
+        {/* EXTRATO TAB */}
+        <TabsContent value="extrato">
+          <ExtratoFinanceiro
+            parcelasRecebidas={parcelasRecebidas}
+            despesas={despesas.map(d => ({
+              id: d.id,
+              valor: Number(d.valor),
+              data: d.data,
+              descricao: d.descricao,
+              obra_nome: d.obras?.nome || '—',
+            }))}
+          />
+        </TabsContent>
+
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-display font-semibold">Receitas</h2>
             {canEdit && (
