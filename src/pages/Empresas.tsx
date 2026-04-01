@@ -65,8 +65,12 @@ export default function Empresas() {
   };
 
   useEffect(() => {
-    fetchEmpresas();
-  }, []);
+    if (role === 'super_admin') fetchEmpresas();
+  }, [role]);
+
+  if (role !== 'super_admin') {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleEdit = (empresa: Empresa) => {
     setSelected(empresa);
