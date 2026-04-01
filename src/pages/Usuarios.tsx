@@ -605,7 +605,7 @@ export default function Usuarios() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((u) => (
+                {filteredUsers.map((u) => (
                   <TableRow key={u.id}>
                     <TableCell className="font-medium">{u.nome || '—'}</TableCell>
                     <TableCell>{u.email || '—'}</TableCell>
@@ -614,6 +614,11 @@ export default function Usuarios() {
                         {roleLabels[u.role] || u.role}
                       </Badge>
                     </TableCell>
+                    {isSuperAdmin && (
+                      <TableCell>
+                        <span className="text-sm">{u.empresa_nome}</span>
+                      </TableCell>
+                    )}
                     <TableCell>
                       {u.obras_vinculadas?.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
