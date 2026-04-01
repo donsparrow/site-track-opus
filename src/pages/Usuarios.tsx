@@ -137,6 +137,8 @@ export default function Usuarios() {
   const { isAdmin, isSuperAdmin, user, empresaId } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
   const [obras, setObras] = useState<any[]>([]);
+  const [empresas, setEmpresas] = useState<any[]>([]);
+  const [filtroEmpresa, setFiltroEmpresa] = useState<string>('todas');
   const [loading, setLoading] = useState(true);
 
   // New user form
