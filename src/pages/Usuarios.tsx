@@ -137,6 +137,8 @@ export default function Usuarios() {
   const { isAdmin, isSuperAdmin, user, empresaId } = useAuth();
   const [users, setUsers] = useState<any[]>([]);
   const [obras, setObras] = useState<any[]>([]);
+  const [empresas, setEmpresas] = useState<any[]>([]);
+  const [filtroEmpresa, setFiltroEmpresa] = useState<string>('todas');
   const [loading, setLoading] = useState(true);
 
   // New user form
@@ -200,10 +202,23 @@ export default function Usuarios() {
     const { data: roles } = await supabase.from('user_roles').select('*');
     const { data: links } = await supabase.from('usuario_obras').select('*');
 
+    // Fetch empresas names for joining
+    let empresasMap: Record<string, string> = {};
+    if (isSuperAdmin) {
+      const { data: empData } = await supabase.from('empresas').select('id, nome');
+      (empData || []).forEach((e: any) => { empresasMap[e.id] = e.nome; });
+    }
+
     const merged = (profiles || []).map((p: any) => {
       const userRole = (roles || []).find((r: any) => r.user_id === p.user_id);
       const userLinks = (links || []).filter((l: any) => l.user_id === p.user_id);
-      return { ...p, role: userRole?.role || 'trabalhador', role_id: userRole?.id, obras_vinculadas: userLinks };
+      return {
+        ...p,
+        role: userRole?.role || 'trabalhador',
+        role_id: userRole?.id,
+        obras_vinculadas: userLinks,
+        empresa_nome: p.empresa_id ? (empresasMap[p.empresa_id] || '—') : 'Sem empresa',
+      };
     });
     setUsers(merged);
     setLoading(false);
@@ -214,10 +229,17 @@ export default function Usuarios() {
     setObras(data || []);
   };
 
+  const fetchEmpresas = async () => {
+    if (!isSuperAdmin) return;
+    const { data } = await supabase.from('empresas').select('id, nome').order('nome');
+    setEmpresas(data || []);
+  };
+
   useEffect(() => {
     if (isAdmin) {
       fetchUsers();
       fetchObras();
+      fetchEmpresas();
     }
   }, [isAdmin, empresaId, isSuperAdmin]);
 
@@ -530,6 +552,10 @@ export default function Usuarios() {
 
   const isFullAccessRole = (role: string) => role === 'super_admin' || role === 'admin';
 
+  const filteredUsers = isSuperAdmin && filtroEmpresa !== 'todas'
+    ? users.filter(u => u.empresa_id === filtroEmpresa)
+    : users;
+
   return (
     <div>
       <div className="mb-8 flex items-center justify-between">
@@ -542,6 +568,23 @@ export default function Usuarios() {
           Novo Usuário
         </Button>
       </div>
+
+      {isSuperAdmin && (
+        <div className="mb-4 flex items-center gap-3">
+          <Label className="text-sm font-medium">Filtrar por empresa:</Label>
+          <Select value={filtroEmpresa} onValueChange={setFiltroEmpresa}>
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder="Todas as empresas" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas as empresas</SelectItem>
+              {empresas.map(e => (
+                <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center py-12">
@@ -556,12 +599,13 @@ export default function Usuarios() {
                   <TableHead>Nome</TableHead>
                   <TableHead>E-mail (Login)</TableHead>
                   <TableHead>Tipo</TableHead>
+                  {isSuperAdmin && <TableHead>Empresa</TableHead>}
                   <TableHead>Obras Vinculadas</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((u) => (
+                {filteredUsers.map((u) => (
                   <TableRow key={u.id}>
                     <TableCell className="font-medium">{u.nome || '—'}</TableCell>
                     <TableCell>{u.email || '—'}</TableCell>
@@ -570,6 +614,11 @@ export default function Usuarios() {
                         {roleLabels[u.role] || u.role}
                       </Badge>
                     </TableCell>
+                    {isSuperAdmin && (
+                      <TableCell>
+                        <span className="text-sm">{u.empresa_nome}</span>
+                      </TableCell>
+                    )}
                     <TableCell>
                       {u.obras_vinculadas?.length > 0 ? (
                         <div className="flex flex-wrap gap-1">
