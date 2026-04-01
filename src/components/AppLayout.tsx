@@ -32,6 +32,9 @@ export default function AppLayout() {
       <div className="md:ml-64">
         <GlobalFooter />
       </div>
+
+      {/* Empresa setup modal for admin without empresa */}
+      <EmpresaSetup />
     </div>
   );
 }

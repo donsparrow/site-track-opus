@@ -121,7 +121,7 @@ export default function Usuarios() {
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: novoEmail,
         password: novoSenha,
-        options: { data: { nome: novoNome } },
+        options: { data: { nome: novoNome, empresa_id: empresaId } },
       });
 
       if (authError) throw authError;
