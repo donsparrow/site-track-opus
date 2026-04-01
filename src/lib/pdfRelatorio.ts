@@ -250,7 +250,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   let coverY = 40;
   if (logoDataUrl) {
     try {
-      doc.addImage(logoDataUrl, 'JPEG', pageW / 2 - 20, coverY, 40, 40);
+      doc.addImage(logoDataUrl, 'PNG', pageW / 2 - 20, coverY, 40, 40);
       coverY += 48;
     } catch {
       coverY += 10;
