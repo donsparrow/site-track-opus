@@ -196,6 +196,11 @@ export default function Relatorios() {
           criado_por: user.id,
           status: 'rascunho',
           descricao_alteracao: 'Criação do relatório',
+          snapshot_dados: {
+            prazos: { contratual: prazoContratual, parados: diasParados, ajustado: prazoAjustado, trabalhados: diasTrabalhados, saldo: saldoPrazo },
+            periodo: { inicio: periodoInicio, fim: periodoFim },
+            diarios_count: 0, equipe_count: 0, atividades_count: 0, materiais_count: 0, ocorrencias_count: 0, imagens_count: 0,
+          },
         });
         await supabase.from('relatorio_logs').insert({
           relatorio_id: relatorio.id,
