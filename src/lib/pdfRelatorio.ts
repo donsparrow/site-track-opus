@@ -459,7 +459,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
             // Draw border
             doc.setDrawColor(200);
             doc.rect(xPos, y, imgW, imgH);
-            doc.addImage(imgDataUrl, 'JPEG', xPos + 0.5, y + 0.5, imgW - 1, imgH - 1);
+            doc.addImage(imgDataUrl, 'PNG', xPos + 0.5, y + 0.5, imgW - 1, imgH - 1);
           }
         } catch {
           // Draw placeholder
