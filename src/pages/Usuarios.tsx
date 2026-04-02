@@ -192,15 +192,21 @@ export default function Usuarios() {
   const fetchUsers = async () => {
     setLoading(true);
     
-    // Filter by empresa_id for non-super_admin users
+    // Fetch profiles
     let profilesQuery = supabase.from('profiles').select('*').order('nome');
     if (!isSuperAdmin && empresaId) {
       profilesQuery = profilesQuery.eq('empresa_id', empresaId);
     }
     
-    const { data: profiles } = await profilesQuery;
-    const { data: roles } = await supabase.from('user_roles').select('*');
-    const { data: links } = await supabase.from('usuario_obras').select('*');
+    const [profilesRes, rolesRes, linksRes] = await Promise.all([
+      profilesQuery,
+      supabase.from('user_roles').select('*'),
+      supabase.from('usuario_obras').select('*'),
+    ]);
+
+    const profiles = profilesRes.data || [];
+    const roles = rolesRes.data || [];
+    const links = linksRes.data || [];
 
     // Fetch empresas names for joining
     let empresasMap: Record<string, string> = {};
@@ -209,9 +215,9 @@ export default function Usuarios() {
       (empData || []).forEach((e: any) => { empresasMap[e.id] = e.nome; });
     }
 
-    const merged = (profiles || []).map((p: any) => {
-      const userRole = (roles || []).find((r: any) => r.user_id === p.user_id);
-      const userLinks = (links || []).filter((l: any) => l.user_id === p.user_id);
+    const merged = profiles.map((p: any) => {
+      const userRole = roles.find((r: any) => r.user_id === p.user_id);
+      const userLinks = links.filter((l: any) => l.user_id === p.user_id);
       return {
         ...p,
         role: userRole?.role || 'trabalhador',
