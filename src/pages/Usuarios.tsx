@@ -646,7 +646,7 @@ export default function Usuarios() {
                       </TableCell>
                     )}
                     <TableCell>
-                      {u.obras_vinculadas?.length > 0 ? (
+                      {(u.obras_count || 0) > 0 ? (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -654,7 +654,7 @@ export default function Usuarios() {
                           onClick={() => openLinkDialog(u.user_id, u.nome)}
                           title="Ver obras vinculadas"
                         >
-                          {u.obras_vinculadas.length === 1 ? '1 obra' : `${u.obras_vinculadas.length} obras`}
+                          {u.obras_count === 1 ? '1 obra' : `${u.obras_count} obras`}
                         </Button>
                       ) : (
                         <span className="text-xs text-muted-foreground">0 obras</span>
