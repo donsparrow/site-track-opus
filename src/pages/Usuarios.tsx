@@ -192,15 +192,17 @@ export default function Usuarios() {
   const fetchUsers = async () => {
     setLoading(true);
     
-    // Filter by empresa_id for non-super_admin users
-    let profilesQuery = supabase.from('profiles').select('*').order('nome');
+    // Fetch profiles with linked obras via join
+    let profilesQuery = supabase
+      .from('profiles')
+      .select('*, usuario_obras(obra_id)')
+      .order('nome');
     if (!isSuperAdmin && empresaId) {
       profilesQuery = profilesQuery.eq('empresa_id', empresaId);
     }
     
     const { data: profiles } = await profilesQuery;
     const { data: roles } = await supabase.from('user_roles').select('*');
-    const { data: links } = await supabase.from('usuario_obras').select('user_id, obra_id');
 
     // Fetch empresas names for joining
     let empresasMap: Record<string, string> = {};
@@ -211,7 +213,7 @@ export default function Usuarios() {
 
     const merged = (profiles || []).map((p: any) => {
       const userRole = (roles || []).find((r: any) => r.user_id === p.user_id);
-      const userLinks = (links || []).filter((l: any) => l.user_id === p.user_id);
+      const userLinks = p.usuario_obras || [];
       return {
         ...p,
         role: userRole?.role || 'trabalhador',
