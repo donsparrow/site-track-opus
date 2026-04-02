@@ -198,15 +198,17 @@ export default function Usuarios() {
       profilesQuery = profilesQuery.eq('empresa_id', empresaId);
     }
     
-    const [profilesRes, rolesRes, linksRes] = await Promise.all([
+    const [profilesRes, rolesRes, linksRes, obrasRes] = await Promise.all([
       profilesQuery,
       supabase.from('user_roles').select('*'),
       supabase.from('usuario_obras').select('*'),
+      supabase.from('obras').select('id, empresa_id'),
     ]);
 
     const profiles = profilesRes.data || [];
     const roles = rolesRes.data || [];
     const links = linksRes.data || [];
+    const allObras = obrasRes.data || [];
 
     // Fetch empresas names for joining
     let empresasMap: Record<string, string> = {};
@@ -218,11 +220,29 @@ export default function Usuarios() {
     const merged = profiles.map((p: any) => {
       const userRole = roles.find((r: any) => r.user_id === p.user_id);
       const userLinks = links.filter((l: any) => l.user_id === p.user_id);
+      const userRoleName = userRole?.role || 'trabalhador';
+      
+      // Admin/trabalhador have access to all obras in their empresa
+      // Cliente/sindico only see linked obras
+      let obrasCount = 0;
+      if (userRoleName === 'super_admin') {
+        obrasCount = allObras.length;
+      } else if (userRoleName === 'admin' || userRoleName === 'trabalhador') {
+        obrasCount = p.empresa_id 
+          ? allObras.filter((o: any) => o.empresa_id === p.empresa_id).length 
+          : 0;
+      } else {
+        // cliente/sindico: only usuario_obras links
+        const linkedObraIds = new Set(userLinks.map((l: any) => l.obra_id));
+        obrasCount = linkedObraIds.size;
+      }
+
       return {
         ...p,
-        role: userRole?.role || 'trabalhador',
+        role: userRoleName,
         role_id: userRole?.id,
         obras_vinculadas: userLinks,
+        obras_count: obrasCount,
         empresa_nome: p.empresa_id ? (empresasMap[p.empresa_id] || '—') : 'Sem empresa',
       };
     });
@@ -626,7 +646,7 @@ export default function Usuarios() {
                       </TableCell>
                     )}
                     <TableCell>
-                      {u.obras_vinculadas?.length > 0 ? (
+                      {(u.obras_count || 0) > 0 ? (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -634,7 +654,7 @@ export default function Usuarios() {
                           onClick={() => openLinkDialog(u.user_id, u.nome)}
                           title="Ver obras vinculadas"
                         >
-                          {u.obras_vinculadas.length === 1 ? '1 obra' : `${u.obras_vinculadas.length} obras`}
+                          {u.obras_count === 1 ? '1 obra' : `${u.obras_count} obras`}
                         </Button>
                       ) : (
                         <span className="text-xs text-muted-foreground">0 obras</span>
