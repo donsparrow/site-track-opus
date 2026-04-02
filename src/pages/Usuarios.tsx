@@ -200,7 +200,7 @@ export default function Usuarios() {
     
     const { data: profiles } = await profilesQuery;
     const { data: roles } = await supabase.from('user_roles').select('*');
-    const { data: links } = await supabase.from('usuario_obras').select('*');
+    const { data: links } = await supabase.from('usuario_obras').select('user_id, obra_id');
 
     // Fetch empresas names for joining
     let empresasMap: Record<string, string> = {};
