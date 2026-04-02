@@ -621,18 +621,17 @@ export default function Usuarios() {
                     )}
                     <TableCell>
                       {u.obras_vinculadas?.length > 0 ? (
-                        <div className="flex flex-wrap gap-1">
-                          {u.obras_vinculadas.map((link: any) => {
-                            const obra = obras.find(o => o.id === link.obra_id);
-                            return (
-                              <Badge key={link.id || link.obra_id} variant="secondary" className="text-xs">
-                                {obra?.nome || 'Obra'}
-                              </Badge>
-                            );
-                          })}
-                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs px-2 py-1 h-auto underline-offset-2 hover:underline"
+                          onClick={() => openLinkDialog(u.user_id, u.nome)}
+                          title="Ver obras vinculadas"
+                        >
+                          {u.obras_vinculadas.length === 1 ? '1 obra' : `${u.obras_vinculadas.length} obras`}
+                        </Button>
                       ) : (
-                        <span className="text-xs text-muted-foreground">Nenhuma</span>
+                        <span className="text-xs text-muted-foreground">0 obras</span>
                       )}
                     </TableCell>
                     <TableCell>
