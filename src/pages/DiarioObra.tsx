@@ -140,7 +140,7 @@ export default function DiarioObra() {
     // Fetch equipe and atividades from last diary
     const [eqRes, atRes] = await Promise.all([
       supabase.from('diario_equipe').select('nome_funcionario, funcao, horas_trabalhadas').eq('diario_id', lastId),
-      supabase.from('diario_atividades').select('descricao, status').eq('diario_id', lastId),
+      supabase.from('diario_atividades').select('descricao, status, percentual').eq('diario_id', lastId),
     ]);
 
     const lastEquipe = eqRes.data || [];
