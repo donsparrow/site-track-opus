@@ -651,21 +651,25 @@ function InlineEquipeForm({ onSave, onCancel }: { onSave: (n: string, f: string,
   );
 }
 
-function InlineAtividadeForm({ onSave, onCancel }: { onSave: (d: string, s: string) => void; onCancel: () => void }) {
-  const [d, setD] = useState(''); const [s, setS] = useState('andamento');
+function InlineAtividadeForm({ onSave, onCancel }: { onSave: (d: string, s: string, p: number) => void; onCancel: () => void }) {
+  const [d, setD] = useState(''); const [p, setP] = useState(0);
+  const autoStatus = percentualToStatus(p);
   return (
-    <div className="flex gap-2 mb-3 p-2 bg-muted rounded">
-      <Input placeholder="Descrição" value={d} onChange={e => setD(e.target.value)} className="flex-1" />
-      <Select value={s} onValueChange={setS}>
-        <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="concluido">Concluído</SelectItem>
-          <SelectItem value="andamento">Em andamento</SelectItem>
-          <SelectItem value="nao iniciado">Não iniciado</SelectItem>
-        </SelectContent>
-      </Select>
-      <Button size="sm" onClick={() => d && onSave(d, s)}>OK</Button>
-      <Button size="sm" variant="ghost" onClick={onCancel}>✕</Button>
+    <div className="flex flex-col gap-2 mb-3 p-3 bg-muted rounded">
+      <div className="flex gap-2">
+        <Input placeholder="Descrição" value={d} onChange={e => setD(e.target.value)} className="flex-1" />
+        <Badge variant={autoStatus === 'concluido' ? 'default' : autoStatus === 'andamento' ? 'secondary' : 'outline'}>
+          {statusLabels[autoStatus]}
+        </Badge>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="text-xs text-muted-foreground w-8">{p}%</span>
+        <Slider value={[p]} onValueChange={v => setP(v[0])} min={0} max={100} step={5} className="flex-1" />
+      </div>
+      <div className="flex gap-2 justify-end">
+        <Button size="sm" onClick={() => d && onSave(d, autoStatus, p)}>OK</Button>
+        <Button size="sm" variant="ghost" onClick={onCancel}>✕</Button>
+      </div>
     </div>
   );
 }
