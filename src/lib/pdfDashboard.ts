@@ -220,8 +220,11 @@ export async function gerarDashboardPDF(data: DashboardPDFData) {
   doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
-   doc.text('RELATÓRIO EXECUTIVO GERAL', pageW / 2, coverY, { align: 'center' });
-   coverY += 20;
+  doc.text('RELATÓRIO EXECUTIVO', pageW / 2, coverY, { align: 'center' });
+  coverY += 8;
+  doc.setFontSize(14);
+  doc.text('DASHBOARD DA OBRA', pageW / 2, coverY, { align: 'center' });
+  coverY += 20;
 
   const statusLabels: Record<string, string> = {
     planejamento: 'Planejamento',
