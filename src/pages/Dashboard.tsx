@@ -148,16 +148,33 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-display font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Visão geral das suas obras</p>
         </div>
         {canEdit && (
-          <Button onClick={() => setDialogOpen(true)} className="bg-accent text-accent-foreground hover:bg-accent/90">
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Obra
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={() => {
+                if (obras.length === 1) {
+                  navigate(`/diario?obra=${obras[0].id}`);
+                } else {
+                  setSelectedObraDiario('');
+                  setDiarioDialogOpen(true);
+                }
+              }}
+              size="lg"
+              className="bg-accent text-accent-foreground hover:bg-accent/90 h-12 px-6 text-base"
+            >
+              <ClipboardList className="h-5 w-5 mr-2" />
+              Criar Diário
+            </Button>
+            <Button onClick={() => setDialogOpen(true)} className="bg-accent text-accent-foreground hover:bg-accent/90">
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Obra
+            </Button>
+          </div>
         )}
       </div>
 
