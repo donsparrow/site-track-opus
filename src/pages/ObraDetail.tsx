@@ -6,7 +6,8 @@ import { useObrasFiltered } from '@/hooks/useObrasFiltered';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ClipboardList, FileText, Clock, Timer, Download, Trash2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, ClipboardList, FileText, Clock, Timer, Download, Trash2, LayoutDashboard, CalendarDays, FolderOpen, History } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
@@ -282,165 +283,208 @@ export default function ObraDetail() {
         </div>
       </div>
 
-      {/* Prazo + Financial summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Prazo Contratual</p>
-            <p className="text-lg font-display font-bold text-foreground">{obra.prazo_contratual_dias != null ? `${obra.prazo_contratual_dias} dias` : '—'}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <p className="text-xs text-muted-foreground flex items-center gap-1"><Timer className="h-3 w-3" /> Saldo de Prazo</p>
-            <p className={`text-lg font-display font-bold ${saldoPrazo != null && saldoPrazo < 0 ? 'text-destructive' : 'text-success'}`}>
-              {saldoPrazo != null ? `${saldoPrazo} dias` : '—'}
-            </p>
-          </CardContent>
-        </Card>
-        {[
-          { label: 'Total Contrato', value: financeiro.contrato, color: 'text-foreground' },
-          { label: 'Recebido', value: financeiro.recebido, color: 'text-success' },
-          { label: 'A Receber', value: financeiro.aReceber, color: 'text-warning' },
-          { label: 'Gastos', value: financeiro.gasto, color: 'text-destructive' },
-          { label: 'Saldo', value: financeiro.saldo, color: financeiro.saldo < 0 ? 'text-destructive' : 'text-success' },
-        ].map((item) => (
-          <Card key={item.label}>
-            <CardContent className="pt-4 pb-4">
-              <p className="text-xs text-muted-foreground">{item.label}</p>
-              <p className={`text-lg font-display font-bold ${item.color}`}>{fmt(item.value)}</p>
+      {/* Tabs */}
+      <Tabs defaultValue="dashboard" className="w-full">
+        <TabsList className="mb-6 flex-wrap h-auto gap-1">
+          <TabsTrigger value="dashboard" className="gap-1.5"><LayoutDashboard className="h-4 w-4" /> Dashboard</TabsTrigger>
+          <TabsTrigger value="diario" className="gap-1.5"><ClipboardList className="h-4 w-4" /> Diário de Obra</TabsTrigger>
+          <TabsTrigger value="cronograma" className="gap-1.5"><CalendarDays className="h-4 w-4" /> Cronograma</TabsTrigger>
+          <TabsTrigger value="relatorios" className="gap-1.5"><FileText className="h-4 w-4" /> Relatórios</TabsTrigger>
+          <TabsTrigger value="documentos" className="gap-1.5"><FolderOpen className="h-4 w-4" /> Documentos</TabsTrigger>
+          <TabsTrigger value="timeline" className="gap-1.5"><History className="h-4 w-4" /> Timeline</TabsTrigger>
+        </TabsList>
+
+        {/* Dashboard Tab */}
+        <TabsContent value="dashboard">
+          {/* Prazo + Financial summary */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
+            <Card>
+              <CardContent className="pt-4 pb-4">
+                <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Prazo Contratual</p>
+                <p className="text-lg font-display font-bold text-foreground">{obra.prazo_contratual_dias != null ? `${obra.prazo_contratual_dias} dias` : '—'}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 pb-4">
+                <p className="text-xs text-muted-foreground flex items-center gap-1"><Timer className="h-3 w-3" /> Saldo de Prazo</p>
+                <p className={`text-lg font-display font-bold ${saldoPrazo != null && saldoPrazo < 0 ? 'text-destructive' : 'text-success'}`}>
+                  {saldoPrazo != null ? `${saldoPrazo} dias` : '—'}
+                </p>
+              </CardContent>
+            </Card>
+            {[
+              { label: 'Total Contrato', value: financeiro.contrato, color: 'text-foreground' },
+              { label: 'Recebido', value: financeiro.recebido, color: 'text-success' },
+              { label: 'A Receber', value: financeiro.aReceber, color: 'text-warning' },
+              { label: 'Gastos', value: financeiro.gasto, color: 'text-destructive' },
+              { label: 'Saldo', value: financeiro.saldo, color: financeiro.saldo < 0 ? 'text-destructive' : 'text-success' },
+            ].map((item) => (
+              <Card key={item.label}>
+                <CardContent className="pt-4 pb-4">
+                  <p className="text-xs text-muted-foreground">{item.label}</p>
+                  <p className={`text-lg font-display font-bold ${item.color}`}>{fmt(item.value)}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {financeiro.saldo < 0 && (
+            <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+              ⚠️ Atenção: Saldo negativo! Os gastos superam os recebimentos em {fmt(Math.abs(financeiro.saldo))}.
+            </div>
+          )}
+          {atrasadas > 0 && (
+            <div className="mb-6 rounded-lg border border-warning/30 bg-warning/5 p-4 text-sm text-warning">
+              ⏰ {atrasadas} parcela{atrasadas > 1 ? 's' : ''} atrasada{atrasadas > 1 ? 's' : ''}!
+            </div>
+          )}
+
+          {/* Financial Chart */}
+          {financeiro.contrato > 0 && (
+            <Card className="mb-8">
+              <CardHeader><CardTitle className="font-display text-base">Visão Financeira</CardTitle></CardHeader>
+              <CardContent>
+                <div ref={chartRef} className="w-full h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                      <YAxis tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
+                      <Tooltip formatter={(v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)} />
+                      <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                        {chartData.map((entry, index) => (<Cell key={index} fill={entry.color} />))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Parcelas table */}
+          <Card className="mb-8">
+            <CardHeader><CardTitle className="font-display">Parcelas</CardTitle></CardHeader>
+            <CardContent>
+              {parcelas.length === 0 ? (
+                <p className="text-muted-foreground text-sm py-4 text-center">Nenhuma parcela registrada.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nº</TableHead>
+                      <TableHead>Valor</TableHead>
+                      <TableHead>Vencimento</TableHead>
+                      <TableHead>Recebimento</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Forma Pgto</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {parcelas.map((p) => (
+                      <TableRow key={p.id} className={p.status === 'atrasado' ? 'bg-destructive/5' : ''}>
+                        <TableCell>{p.numero_parcela}</TableCell>
+                        <TableCell className="font-medium">{fmt(Number(p.valor))}</TableCell>
+                        <TableCell>{new Date(p.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
+                        <TableCell>{p.data_recebimento ? new Date(p.data_recebimento + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
+                        <TableCell>{statusBadge(p.status)}</TableCell>
+                        <TableCell className="capitalize">{p.forma_pagamento || '—'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
             </CardContent>
           </Card>
-        ))}
-      </div>
 
-      {financeiro.saldo < 0 && (
-        <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-          ⚠️ Atenção: Saldo negativo! Os gastos superam os recebimentos em {fmt(Math.abs(financeiro.saldo))}.
-        </div>
-      )}
-      {atrasadas > 0 && (
-        <div className="mb-6 rounded-lg border border-warning/30 bg-warning/5 p-4 text-sm text-warning">
-          ⏰ {atrasadas} parcela{atrasadas > 1 ? 's' : ''} atrasada{atrasadas > 1 ? 's' : ''}!
-        </div>
-      )}
+          {/* Despesas table */}
+          <Card className="mb-8">
+            <CardHeader><CardTitle className="font-display">Despesas</CardTitle></CardHeader>
+            <CardContent>
+              {despesas.length === 0 ? (
+                <p className="text-muted-foreground text-sm py-4 text-center">Nenhuma despesa registrada.</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Valor</TableHead>
+                      <TableHead>Forma Pgto</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {despesas.map((d) => (
+                      <TableRow key={d.id}>
+                        <TableCell>{new Date(d.data + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
+                        <TableCell><Badge variant="secondary">{tipoLabels[d.tipo] || d.tipo}</Badge></TableCell>
+                        <TableCell>{d.descricao}</TableCell>
+                        <TableCell className="font-medium text-destructive">{fmt(Number(d.valor))}</TableCell>
+                        <TableCell className="capitalize">{d.forma_pagamento || '—'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
 
-      {/* Financial Chart */}
-      {financeiro.contrato > 0 && (
-        <Card className="mb-8">
-          <CardHeader><CardTitle className="font-display text-base">Visão Financeira</CardTitle></CardHeader>
-          <CardContent>
-            <div ref={chartRef} className="w-full h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                  <YAxis tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)} />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                    {chartData.map((entry, index) => (<Cell key={index} fill={entry.color} />))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+          {(role === 'admin' || role === 'trabalhador') && (
+            <div className="mt-4">
+              <AnotacoesObra obraId={id!} initialContent={(obra as any)?.anotacoes} />
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Parcelas table - read only */}
-      <Card className="mb-8">
-        <CardHeader><CardTitle className="font-display">Parcelas</CardTitle></CardHeader>
-        <CardContent>
-          {parcelas.length === 0 ? (
-            <p className="text-muted-foreground text-sm py-4 text-center">Nenhuma parcela registrada.</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nº</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Vencimento</TableHead>
-                  <TableHead>Recebimento</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Forma Pgto</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {parcelas.map((p) => (
-                  <TableRow key={p.id} className={p.status === 'atrasado' ? 'bg-destructive/5' : ''}>
-                    <TableCell>{p.numero_parcela}</TableCell>
-                    <TableCell className="font-medium">{fmt(Number(p.valor))}</TableCell>
-                    <TableCell>{new Date(p.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
-                    <TableCell>{p.data_recebimento ? new Date(p.data_recebimento + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
-                    <TableCell>{statusBadge(p.status)}</TableCell>
-                    <TableCell className="capitalize">{p.forma_pagamento || '—'}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
           )}
-        </CardContent>
-      </Card>
+        </TabsContent>
 
-      {/* Despesas table - read only */}
-      <Card className="mb-8">
-        <CardHeader><CardTitle className="font-display">Despesas</CardTitle></CardHeader>
-        <CardContent>
-          {despesas.length === 0 ? (
-            <p className="text-muted-foreground text-sm py-4 text-center">Nenhuma despesa registrada.</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Forma Pgto</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {despesas.map((d) => (
-                  <TableRow key={d.id}>
-                    <TableCell>{new Date(d.data + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
-                    <TableCell><Badge variant="secondary">{tipoLabels[d.tipo] || d.tipo}</Badge></TableCell>
-                    <TableCell>{d.descricao}</TableCell>
-                    <TableCell className="font-medium text-destructive">{fmt(Number(d.valor))}</TableCell>
-                    <TableCell className="capitalize">{d.forma_pagamento || '—'}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+        {/* Diário de Obra Tab */}
+        <TabsContent value="diario">
+          <div className="flex flex-col items-center justify-center py-12 gap-4">
+            <ClipboardList className="h-12 w-12 text-muted-foreground" />
+            <p className="text-muted-foreground">Acesse o diário de obra completo.</p>
+            <Link to={`/diario?obra=${id}`}>
+              <Button><ClipboardList className="h-4 w-4 mr-2" /> Abrir Diário de Obra</Button>
+            </Link>
+          </div>
+        </TabsContent>
 
-      {/* Delete Obra Confirm */}
-      <AlertDialog open={deleteObraOpen} onOpenChange={setDeleteObraOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Obra</AlertDialogTitle>
-            <AlertDialogDescription>{deleteObraMsg}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            {!deleteObraBlocked && (
-              <AlertDialogAction onClick={handleDeleteObra} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                Excluir
-              </AlertDialogAction>
-            )}
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        {/* Cronograma Tab */}
+        <TabsContent value="cronograma">
+          <div className="flex flex-col items-center justify-center py-12 gap-4">
+            <CalendarDays className="h-12 w-12 text-muted-foreground" />
+            <p className="text-muted-foreground">Acesse o cronograma completo da obra.</p>
+            <Link to={`/cronograma?obra=${id}`}>
+              <Button><CalendarDays className="h-4 w-4 mr-2" /> Abrir Cronograma</Button>
+            </Link>
+          </div>
+        </TabsContent>
 
-      {/* Timeline */}
-      <TimelineObra obraId={id!} obraData={obra} />
+        {/* Relatórios Tab */}
+        <TabsContent value="relatorios">
+          <div className="flex flex-col items-center justify-center py-12 gap-4">
+            <FileText className="h-12 w-12 text-muted-foreground" />
+            <p className="text-muted-foreground">Acesse os relatórios da obra.</p>
+            <Link to={`/relatorios?obra=${id}`}>
+              <Button><FileText className="h-4 w-4 mr-2" /> Abrir Relatórios</Button>
+            </Link>
+          </div>
+        </TabsContent>
 
-      {(role === 'admin' || role === 'trabalhador') && (
-        <div className="mt-8">
-          <AnotacoesObra obraId={id!} initialContent={(obra as any)?.anotacoes} />
-        </div>
-      )}
+        {/* Documentos Tab */}
+        <TabsContent value="documentos">
+          <div className="flex flex-col items-center justify-center py-12 gap-4">
+            <FolderOpen className="h-12 w-12 text-muted-foreground" />
+            <p className="text-muted-foreground">Acesse os documentos da obra.</p>
+            <Link to={`/documentacao?obra=${id}`}>
+              <Button><FolderOpen className="h-4 w-4 mr-2" /> Abrir Documentos</Button>
+            </Link>
+          </div>
+        </TabsContent>
+
+        {/* Timeline Tab */}
+        <TabsContent value="timeline">
+          <TimelineObra obraId={id!} obraData={obra} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
