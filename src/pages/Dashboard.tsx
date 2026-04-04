@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Building2, Plus, TrendingUp, TrendingDown, DollarSign, AlertTriangle } from 'lucide-react';
+import { Building2, Plus, TrendingUp, TrendingDown, DollarSign, AlertTriangle, ClipboardList } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useObrasFiltered } from '@/hooks/useObrasFiltered';
 import NovaObraDialog from '@/components/NovaObraDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface ObraResumo {
@@ -31,10 +34,13 @@ const COLORS = ['hsl(var(--accent))', 'hsl(var(--destructive))', 'hsl(var(--prim
 
 export default function Dashboard() {
   const { canEdit } = useAuth();
+  const navigate = useNavigate();
   const { filterObras, loading: obrasFilterLoading } = useObrasFiltered();
   const [obras, setObras] = useState<ObraResumo[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [diarioDialogOpen, setDiarioDialogOpen] = useState(false);
+  const [selectedObraDiario, setSelectedObraDiario] = useState('');
   const [despesasPorTipo, setDespesasPorTipo] = useState<any[]>([]);
   const [evolucaoMensal, setEvolucaoMensal] = useState<any[]>([]);
   const [parcelasAtrasadas, setParcelasAtrasadas] = useState(0);
@@ -142,16 +148,33 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-display font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Visão geral das suas obras</p>
         </div>
         {canEdit && (
-          <Button onClick={() => setDialogOpen(true)} className="bg-accent text-accent-foreground hover:bg-accent/90">
-            <Plus className="h-4 w-4 mr-2" />
-            Nova Obra
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={() => {
+                if (obras.length === 1) {
+                  navigate(`/diario?obra=${obras[0].id}`);
+                } else {
+                  setSelectedObraDiario('');
+                  setDiarioDialogOpen(true);
+                }
+              }}
+              size="lg"
+              className="bg-accent text-accent-foreground hover:bg-accent/90 h-12 px-6 text-base"
+            >
+              <ClipboardList className="h-5 w-5 mr-2" />
+              Criar Diário
+            </Button>
+            <Button onClick={() => setDialogOpen(true)} className="bg-accent text-accent-foreground hover:bg-accent/90">
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Obra
+            </Button>
+          </div>
         )}
       </div>
 
@@ -309,7 +332,59 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Diário dialog - select obra */}
+      <Dialog open={diarioDialogOpen} onOpenChange={setDiarioDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Selecionar Obra</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label>Obra</Label>
+              <Select value={selectedObraDiario} onValueChange={setSelectedObraDiario}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a obra" />
+                </SelectTrigger>
+                <SelectContent>
+                  {obras.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+              disabled={!selectedObraDiario}
+              onClick={() => {
+                setDiarioDialogOpen(false);
+                navigate(`/diario?obra=${selectedObraDiario}`);
+              }}
+            >
+              <ClipboardList className="h-4 w-4 mr-2" />
+              Criar Diário
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <NovaObraDialog open={dialogOpen} onOpenChange={setDialogOpen} onCreated={fetchObras} />
+
+      {/* Mobile floating button */}
+      {canEdit && (
+        <Button
+          className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg bg-accent text-accent-foreground hover:bg-accent/90 md:hidden p-0"
+          onClick={() => {
+            if (obras.length === 1) {
+              navigate(`/diario?obra=${obras[0].id}`);
+            } else {
+              setSelectedObraDiario('');
+              setDiarioDialogOpen(true);
+            }
+          }}
+        >
+          <ClipboardList className="h-6 w-6" />
+        </Button>
+      )}
     </div>
   );
 }
