@@ -26,9 +26,9 @@ const roleLabels: Record<string, string> = {
   cliente: 'Cliente',
 };
 
-const roleBadgeVariant: Record<string, 'default' | 'secondary' | 'destructive'> = {
+const roleBadgeVariant: Record<string, string> = {
   super_admin: 'destructive',
-  admin: 'destructive',
+  admin: 'green',
   trabalhador: 'default',
   sindico: 'secondary',
   cliente: 'secondary',
