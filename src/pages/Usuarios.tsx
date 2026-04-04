@@ -26,12 +26,16 @@ const roleLabels: Record<string, string> = {
   cliente: 'Cliente',
 };
 
-const roleBadgeVariant: Record<string, string> = {
+const roleBadgeVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   super_admin: 'destructive',
-  admin: 'green',
+  admin: 'outline',
   trabalhador: 'default',
   sindico: 'secondary',
   cliente: 'secondary',
+};
+
+const roleBadgeClassName: Record<string, string> = {
+  admin: 'border-transparent bg-green-600 text-white hover:bg-green-600/80',
 };
 
 const DEFAULT_PERMISSIONS: Record<string, Record<Modulo, { v: boolean; c: boolean; e: boolean; x: boolean }>> = {
