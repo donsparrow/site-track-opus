@@ -441,27 +441,29 @@ export default function DiarioObra() {
                               const isEditing = editingAtividadeId === a.id;
 
                               if (isEditing) {
+                                const editAutoStatus = percentualToStatus(editAtivPercentual);
                                 return (
-                                  <div key={a.id} className="flex items-center gap-2 p-2 rounded border border-accent bg-accent/5">
-                                    <Input
-                                      value={editAtivDesc}
-                                      onChange={e => setEditAtivDesc(e.target.value)}
-                                      className="flex-1"
-                                    />
-                                    <Select value={editAtivStatus} onValueChange={setEditAtivStatus}>
-                                      <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="concluido">Concluído</SelectItem>
-                                        <SelectItem value="andamento">Em andamento</SelectItem>
-                                        <SelectItem value="nao iniciado">Não iniciado</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                    <Button size="sm" variant="ghost" onClick={() => updateAtividadeItem(a.id)}>
-                                      <Save className="h-3 w-3" />
-                                    </Button>
-                                    <Button size="sm" variant="ghost" onClick={() => setEditingAtividadeId(null)}>
-                                      <X className="h-3 w-3" />
-                                    </Button>
+                                  <div key={a.id} className="flex flex-col gap-2 p-3 rounded border border-accent bg-accent/5">
+                                    <div className="flex items-center gap-2">
+                                      <Input
+                                        value={editAtivDesc}
+                                        onChange={e => setEditAtivDesc(e.target.value)}
+                                        className="flex-1"
+                                      />
+                                      <Badge variant={editAutoStatus === 'concluido' ? 'default' : editAutoStatus === 'andamento' ? 'secondary' : 'outline'}>
+                                        {statusLabels[editAutoStatus]}
+                                      </Badge>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-xs text-muted-foreground w-8">{editAtivPercentual}%</span>
+                                      <Slider value={[editAtivPercentual]} onValueChange={v => setEditAtivPercentual(v[0])} min={0} max={100} step={5} className="flex-1" />
+                                      <Button size="sm" variant="ghost" onClick={() => updateAtividadeItem(a.id)}>
+                                        <Save className="h-3 w-3" />
+                                      </Button>
+                                      <Button size="sm" variant="ghost" onClick={() => setEditingAtividadeId(null)}>
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </div>
                                   </div>
                                 );
                               }
