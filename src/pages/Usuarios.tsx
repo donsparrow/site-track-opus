@@ -640,7 +640,7 @@ export default function Usuarios() {
                     <TableCell className="font-medium">{u.nome || '—'}</TableCell>
                     <TableCell>{u.email || '—'}</TableCell>
                     <TableCell>
-                      <Badge variant={roleBadgeVariant[u.role] || 'secondary'}>
+                      <Badge variant={roleBadgeVariant[u.role] || 'secondary'} className={roleBadgeClassName[u.role] || ''}>
                         {roleLabels[u.role] || u.role}
                       </Badge>
                     </TableCell>
