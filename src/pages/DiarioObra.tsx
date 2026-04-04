@@ -14,6 +14,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Sun, Cloud, CloudRain, Trash2, Upload, Users, Wrench, Package, AlertTriangle, Image as ImageIcon, PauseCircle, Pencil, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { Slider } from '@/components/ui/slider';
+import { Progress } from '@/components/ui/progress';
+
+function percentualToStatus(p: number): string {
+  if (p <= 0) return 'nao iniciado';
+  if (p >= 100) return 'concluido';
+  return 'andamento';
+}
 
 const climaIcons: Record<string, any> = { sol: Sun, nublado: Cloud, chuva: CloudRain };
 const climaLabels: Record<string, string> = { sol: 'Sol', nublado: 'Nublado', chuva: 'Chuva' };
