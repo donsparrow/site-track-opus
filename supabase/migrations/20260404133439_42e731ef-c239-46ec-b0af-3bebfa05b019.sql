@@ -1,0 +1,1 @@
+ALTER TABLE public.diario_atividades ADD COLUMN percentual integer NOT NULL DEFAULT 0;

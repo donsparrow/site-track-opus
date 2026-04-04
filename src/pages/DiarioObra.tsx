@@ -14,6 +14,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Sun, Cloud, CloudRain, Trash2, Upload, Users, Wrench, Package, AlertTriangle, Image as ImageIcon, PauseCircle, Pencil, Save, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { Slider } from '@/components/ui/slider';
+import { Progress } from '@/components/ui/progress';
+
+function percentualToStatus(p: number): string {
+  if (p <= 0) return 'nao iniciado';
+  if (p >= 100) return 'concluido';
+  return 'andamento';
+}
 
 const climaIcons: Record<string, any> = { sol: Sun, nublado: Cloud, chuva: CloudRain };
 const climaLabels: Record<string, string> = { sol: 'Sol', nublado: 'Nublado', chuva: 'Chuva' };
@@ -70,6 +78,7 @@ export default function DiarioObra() {
   const [editingAtividadeId, setEditingAtividadeId] = useState<string | null>(null);
   const [editAtivDesc, setEditAtivDesc] = useState('');
   const [editAtivStatus, setEditAtivStatus] = useState('');
+  const [editAtivPercentual, setEditAtivPercentual] = useState(0);
 
   useEffect(() => {
     supabase.from('obras').select('id, nome, prazo_contratual_dias').order('nome').then(({ data }) => setObras(filterObras(data || [])));
@@ -131,7 +140,7 @@ export default function DiarioObra() {
     // Fetch equipe and atividades from last diary
     const [eqRes, atRes] = await Promise.all([
       supabase.from('diario_equipe').select('nome_funcionario, funcao, horas_trabalhadas').eq('diario_id', lastId),
-      supabase.from('diario_atividades').select('descricao, status').eq('diario_id', lastId),
+      supabase.from('diario_atividades').select('descricao, status, percentual').eq('diario_id', lastId),
     ]);
 
     const lastEquipe = eqRes.data || [];
@@ -156,6 +165,7 @@ export default function DiarioObra() {
           diario_id: newDiarioId,
           descricao: a.descricao,
           status: mapLegacyStatus(a.status),
+          percentual: a.percentual || 0,
         }))
       );
     }
@@ -194,10 +204,11 @@ export default function DiarioObra() {
     setAddingEquipe(false);
   };
 
-  const addAtividadeItem = async (descricao: string, status: string) => {
+  const addAtividadeItem = async (descricao: string, status: string, percentual: number) => {
     if (!selectedDiario) return;
+    const finalStatus = percentualToStatus(percentual);
     const { error } = await supabase.from('diario_atividades').insert({
-      diario_id: selectedDiario.id, descricao, status: mapLegacyStatus(status)
+      diario_id: selectedDiario.id, descricao, status: finalStatus, percentual
     });
     if (error) toast.error(error.message);
     else { toast.success('Adicionado!'); fetchDiarioDetails(selectedDiario); }
@@ -205,8 +216,9 @@ export default function DiarioObra() {
   };
 
   const updateAtividadeItem = async (id: string) => {
+    const finalStatus = percentualToStatus(editAtivPercentual);
     const { error } = await supabase.from('diario_atividades')
-      .update({ descricao: editAtivDesc, status: editAtivStatus })
+      .update({ descricao: editAtivDesc, status: finalStatus, percentual: editAtivPercentual })
       .eq('id', id);
     if (error) toast.error(error.message);
     else { toast.success('Atividade atualizada!'); setEditingAtividadeId(null); fetchDiarioDetails(selectedDiario); }
@@ -429,51 +441,58 @@ export default function DiarioObra() {
                               const isEditing = editingAtividadeId === a.id;
 
                               if (isEditing) {
+                                const editAutoStatus = percentualToStatus(editAtivPercentual);
                                 return (
-                                  <div key={a.id} className="flex items-center gap-2 p-2 rounded border border-accent bg-accent/5">
-                                    <Input
-                                      value={editAtivDesc}
-                                      onChange={e => setEditAtivDesc(e.target.value)}
-                                      className="flex-1"
-                                    />
-                                    <Select value={editAtivStatus} onValueChange={setEditAtivStatus}>
-                                      <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="concluido">Concluído</SelectItem>
-                                        <SelectItem value="andamento">Em andamento</SelectItem>
-                                        <SelectItem value="nao iniciado">Não iniciado</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                    <Button size="sm" variant="ghost" onClick={() => updateAtividadeItem(a.id)}>
-                                      <Save className="h-3 w-3" />
-                                    </Button>
-                                    <Button size="sm" variant="ghost" onClick={() => setEditingAtividadeId(null)}>
-                                      <X className="h-3 w-3" />
-                                    </Button>
+                                  <div key={a.id} className="flex flex-col gap-2 p-3 rounded border border-accent bg-accent/5">
+                                    <div className="flex items-center gap-2">
+                                      <Input
+                                        value={editAtivDesc}
+                                        onChange={e => setEditAtivDesc(e.target.value)}
+                                        className="flex-1"
+                                      />
+                                      <Badge variant={editAutoStatus === 'concluido' ? 'default' : editAutoStatus === 'andamento' ? 'secondary' : 'outline'}>
+                                        {statusLabels[editAutoStatus]}
+                                      </Badge>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                      <span className="text-xs text-muted-foreground w-8">{editAtivPercentual}%</span>
+                                      <Slider value={[editAtivPercentual]} onValueChange={v => setEditAtivPercentual(v[0])} min={0} max={100} step={5} className="flex-1" />
+                                      <Button size="sm" variant="ghost" onClick={() => updateAtividadeItem(a.id)}>
+                                        <Save className="h-3 w-3" />
+                                      </Button>
+                                      <Button size="sm" variant="ghost" onClick={() => setEditingAtividadeId(null)}>
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </div>
                                   </div>
                                 );
                               }
 
                               return (
-                                <div key={a.id} className="flex items-center gap-2 p-2 rounded border">
-                                  <span className="flex-1 text-sm">{a.descricao}</span>
-                                  <Badge variant={normalizedStatus === 'concluido' ? 'default' : normalizedStatus === 'andamento' ? 'secondary' : 'outline'}>
-                                    {statusLabels[normalizedStatus] || normalizedStatus}
-                                  </Badge>
-                                  {canEdit && (
-                                    <>
-                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
-                                        setEditingAtividadeId(a.id);
-                                        setEditAtivDesc(a.descricao);
-                                        setEditAtivStatus(normalizedStatus);
-                                      }}>
-                                        <Pencil className="h-3 w-3" />
-                                      </Button>
-                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteAtividadeItem(a.id)}>
-                                        <Trash2 className="h-3 w-3" />
-                                      </Button>
-                                    </>
-                                  )}
+                                <div key={a.id} className="flex flex-col gap-1 p-2 rounded border">
+                                  <div className="flex items-center gap-2">
+                                    <span className="flex-1 text-sm">{a.descricao}</span>
+                                    <span className="text-xs font-medium text-muted-foreground">{a.percentual || 0}%</span>
+                                    <Badge variant={normalizedStatus === 'concluido' ? 'default' : normalizedStatus === 'andamento' ? 'secondary' : 'outline'}>
+                                      {statusLabels[normalizedStatus] || normalizedStatus}
+                                    </Badge>
+                                    {canEdit && (
+                                      <>
+                                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
+                                          setEditingAtividadeId(a.id);
+                                          setEditAtivDesc(a.descricao);
+                                          setEditAtivStatus(normalizedStatus);
+                                          setEditAtivPercentual(a.percentual || 0);
+                                        }}>
+                                          <Pencil className="h-3 w-3" />
+                                        </Button>
+                                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteAtividadeItem(a.id)}>
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                      </>
+                                    )}
+                                  </div>
+                                  <Progress value={a.percentual || 0} className="h-2" />
                                 </div>
                               );
                             })}
@@ -639,21 +658,25 @@ function InlineEquipeForm({ onSave, onCancel }: { onSave: (n: string, f: string,
   );
 }
 
-function InlineAtividadeForm({ onSave, onCancel }: { onSave: (d: string, s: string) => void; onCancel: () => void }) {
-  const [d, setD] = useState(''); const [s, setS] = useState('andamento');
+function InlineAtividadeForm({ onSave, onCancel }: { onSave: (d: string, s: string, p: number) => void; onCancel: () => void }) {
+  const [d, setD] = useState(''); const [p, setP] = useState(0);
+  const autoStatus = percentualToStatus(p);
   return (
-    <div className="flex gap-2 mb-3 p-2 bg-muted rounded">
-      <Input placeholder="Descrição" value={d} onChange={e => setD(e.target.value)} className="flex-1" />
-      <Select value={s} onValueChange={setS}>
-        <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
-        <SelectContent>
-          <SelectItem value="concluido">Concluído</SelectItem>
-          <SelectItem value="andamento">Em andamento</SelectItem>
-          <SelectItem value="nao iniciado">Não iniciado</SelectItem>
-        </SelectContent>
-      </Select>
-      <Button size="sm" onClick={() => d && onSave(d, s)}>OK</Button>
-      <Button size="sm" variant="ghost" onClick={onCancel}>✕</Button>
+    <div className="flex flex-col gap-2 mb-3 p-3 bg-muted rounded">
+      <div className="flex gap-2">
+        <Input placeholder="Descrição" value={d} onChange={e => setD(e.target.value)} className="flex-1" />
+        <Badge variant={autoStatus === 'concluido' ? 'default' : autoStatus === 'andamento' ? 'secondary' : 'outline'}>
+          {statusLabels[autoStatus]}
+        </Badge>
+      </div>
+      <div className="flex items-center gap-3">
+        <span className="text-xs text-muted-foreground w-8">{p}%</span>
+        <Slider value={[p]} onValueChange={v => setP(v[0])} min={0} max={100} step={5} className="flex-1" />
+      </div>
+      <div className="flex gap-2 justify-end">
+        <Button size="sm" onClick={() => d && onSave(d, autoStatus, p)}>OK</Button>
+        <Button size="sm" variant="ghost" onClick={onCancel}>✕</Button>
+      </div>
     </div>
   );
 }

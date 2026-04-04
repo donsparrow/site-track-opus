@@ -484,6 +484,7 @@ export type Database = {
           descricao: string
           diario_id: string
           id: string
+          percentual: number
           status: string
         }
         Insert: {
@@ -491,6 +492,7 @@ export type Database = {
           descricao: string
           diario_id: string
           id?: string
+          percentual?: number
           status?: string
         }
         Update: {
@@ -498,6 +500,7 @@ export type Database = {
           descricao?: string
           diario_id?: string
           id?: string
+          percentual?: number
           status?: string
         }
         Relationships: [
