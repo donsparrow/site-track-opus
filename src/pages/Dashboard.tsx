@@ -332,7 +332,59 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Diário dialog - select obra */}
+      <Dialog open={diarioDialogOpen} onOpenChange={setDiarioDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Selecionar Obra</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-2">
+              <Label>Obra</Label>
+              <Select value={selectedObraDiario} onValueChange={setSelectedObraDiario}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a obra" />
+                </SelectTrigger>
+                <SelectContent>
+                  {obras.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+              disabled={!selectedObraDiario}
+              onClick={() => {
+                setDiarioDialogOpen(false);
+                navigate(`/diario?obra=${selectedObraDiario}`);
+              }}
+            >
+              <ClipboardList className="h-4 w-4 mr-2" />
+              Criar Diário
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <NovaObraDialog open={dialogOpen} onOpenChange={setDialogOpen} onCreated={fetchObras} />
+
+      {/* Mobile floating button */}
+      {canEdit && (
+        <Button
+          className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg bg-accent text-accent-foreground hover:bg-accent/90 md:hidden p-0"
+          onClick={() => {
+            if (obras.length === 1) {
+              navigate(`/diario?obra=${obras[0].id}`);
+            } else {
+              setSelectedObraDiario('');
+              setDiarioDialogOpen(true);
+            }
+          }}
+        >
+          <ClipboardList className="h-6 w-6" />
+        </Button>
+      )}
     </div>
   );
 }
