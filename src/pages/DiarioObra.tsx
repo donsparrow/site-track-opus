@@ -204,10 +204,11 @@ export default function DiarioObra() {
     setAddingEquipe(false);
   };
 
-  const addAtividadeItem = async (descricao: string, status: string) => {
+  const addAtividadeItem = async (descricao: string, status: string, percentual: number) => {
     if (!selectedDiario) return;
+    const finalStatus = percentualToStatus(percentual);
     const { error } = await supabase.from('diario_atividades').insert({
-      diario_id: selectedDiario.id, descricao, status: mapLegacyStatus(status)
+      diario_id: selectedDiario.id, descricao, status: finalStatus, percentual
     });
     if (error) toast.error(error.message);
     else { toast.success('Adicionado!'); fetchDiarioDetails(selectedDiario); }
