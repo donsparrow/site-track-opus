@@ -34,10 +34,13 @@ const COLORS = ['hsl(var(--accent))', 'hsl(var(--destructive))', 'hsl(var(--prim
 
 export default function Dashboard() {
   const { canEdit } = useAuth();
+  const navigate = useNavigate();
   const { filterObras, loading: obrasFilterLoading } = useObrasFiltered();
   const [obras, setObras] = useState<ObraResumo[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [diarioDialogOpen, setDiarioDialogOpen] = useState(false);
+  const [selectedObraDiario, setSelectedObraDiario] = useState('');
   const [despesasPorTipo, setDespesasPorTipo] = useState<any[]>([]);
   const [evolucaoMensal, setEvolucaoMensal] = useState<any[]>([]);
   const [parcelasAtrasadas, setParcelasAtrasadas] = useState(0);
