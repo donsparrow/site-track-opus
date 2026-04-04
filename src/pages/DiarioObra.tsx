@@ -216,8 +216,9 @@ export default function DiarioObra() {
   };
 
   const updateAtividadeItem = async (id: string) => {
+    const finalStatus = percentualToStatus(editAtivPercentual);
     const { error } = await supabase.from('diario_atividades')
-      .update({ descricao: editAtivDesc, status: editAtivStatus })
+      .update({ descricao: editAtivDesc, status: finalStatus, percentual: editAtivPercentual })
       .eq('id', id);
     if (error) toast.error(error.message);
     else { toast.success('Atividade atualizada!'); setEditingAtividadeId(null); fetchDiarioDetails(selectedDiario); }
