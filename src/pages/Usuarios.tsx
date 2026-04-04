@@ -26,12 +26,16 @@ const roleLabels: Record<string, string> = {
   cliente: 'Cliente',
 };
 
-const roleBadgeVariant: Record<string, 'default' | 'secondary' | 'destructive'> = {
+const roleBadgeVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   super_admin: 'destructive',
-  admin: 'destructive',
+  admin: 'outline',
   trabalhador: 'default',
   sindico: 'secondary',
   cliente: 'secondary',
+};
+
+const roleBadgeClassName: Record<string, string> = {
+  admin: 'border-transparent bg-green-600 text-white hover:bg-green-600/80',
 };
 
 const DEFAULT_PERMISSIONS: Record<string, Record<Modulo, { v: boolean; c: boolean; e: boolean; x: boolean }>> = {
@@ -636,7 +640,7 @@ export default function Usuarios() {
                     <TableCell className="font-medium">{u.nome || '—'}</TableCell>
                     <TableCell>{u.email || '—'}</TableCell>
                     <TableCell>
-                      <Badge variant={roleBadgeVariant[u.role] || 'secondary'}>
+                      <Badge variant={roleBadgeVariant[u.role] || 'secondary'} className={roleBadgeClassName[u.role] || ''}>
                         {roleLabels[u.role] || u.role}
                       </Badge>
                     </TableCell>
@@ -839,7 +843,7 @@ export default function Usuarios() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Badge variant={roleBadgeVariant[permsUserRole] || 'secondary'}>
+              <Badge variant={roleBadgeVariant[permsUserRole] || 'secondary'} className={roleBadgeClassName[permsUserRole] || ''}>
                 {roleLabels[permsUserRole] || permsUserRole}
               </Badge>
             </div>
