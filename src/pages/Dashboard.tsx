@@ -165,7 +165,7 @@ export default function Dashboard() {
                 }
               }}
               size="lg"
-              className="bg-accent text-accent-foreground hover:bg-accent/90 h-12 px-6 text-base"
+              className="bg-accent text-accent-foreground hover:bg-accent/90 h-12 text-base px-[23px] mx-[3px]"
             >
               <ClipboardList className="h-5 w-5 mr-2" />
               Criar Diário
