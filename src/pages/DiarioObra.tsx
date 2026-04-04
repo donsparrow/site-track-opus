@@ -469,25 +469,30 @@ export default function DiarioObra() {
                               }
 
                               return (
-                                <div key={a.id} className="flex items-center gap-2 p-2 rounded border">
-                                  <span className="flex-1 text-sm">{a.descricao}</span>
-                                  <Badge variant={normalizedStatus === 'concluido' ? 'default' : normalizedStatus === 'andamento' ? 'secondary' : 'outline'}>
-                                    {statusLabels[normalizedStatus] || normalizedStatus}
-                                  </Badge>
-                                  {canEdit && (
-                                    <>
-                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
-                                        setEditingAtividadeId(a.id);
-                                        setEditAtivDesc(a.descricao);
-                                        setEditAtivStatus(normalizedStatus);
-                                      }}>
-                                        <Pencil className="h-3 w-3" />
-                                      </Button>
-                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteAtividadeItem(a.id)}>
-                                        <Trash2 className="h-3 w-3" />
-                                      </Button>
-                                    </>
-                                  )}
+                                <div key={a.id} className="flex flex-col gap-1 p-2 rounded border">
+                                  <div className="flex items-center gap-2">
+                                    <span className="flex-1 text-sm">{a.descricao}</span>
+                                    <span className="text-xs font-medium text-muted-foreground">{a.percentual || 0}%</span>
+                                    <Badge variant={normalizedStatus === 'concluido' ? 'default' : normalizedStatus === 'andamento' ? 'secondary' : 'outline'}>
+                                      {statusLabels[normalizedStatus] || normalizedStatus}
+                                    </Badge>
+                                    {canEdit && (
+                                      <>
+                                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
+                                          setEditingAtividadeId(a.id);
+                                          setEditAtivDesc(a.descricao);
+                                          setEditAtivStatus(normalizedStatus);
+                                          setEditAtivPercentual(a.percentual || 0);
+                                        }}>
+                                          <Pencil className="h-3 w-3" />
+                                        </Button>
+                                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteAtividadeItem(a.id)}>
+                                          <Trash2 className="h-3 w-3" />
+                                        </Button>
+                                      </>
+                                    )}
+                                  </div>
+                                  <Progress value={a.percentual || 0} className="h-2" />
                                 </div>
                               );
                             })}
