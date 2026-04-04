@@ -78,6 +78,7 @@ export default function DiarioObra() {
   const [editingAtividadeId, setEditingAtividadeId] = useState<string | null>(null);
   const [editAtivDesc, setEditAtivDesc] = useState('');
   const [editAtivStatus, setEditAtivStatus] = useState('');
+  const [editAtivPercentual, setEditAtivPercentual] = useState(0);
 
   useEffect(() => {
     supabase.from('obras').select('id, nome, prazo_contratual_dias').order('nome').then(({ data }) => setObras(filterObras(data || [])));
