@@ -433,8 +433,13 @@ export default function ObraDetail() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Timeline */}
+      <TimelineObra obraId={id!} obraData={obra} />
+
       {(role === 'admin' || role === 'trabalhador') && (
-        <AnotacoesObra obraId={id!} initialContent={(obra as any)?.anotacoes} />
+        <div className="mt-8">
+          <AnotacoesObra obraId={id!} initialContent={(obra as any)?.anotacoes} />
+        </div>
       )}
     </div>
   );
