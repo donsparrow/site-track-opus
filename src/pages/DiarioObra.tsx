@@ -165,6 +165,7 @@ export default function DiarioObra() {
           diario_id: newDiarioId,
           descricao: a.descricao,
           status: mapLegacyStatus(a.status),
+          percentual: a.percentual || 0,
         }))
       );
     }
