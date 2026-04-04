@@ -134,7 +134,7 @@ export default function TimelineObra({ obraId, obraData }: TimelineObraProps) {
         const ocorr = ocorrByDiario[d.id] || [];
         for (const o of ocorr) {
           allEvents.push({
-            id: `ocorr-${o.id || d.id}-${Math.random()}`,
+            id: `ocorr-${d.id}-${Math.random()}`,
             date: d.data,
             type: 'ocorrencia',
             title: (o as any).descricao,
