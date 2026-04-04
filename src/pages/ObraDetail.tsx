@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import AnotacoesObra from '@/components/AnotacoesObra';
+import TimelineObra from '@/components/TimelineObra';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { gerarDashboardPDF } from '@/lib/pdfDashboard';
 
@@ -432,8 +433,13 @@ export default function ObraDetail() {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Timeline */}
+      <TimelineObra obraId={id!} obraData={obra} />
+
       {(role === 'admin' || role === 'trabalhador') && (
-        <AnotacoesObra obraId={id!} initialContent={(obra as any)?.anotacoes} />
+        <div className="mt-8">
+          <AnotacoesObra obraId={id!} initialContent={(obra as any)?.anotacoes} />
+        </div>
       )}
     </div>
   );
