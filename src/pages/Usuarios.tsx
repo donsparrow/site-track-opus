@@ -843,7 +843,7 @@ export default function Usuarios() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Badge variant={roleBadgeVariant[permsUserRole] || 'secondary'}>
+              <Badge variant={roleBadgeVariant[permsUserRole] || 'secondary'} className={roleBadgeClassName[permsUserRole] || ''}>
                 {roleLabels[permsUserRole] || permsUserRole}
               </Badge>
             </div>
