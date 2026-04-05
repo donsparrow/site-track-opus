@@ -313,26 +313,30 @@ export default function Dashboard() {
                     )}
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">Contrato</p>
-                        <p className="font-semibold">{formatCurrency(obra.total_receitas)}</p>
+                    {canSeeFinanceiro ? (
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Contrato</p>
+                          <p className="font-semibold">{formatCurrency(obra.total_receitas)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Recebido</p>
+                          <p className="font-semibold text-success">{formatCurrency(obra.total_recebido)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Gastos</p>
+                          <p className="font-semibold text-destructive">{formatCurrency(obra.total_despesas)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Saldo</p>
+                          <p className={`font-semibold ${saldo < 0 ? 'text-destructive' : 'text-success'}`}>
+                            {formatCurrency(saldo)}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-muted-foreground">Recebido</p>
-                        <p className="font-semibold text-success">{formatCurrency(obra.total_recebido)}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Gastos</p>
-                        <p className="font-semibold text-destructive">{formatCurrency(obra.total_despesas)}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Saldo</p>
-                        <p className={`font-semibold ${saldo < 0 ? 'text-destructive' : 'text-success'}`}>
-                          {formatCurrency(saldo)}
-                        </p>
-                      </div>
-                    </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Status: {statusConfig[obra.status]?.label || obra.status}</p>
+                    )}
                   </CardContent>
                 </Card>
               </Link>
