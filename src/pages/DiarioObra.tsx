@@ -52,6 +52,7 @@ export default function DiarioObra() {
   const [editDiarioOpen, setEditDiarioOpen] = useState(false);
   const [deleteDiarioId, setDeleteDiarioId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [globalEditMode, setGlobalEditMode] = useState(false);
 
   const canEditDelete = canEdit; // admin, trabalhador e super_admin
 
@@ -86,6 +87,37 @@ export default function DiarioObra() {
   const [editAtivDesc, setEditAtivDesc] = useState('');
   const [editAtivStatus, setEditAtivStatus] = useState('');
   const [editAtivPercentual, setEditAtivPercentual] = useState(0);
+
+  // Editing equipe inline
+  const [editingEquipeId, setEditingEquipeId] = useState<string | null>(null);
+  const [editEquipeNome, setEditEquipeNome] = useState('');
+  const [editEquipeFuncao, setEditEquipeFuncao] = useState('');
+  const [editEquipeHoras, setEditEquipeHoras] = useState('');
+
+  // Editing material inline
+  const [editingMaterialId, setEditingMaterialId] = useState<string | null>(null);
+  const [editMaterialNome, setEditMaterialNome] = useState('');
+  const [editMaterialQtd, setEditMaterialQtd] = useState('');
+  const [editMaterialUnidade, setEditMaterialUnidade] = useState('');
+
+  // Editing ocorrencia inline
+  const [editingOcorrenciaId, setEditingOcorrenciaId] = useState<string | null>(null);
+  const [editOcorrenciaDesc, setEditOcorrenciaDesc] = useState('');
+  const [editOcorrenciaImpacto, setEditOcorrenciaImpacto] = useState('');
+
+  // Editing paralisacao inline
+  const [editingParalisacaoId, setEditingParalisacaoId] = useState<string | null>(null);
+  const [editParalisacaoMotivo, setEditParalisacaoMotivo] = useState('');
+  const [editParalisacaoInicio, setEditParalisacaoInicio] = useState('');
+  const [editParalisacaoFim, setEditParalisacaoFim] = useState('');
+
+  // Editable header fields
+  const [editHeaderData, setEditHeaderData] = useState('');
+  const [editHeaderClima, setEditHeaderClima] = useState('');
+  const [editHeaderTemp, setEditHeaderTemp] = useState('');
+  const [editHeaderInicio, setEditHeaderInicio] = useState('');
+  const [editHeaderFim, setEditHeaderFim] = useState('');
+  const [editHeaderObs, setEditHeaderObs] = useState('');
 
   useEffect(() => {
     supabase.from('obras').select('id, nome, prazo_contratual_dias').order('nome').then(({ data }) => setObras(filterObras(data || [])));
@@ -241,7 +273,77 @@ export default function DiarioObra() {
     fetchDiarios(selectedObra);
   };
 
-  const deleteEquipeItem = async (id: string) => {
+  const enterEditMode = () => {
+    if (!selectedDiario) return;
+    setGlobalEditMode(true);
+    setEditHeaderData(selectedDiario.data);
+    setEditHeaderClima(selectedDiario.clima);
+    setEditHeaderTemp(selectedDiario.temperatura || '');
+    setEditHeaderInicio(selectedDiario.horario_inicio || '');
+    setEditHeaderFim(selectedDiario.horario_fim || '');
+    setEditHeaderObs(selectedDiario.observacoes_gerais || '');
+  };
+
+  const exitEditMode = () => {
+    setGlobalEditMode(false);
+    setEditingEquipeId(null);
+    setEditingMaterialId(null);
+    setEditingOcorrenciaId(null);
+    setEditingParalisacaoId(null);
+    setEditingAtividadeId(null);
+    if (selectedDiario) fetchDiarioDetails(selectedDiario);
+  };
+
+  const saveHeaderChanges = async () => {
+    if (!selectedDiario) return;
+    const { error } = await supabase.from('diario_obra').update({
+      data: editHeaderData,
+      clima: editHeaderClima,
+      temperatura: editHeaderTemp || null,
+      horario_inicio: editHeaderInicio || null,
+      horario_fim: editHeaderFim || null,
+      observacoes_gerais: editHeaderObs || null,
+    }).eq('id', selectedDiario.id);
+    if (error) { toast.error('Erro: ' + error.message); return; }
+    toast.success('Diário atualizado!');
+    setGlobalEditMode(false);
+    fetchDiarios(selectedObra);
+    fetchDiarioDetails({ ...selectedDiario, data: editHeaderData, clima: editHeaderClima, temperatura: editHeaderTemp, horario_inicio: editHeaderInicio, horario_fim: editHeaderFim, observacoes_gerais: editHeaderObs });
+  };
+
+  const updateEquipeItem = async (id: string) => {
+    const { error } = await supabase.from('diario_equipe').update({
+      nome_funcionario: editEquipeNome, funcao: editEquipeFuncao || null, horas_trabalhadas: parseFloat(editEquipeHoras) || 0
+    }).eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('Atualizado!'); setEditingEquipeId(null); fetchDiarioDetails(selectedDiario); }
+  };
+
+  const updateMaterialItem = async (id: string) => {
+    const { error } = await supabase.from('diario_materiais').update({
+      material: editMaterialNome, quantidade: parseFloat(editMaterialQtd) || 0, unidade: editMaterialUnidade
+    }).eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('Atualizado!'); setEditingMaterialId(null); fetchDiarioDetails(selectedDiario); }
+  };
+
+  const updateOcorrenciaItem = async (id: string) => {
+    const { error } = await supabase.from('diario_ocorrencias').update({
+      descricao: editOcorrenciaDesc, impacto: editOcorrenciaImpacto
+    }).eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('Atualizado!'); setEditingOcorrenciaId(null); fetchDiarioDetails(selectedDiario); }
+  };
+
+  const updateParalisacaoItem = async (id: string) => {
+    const dias = editParalisacaoFim ? Math.ceil((new Date(editParalisacaoFim).getTime() - new Date(editParalisacaoInicio).getTime()) / 86400000) : 0;
+    const { error } = await supabase.from('diario_paralisacoes').update({
+      motivo: editParalisacaoMotivo, data_inicio: editParalisacaoInicio, data_fim: editParalisacaoFim || null, total_dias: dias
+    }).eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('Atualizado!'); setEditingParalisacaoId(null); fetchDiarioDetails(selectedDiario); }
+  };
+
     const { error } = await supabase.from('diario_equipe').delete().eq('id', id);
     if (error) toast.error(error.message);
     else { toast.success('Removido!'); fetchDiarioDetails(selectedDiario); }
@@ -443,8 +545,14 @@ export default function DiarioObra() {
                       <div className="flex gap-1 mt-2">
                         <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={(e) => {
                           e.stopPropagation();
-                          setEditingDiario({ ...d });
-                          setEditDiarioOpen(true);
+                          fetchDiarioDetails(d);
+                          setGlobalEditMode(true);
+                          setEditHeaderData(d.data);
+                          setEditHeaderClima(d.clima);
+                          setEditHeaderTemp(d.temperatura || '');
+                          setEditHeaderInicio(d.horario_inicio || '');
+                          setEditHeaderFim(d.horario_fim || '');
+                          setEditHeaderObs(d.observacoes_gerais || '');
                         }}>
                           <Pencil className="h-3 w-3 mr-1" />Editar
                         </Button>
@@ -466,21 +574,64 @@ export default function DiarioObra() {
           {/* Right: detail */}
           <div className="lg:col-span-2">
             {selectedDiario ? (
-              <div className="space-y-4">
+              <div className={`space-y-4 ${globalEditMode ? 'ring-2 ring-accent rounded-lg p-3' : ''}`}>
+                {/* Edit mode bar */}
+                {globalEditMode && (
+                  <div className="flex items-center justify-between bg-accent/10 rounded-lg p-3 border border-accent">
+                    <span className="text-sm font-medium text-accent flex items-center gap-2"><Pencil className="h-4 w-4" />Modo Edição Ativo</span>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={exitEditMode}><X className="h-3 w-3 mr-1" />Cancelar</Button>
+                      <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={saveHeaderChanges}><Save className="h-3 w-3 mr-1" />Salvar Alterações</Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Non-edit mode: show edit button */}
+                {!globalEditMode && canEditDelete && (
+                  <div className="flex justify-end">
+                    <Button size="sm" variant="outline" onClick={enterEditMode}><Pencil className="h-3 w-3 mr-1" />Editar Diário</Button>
+                  </div>
+                )}
+
                 <Card>
                   <CardHeader className="pb-3">
-                    <div className="flex items-center gap-3">
-                      <ClimaIcon className="h-6 w-6 text-accent" />
-                      <div>
-                        <CardTitle className="font-display">{new Date(selectedDiario.data + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                          {selectedDiario.horario_inicio?.slice(0,5)} - {selectedDiario.horario_fim?.slice(0,5)}
-                          {selectedDiario.temperatura && ` · ${selectedDiario.temperatura}`}
-                        </p>
+                    {globalEditMode ? (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div><Label className="text-xs">Data</Label><Input type="date" value={editHeaderData} onChange={e => setEditHeaderData(e.target.value)} /></div>
+                          <div>
+                            <Label className="text-xs">Clima</Label>
+                            <Select value={editHeaderClima} onValueChange={setEditHeaderClima}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="sol">☀️ Sol</SelectItem>
+                                <SelectItem value="nublado">☁️ Nublado</SelectItem>
+                                <SelectItem value="chuva">🌧️ Chuva</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div><Label className="text-xs">Temperatura</Label><Input placeholder="Ex: 28°C" value={editHeaderTemp} onChange={e => setEditHeaderTemp(e.target.value)} /></div>
+                          <div><Label className="text-xs">Horário Início</Label><Input type="time" value={editHeaderInicio} onChange={e => setEditHeaderInicio(e.target.value)} /></div>
+                          <div><Label className="text-xs">Horário Fim</Label><Input type="time" value={editHeaderFim} onChange={e => setEditHeaderFim(e.target.value)} /></div>
+                        </div>
+                        <div><Label className="text-xs">Observações</Label><Textarea value={editHeaderObs} onChange={e => setEditHeaderObs(e.target.value)} className="min-h-[60px]" /></div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <ClimaIcon className="h-6 w-6 text-accent" />
+                        <div>
+                          <CardTitle className="font-display">{new Date(selectedDiario.data + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</CardTitle>
+                          <p className="text-sm text-muted-foreground">
+                            {selectedDiario.horario_inicio?.slice(0,5)} - {selectedDiario.horario_fim?.slice(0,5)}
+                            {selectedDiario.temperatura && ` · ${selectedDiario.temperatura}`}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </CardHeader>
-                  {selectedDiario.observacoes_gerais && (
+                  {!globalEditMode && selectedDiario.observacoes_gerais && (
                     <CardContent className="pt-0">
                       <p className="text-sm">{selectedDiario.observacoes_gerais}</p>
                     </CardContent>
@@ -502,28 +653,51 @@ export default function DiarioObra() {
                     <Card>
                       <CardHeader className="flex flex-row items-center justify-between py-3">
                         <CardTitle className="text-sm font-display">Equipe</CardTitle>
-                        {canEdit && <Button size="sm" variant="outline" onClick={() => setAddingEquipe(true)}><Plus className="h-3 w-3 mr-1" />Adicionar</Button>}
+                        {(canEdit || globalEditMode) && <Button size="sm" variant="outline" onClick={() => setAddingEquipe(true)}><Plus className="h-3 w-3 mr-1" />Adicionar</Button>}
                       </CardHeader>
                       <CardContent>
                         {addingEquipe && <InlineEquipeForm onSave={addEquipeItem} onCancel={() => setAddingEquipe(false)} />}
                         {equipe.length === 0 && !addingEquipe ? <p className="text-sm text-muted-foreground text-center py-4">Nenhum registro</p> : (
                           <Table>
-                            <TableHeader><TableRow><TableHead>Funcionário</TableHead><TableHead>Função</TableHead><TableHead>Horas</TableHead>{canEditDelete && <TableHead className="w-10"></TableHead>}</TableRow></TableHeader>
+                            <TableHeader><TableRow><TableHead>Funcionário</TableHead><TableHead>Função</TableHead><TableHead>Horas</TableHead>{canEditDelete && <TableHead className="w-20"></TableHead>}</TableRow></TableHeader>
                             <TableBody>
-                              {equipe.map(e => (
-                                <TableRow key={e.id}>
-                                  <TableCell>{e.nome_funcionario}</TableCell>
-                                  <TableCell>{e.funcao || '—'}</TableCell>
-                                  <TableCell>{e.horas_trabalhadas}h</TableCell>
-                                  {canEditDelete && (
-                                    <TableCell>
-                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteEquipeItem(e.id)}>
-                                        <Trash2 className="h-3 w-3" />
-                                      </Button>
-                                    </TableCell>
-                                  )}
-                                </TableRow>
-                              ))}
+                              {equipe.map(e => {
+                                if (editingEquipeId === e.id) {
+                                  return (
+                                    <TableRow key={e.id}>
+                                      <TableCell><Input value={editEquipeNome} onChange={ev => setEditEquipeNome(ev.target.value)} className="h-8" /></TableCell>
+                                      <TableCell><Input value={editEquipeFuncao} onChange={ev => setEditEquipeFuncao(ev.target.value)} className="h-8" /></TableCell>
+                                      <TableCell><Input type="number" value={editEquipeHoras} onChange={ev => setEditEquipeHoras(ev.target.value)} className="h-8 w-20" /></TableCell>
+                                      <TableCell>
+                                        <div className="flex gap-1">
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => updateEquipeItem(e.id)}><Save className="h-3 w-3" /></Button>
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditingEquipeId(null)}><X className="h-3 w-3" /></Button>
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                }
+                                return (
+                                  <TableRow key={e.id}>
+                                    <TableCell>{e.nome_funcionario}</TableCell>
+                                    <TableCell>{e.funcao || '—'}</TableCell>
+                                    <TableCell>{e.horas_trabalhadas}h</TableCell>
+                                    {canEditDelete && (
+                                      <TableCell>
+                                        <div className="flex gap-1">
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
+                                            setEditingEquipeId(e.id);
+                                            setEditEquipeNome(e.nome_funcionario);
+                                            setEditEquipeFuncao(e.funcao || '');
+                                            setEditEquipeHoras(String(e.horas_trabalhadas || 0));
+                                          }}><Pencil className="h-3 w-3" /></Button>
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteEquipeItem(e.id)}><Trash2 className="h-3 w-3" /></Button>
+                                        </div>
+                                      </TableCell>
+                                    )}
+                                  </TableRow>
+                                );
+                              })}
                             </TableBody>
                           </Table>
                         )}
@@ -619,22 +793,45 @@ export default function DiarioObra() {
                         {addingMaterial && <InlineMaterialForm onSave={addMaterialItem} onCancel={() => setAddingMaterial(false)} />}
                         {materiais.length === 0 && !addingMaterial ? <p className="text-sm text-muted-foreground text-center py-4">Nenhum registro</p> : (
                           <Table>
-                            <TableHeader><TableRow><TableHead>Material</TableHead><TableHead>Qtd</TableHead><TableHead>Unidade</TableHead>{canEditDelete && <TableHead className="w-10"></TableHead>}</TableRow></TableHeader>
+                            <TableHeader><TableRow><TableHead>Material</TableHead><TableHead>Qtd</TableHead><TableHead>Unidade</TableHead>{canEditDelete && <TableHead className="w-20"></TableHead>}</TableRow></TableHeader>
                             <TableBody>
-                              {materiais.map(m => (
-                                <TableRow key={m.id}>
-                                  <TableCell>{m.material}</TableCell>
-                                  <TableCell>{m.quantidade}</TableCell>
-                                  <TableCell>{m.unidade}</TableCell>
-                                  {canEditDelete && (
-                                    <TableCell>
-                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteMaterialItem(m.id)}>
-                                        <Trash2 className="h-3 w-3" />
-                                      </Button>
-                                    </TableCell>
-                                  )}
-                                </TableRow>
-                              ))}
+                              {materiais.map(m => {
+                                if (editingMaterialId === m.id) {
+                                  return (
+                                    <TableRow key={m.id}>
+                                      <TableCell><Input value={editMaterialNome} onChange={ev => setEditMaterialNome(ev.target.value)} className="h-8" /></TableCell>
+                                      <TableCell><Input type="number" value={editMaterialQtd} onChange={ev => setEditMaterialQtd(ev.target.value)} className="h-8 w-20" /></TableCell>
+                                      <TableCell><Input value={editMaterialUnidade} onChange={ev => setEditMaterialUnidade(ev.target.value)} className="h-8 w-16" /></TableCell>
+                                      <TableCell>
+                                        <div className="flex gap-1">
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => updateMaterialItem(m.id)}><Save className="h-3 w-3" /></Button>
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditingMaterialId(null)}><X className="h-3 w-3" /></Button>
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                }
+                                return (
+                                  <TableRow key={m.id}>
+                                    <TableCell>{m.material}</TableCell>
+                                    <TableCell>{m.quantidade}</TableCell>
+                                    <TableCell>{m.unidade}</TableCell>
+                                    {canEditDelete && (
+                                      <TableCell>
+                                        <div className="flex gap-1">
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
+                                            setEditingMaterialId(m.id);
+                                            setEditMaterialNome(m.material);
+                                            setEditMaterialQtd(String(m.quantidade || 0));
+                                            setEditMaterialUnidade(m.unidade || 'un');
+                                          }}><Pencil className="h-3 w-3" /></Button>
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteMaterialItem(m.id)}><Trash2 className="h-3 w-3" /></Button>
+                                        </div>
+                                      </TableCell>
+                                    )}
+                                  </TableRow>
+                                );
+                              })}
                             </TableBody>
                           </Table>
                         )}
@@ -653,19 +850,43 @@ export default function DiarioObra() {
                         {addingOcorrencia && <InlineOcorrenciaForm onSave={addOcorrenciaItem} onCancel={() => setAddingOcorrencia(false)} />}
                         {ocorrencias.length === 0 && !addingOcorrencia ? <p className="text-sm text-muted-foreground text-center py-4">Nenhum registro</p> : (
                           <div className="space-y-2">
-                            {ocorrencias.map(o => (
-                              <div key={o.id} className="flex items-center gap-2 p-2 rounded border">
-                                <span className="flex-1 text-sm">{o.descricao}</span>
-                                <Badge variant={o.impacto === 'alto' ? 'destructive' : o.impacto === 'medio' ? 'secondary' : 'outline'}>
-                                  {o.impacto}
-                                </Badge>
-                                {canEditDelete && (
-                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteOcorrenciaItem(o.id)}>
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                )}
-                              </div>
-                            ))}
+                            {ocorrencias.map(o => {
+                              if (editingOcorrenciaId === o.id) {
+                                return (
+                                  <div key={o.id} className="flex items-center gap-2 p-2 rounded border border-accent bg-accent/5">
+                                    <Input value={editOcorrenciaDesc} onChange={ev => setEditOcorrenciaDesc(ev.target.value)} className="flex-1 h-8" />
+                                    <Select value={editOcorrenciaImpacto} onValueChange={setEditOcorrenciaImpacto}>
+                                      <SelectTrigger className="w-28 h-8"><SelectValue /></SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="baixo">Baixo</SelectItem>
+                                        <SelectItem value="medio">Médio</SelectItem>
+                                        <SelectItem value="alto">Alto</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => updateOcorrenciaItem(o.id)}><Save className="h-3 w-3" /></Button>
+                                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditingOcorrenciaId(null)}><X className="h-3 w-3" /></Button>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <div key={o.id} className="flex items-center gap-2 p-2 rounded border">
+                                  <span className="flex-1 text-sm">{o.descricao}</span>
+                                  <Badge variant={o.impacto === 'alto' ? 'destructive' : o.impacto === 'medio' ? 'secondary' : 'outline'}>
+                                    {o.impacto}
+                                  </Badge>
+                                  {canEditDelete && (
+                                    <div className="flex gap-1">
+                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
+                                        setEditingOcorrenciaId(o.id);
+                                        setEditOcorrenciaDesc(o.descricao);
+                                        setEditOcorrenciaImpacto(o.impacto);
+                                      }}><Pencil className="h-3 w-3" /></Button>
+                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteOcorrenciaItem(o.id)}><Trash2 className="h-3 w-3" /></Button>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </CardContent>
@@ -710,23 +931,47 @@ export default function DiarioObra() {
                         {addingParalisacao && <InlineParalisacaoForm onSave={addParalisacaoItem} onCancel={() => setAddingParalisacao(false)} />}
                         {paralisacoes.length === 0 && !addingParalisacao ? <p className="text-sm text-muted-foreground text-center py-4">Nenhum registro</p> : (
                           <Table>
-                            <TableHeader><TableRow><TableHead>Motivo</TableHead><TableHead>Início</TableHead><TableHead>Fim</TableHead><TableHead>Dias</TableHead>{canEditDelete && <TableHead className="w-10"></TableHead>}</TableRow></TableHeader>
+                            <TableHeader><TableRow><TableHead>Motivo</TableHead><TableHead>Início</TableHead><TableHead>Fim</TableHead><TableHead>Dias</TableHead>{canEditDelete && <TableHead className="w-20"></TableHead>}</TableRow></TableHeader>
                             <TableBody>
-                              {paralisacoes.map(p => (
-                                <TableRow key={p.id}>
-                                  <TableCell>{p.motivo}</TableCell>
-                                  <TableCell>{new Date(p.data_inicio + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
-                                  <TableCell>{p.data_fim ? new Date(p.data_fim + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
-                                  <TableCell>{p.total_dias}</TableCell>
-                                  {canEditDelete && (
-                                    <TableCell>
-                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteParalisacaoItem(p.id)}>
-                                        <Trash2 className="h-3 w-3" />
-                                      </Button>
-                                    </TableCell>
-                                  )}
-                                </TableRow>
-                              ))}
+                              {paralisacoes.map(p => {
+                                if (editingParalisacaoId === p.id) {
+                                  return (
+                                    <TableRow key={p.id}>
+                                      <TableCell><Input value={editParalisacaoMotivo} onChange={ev => setEditParalisacaoMotivo(ev.target.value)} className="h-8" /></TableCell>
+                                      <TableCell><Input type="date" value={editParalisacaoInicio} onChange={ev => setEditParalisacaoInicio(ev.target.value)} className="h-8" /></TableCell>
+                                      <TableCell><Input type="date" value={editParalisacaoFim} onChange={ev => setEditParalisacaoFim(ev.target.value)} className="h-8" /></TableCell>
+                                      <TableCell>—</TableCell>
+                                      <TableCell>
+                                        <div className="flex gap-1">
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => updateParalisacaoItem(p.id)}><Save className="h-3 w-3" /></Button>
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditingParalisacaoId(null)}><X className="h-3 w-3" /></Button>
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                }
+                                return (
+                                  <TableRow key={p.id}>
+                                    <TableCell>{p.motivo}</TableCell>
+                                    <TableCell>{new Date(p.data_inicio + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
+                                    <TableCell>{p.data_fim ? new Date(p.data_fim + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
+                                    <TableCell>{p.total_dias}</TableCell>
+                                    {canEditDelete && (
+                                      <TableCell>
+                                        <div className="flex gap-1">
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
+                                            setEditingParalisacaoId(p.id);
+                                            setEditParalisacaoMotivo(p.motivo);
+                                            setEditParalisacaoInicio(p.data_inicio);
+                                            setEditParalisacaoFim(p.data_fim || '');
+                                          }}><Pencil className="h-3 w-3" /></Button>
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteParalisacaoItem(p.id)}><Trash2 className="h-3 w-3" /></Button>
+                                        </div>
+                                      </TableCell>
+                                    )}
+                                  </TableRow>
+                                );
+                              })}
                             </TableBody>
                           </Table>
                         )}
@@ -775,40 +1020,6 @@ export default function DiarioObra() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog Editar Diário */}
-      <Dialog open={editDiarioOpen} onOpenChange={setEditDiarioOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="font-display">Editar Diário de Obra</DialogTitle>
-            <DialogDescription>Altere os dados do diário e clique em salvar.</DialogDescription>
-          </DialogHeader>
-          {editingDiario && (
-            <form onSubmit={handleEditDiario} className="space-y-4">
-              <div><Label>Data *</Label><Input type="date" value={editingDiario.data} onChange={e => setEditingDiario({ ...editingDiario, data: e.target.value })} required /></div>
-              <div>
-                <Label>Clima</Label>
-                <Select value={editingDiario.clima} onValueChange={v => setEditingDiario({ ...editingDiario, clima: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="sol">☀️ Sol</SelectItem>
-                    <SelectItem value="nublado">☁️ Nublado</SelectItem>
-                    <SelectItem value="chuva">🌧️ Chuva</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><Label>Temperatura</Label><Input placeholder="Ex: 28°C" value={editingDiario.temperatura || ''} onChange={e => setEditingDiario({ ...editingDiario, temperatura: e.target.value })} /></div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><Label>Horário Início</Label><Input type="time" value={editingDiario.horario_inicio || ''} onChange={e => setEditingDiario({ ...editingDiario, horario_inicio: e.target.value })} /></div>
-                <div><Label>Horário Fim</Label><Input type="time" value={editingDiario.horario_fim || ''} onChange={e => setEditingDiario({ ...editingDiario, horario_fim: e.target.value })} /></div>
-              </div>
-              <div><Label>Observações Gerais</Label><Textarea value={editingDiario.observacoes_gerais || ''} onChange={e => setEditingDiario({ ...editingDiario, observacoes_gerais: e.target.value })} /></div>
-              <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">Salvar Alterações</Button>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
 
       {/* Dialog Confirmar Exclusão */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
