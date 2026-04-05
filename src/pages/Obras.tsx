@@ -114,7 +114,7 @@ export default function Obras() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-display font-bold">Obras</h1>
-        {canManage && (
+        {canCreate && (
           <Button onClick={() => setNovaObraOpen(true)} className="bg-accent text-accent-foreground hover:bg-accent/90">
             <Plus className="h-4 w-4 mr-2" /> Nova Obra
           </Button>
