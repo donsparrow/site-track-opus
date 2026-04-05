@@ -925,23 +925,47 @@ export default function DiarioObra() {
                         {addingParalisacao && <InlineParalisacaoForm onSave={addParalisacaoItem} onCancel={() => setAddingParalisacao(false)} />}
                         {paralisacoes.length === 0 && !addingParalisacao ? <p className="text-sm text-muted-foreground text-center py-4">Nenhum registro</p> : (
                           <Table>
-                            <TableHeader><TableRow><TableHead>Motivo</TableHead><TableHead>Início</TableHead><TableHead>Fim</TableHead><TableHead>Dias</TableHead>{canEditDelete && <TableHead className="w-10"></TableHead>}</TableRow></TableHeader>
+                            <TableHeader><TableRow><TableHead>Motivo</TableHead><TableHead>Início</TableHead><TableHead>Fim</TableHead><TableHead>Dias</TableHead>{canEditDelete && <TableHead className="w-20"></TableHead>}</TableRow></TableHeader>
                             <TableBody>
-                              {paralisacoes.map(p => (
-                                <TableRow key={p.id}>
-                                  <TableCell>{p.motivo}</TableCell>
-                                  <TableCell>{new Date(p.data_inicio + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
-                                  <TableCell>{p.data_fim ? new Date(p.data_fim + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
-                                  <TableCell>{p.total_dias}</TableCell>
-                                  {canEditDelete && (
-                                    <TableCell>
-                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteParalisacaoItem(p.id)}>
-                                        <Trash2 className="h-3 w-3" />
-                                      </Button>
-                                    </TableCell>
-                                  )}
-                                </TableRow>
-                              ))}
+                              {paralisacoes.map(p => {
+                                if (editingParalisacaoId === p.id) {
+                                  return (
+                                    <TableRow key={p.id}>
+                                      <TableCell><Input value={editParalisacaoMotivo} onChange={ev => setEditParalisacaoMotivo(ev.target.value)} className="h-8" /></TableCell>
+                                      <TableCell><Input type="date" value={editParalisacaoInicio} onChange={ev => setEditParalisacaoInicio(ev.target.value)} className="h-8" /></TableCell>
+                                      <TableCell><Input type="date" value={editParalisacaoFim} onChange={ev => setEditParalisacaoFim(ev.target.value)} className="h-8" /></TableCell>
+                                      <TableCell>—</TableCell>
+                                      <TableCell>
+                                        <div className="flex gap-1">
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => updateParalisacaoItem(p.id)}><Save className="h-3 w-3" /></Button>
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditingParalisacaoId(null)}><X className="h-3 w-3" /></Button>
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                }
+                                return (
+                                  <TableRow key={p.id}>
+                                    <TableCell>{p.motivo}</TableCell>
+                                    <TableCell>{new Date(p.data_inicio + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
+                                    <TableCell>{p.data_fim ? new Date(p.data_fim + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
+                                    <TableCell>{p.total_dias}</TableCell>
+                                    {canEditDelete && (
+                                      <TableCell>
+                                        <div className="flex gap-1">
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
+                                            setEditingParalisacaoId(p.id);
+                                            setEditParalisacaoMotivo(p.motivo);
+                                            setEditParalisacaoInicio(p.data_inicio);
+                                            setEditParalisacaoFim(p.data_fim || '');
+                                          }}><Pencil className="h-3 w-3" /></Button>
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteParalisacaoItem(p.id)}><Trash2 className="h-3 w-3" /></Button>
+                                        </div>
+                                      </TableCell>
+                                    )}
+                                  </TableRow>
+                                );
+                              })}
                             </TableBody>
                           </Table>
                         )}
