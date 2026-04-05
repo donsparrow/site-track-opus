@@ -121,13 +121,31 @@ export default function ObraDetail() {
     setDespesas((despesasData || []) as Despesa[]);
     const totalGasto = (despesasData || []).reduce((s, d) => s + Number(d.valor), 0);
 
-    setFinanceiro({
-      contrato: totalContrato,
-      recebido: totalRecebido,
-      aReceber: totalAReceber,
-      gasto: totalGasto,
-      saldo: totalRecebido - totalGasto,
-    });
+    // Fetch document stats
+    if (canSeeDocs) {
+      const { data: pastas } = await supabase.from('documentos_pastas').select('id').eq('obra_id', id!);
+      const pastaIds = (pastas || []).map(p => p.id);
+      if (pastaIds.length > 0) {
+        const { data: arquivos } = await supabase
+          .from('documentos_arquivos')
+          .select('nome_arquivo, tipo, created_at')
+          .in('pasta_id', pastaIds)
+          .order('created_at', { ascending: false });
+        const files = arquivos || [];
+        const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+        const pdfs = files.filter(f => f.tipo === 'pdf' || f.nome_arquivo.toLowerCase().endsWith('.pdf')).length;
+        const imgs = files.filter(f => imageExts.some(ext => f.nome_arquivo.toLowerCase().endsWith(`.${ext}`))).length;
+        setDocStats({
+          totalPastas: pastaIds.length,
+          totalArquivos: files.length,
+          pdfs,
+          imagens: imgs,
+          recentFiles: files.slice(0, 5).map(f => ({ nome: f.nome_arquivo, tipo: f.tipo, created_at: f.created_at })),
+        });
+      } else {
+        setDocStats({ totalPastas: 0, totalArquivos: 0, pdfs: 0, imagens: 0, recentFiles: [] });
+      }
+    }
 
     setLoading(false);
   };
