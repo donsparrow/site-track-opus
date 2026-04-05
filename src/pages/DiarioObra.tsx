@@ -546,7 +546,13 @@ export default function DiarioObra() {
                         <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={(e) => {
                           e.stopPropagation();
                           fetchDiarioDetails(d);
-                          setTimeout(() => enterEditMode(), 100);
+                          setGlobalEditMode(true);
+                          setEditHeaderData(d.data);
+                          setEditHeaderClima(d.clima);
+                          setEditHeaderTemp(d.temperatura || '');
+                          setEditHeaderInicio(d.horario_inicio || '');
+                          setEditHeaderFim(d.horario_fim || '');
+                          setEditHeaderObs(d.observacoes_gerais || '');
                         }}>
                           <Pencil className="h-3 w-3 mr-1" />Editar
                         </Button>
