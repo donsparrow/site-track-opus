@@ -183,53 +183,55 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Contratos</p>
-                <p className="text-2xl font-display font-bold">{formatCurrency(totalGeral)}</p>
+      {/* Summary cards - only if user can see financeiro */}
+      {canSeeFinanceiro && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Contratos</p>
+                  <p className="text-2xl font-display font-bold">{formatCurrency(totalGeral)}</p>
+                </div>
+                <DollarSign className="h-8 w-8 text-accent" />
               </div>
-              <DollarSign className="h-8 w-8 text-accent" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Recebido</p>
-                <p className="text-2xl font-display font-bold text-success">{formatCurrency(totalRecebidoGeral)}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Recebido</p>
+                  <p className="text-2xl font-display font-bold text-success">{formatCurrency(totalRecebidoGeral)}</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-success" />
               </div>
-              <TrendingUp className="h-8 w-8 text-success" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Gastos</p>
-                <p className="text-2xl font-display font-bold text-destructive">{formatCurrency(totalGastoGeral)}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Gastos</p>
+                  <p className="text-2xl font-display font-bold text-destructive">{formatCurrency(totalGastoGeral)}</p>
+                </div>
+                <TrendingDown className="h-8 w-8 text-destructive" />
               </div>
-              <TrendingDown className="h-8 w-8 text-destructive" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Parcelas Atrasadas</p>
-                <p className={`text-2xl font-display font-bold ${parcelasAtrasadas > 0 ? 'text-destructive' : 'text-foreground'}`}>{parcelasAtrasadas}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Parcelas Atrasadas</p>
+                  <p className={`text-2xl font-display font-bold ${parcelasAtrasadas > 0 ? 'text-destructive' : 'text-foreground'}`}>{parcelasAtrasadas}</p>
+                </div>
+                <AlertTriangle className={`h-8 w-8 ${parcelasAtrasadas > 0 ? 'text-destructive' : 'text-muted-foreground'}`} />
               </div>
-              <AlertTriangle className={`h-8 w-8 ${parcelasAtrasadas > 0 ? 'text-destructive' : 'text-muted-foreground'}`} />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Charts */}
       {(despesasPorTipo.length > 0 || evolucaoMensal.length > 0) && (
