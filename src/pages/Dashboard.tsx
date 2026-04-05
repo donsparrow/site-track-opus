@@ -234,7 +234,7 @@ export default function Dashboard() {
       )}
 
       {/* Charts */}
-      {(despesasPorTipo.length > 0 || evolucaoMensal.length > 0) && (
+      {canSeeFinanceiro && (despesasPorTipo.length > 0 || evolucaoMensal.length > 0) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {despesasPorTipo.length > 0 && (
             <Card>
