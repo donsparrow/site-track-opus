@@ -844,19 +844,43 @@ export default function DiarioObra() {
                         {addingOcorrencia && <InlineOcorrenciaForm onSave={addOcorrenciaItem} onCancel={() => setAddingOcorrencia(false)} />}
                         {ocorrencias.length === 0 && !addingOcorrencia ? <p className="text-sm text-muted-foreground text-center py-4">Nenhum registro</p> : (
                           <div className="space-y-2">
-                            {ocorrencias.map(o => (
-                              <div key={o.id} className="flex items-center gap-2 p-2 rounded border">
-                                <span className="flex-1 text-sm">{o.descricao}</span>
-                                <Badge variant={o.impacto === 'alto' ? 'destructive' : o.impacto === 'medio' ? 'secondary' : 'outline'}>
-                                  {o.impacto}
-                                </Badge>
-                                {canEditDelete && (
-                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteOcorrenciaItem(o.id)}>
-                                    <Trash2 className="h-3 w-3" />
-                                  </Button>
-                                )}
-                              </div>
-                            ))}
+                            {ocorrencias.map(o => {
+                              if (editingOcorrenciaId === o.id) {
+                                return (
+                                  <div key={o.id} className="flex items-center gap-2 p-2 rounded border border-accent bg-accent/5">
+                                    <Input value={editOcorrenciaDesc} onChange={ev => setEditOcorrenciaDesc(ev.target.value)} className="flex-1 h-8" />
+                                    <Select value={editOcorrenciaImpacto} onValueChange={setEditOcorrenciaImpacto}>
+                                      <SelectTrigger className="w-28 h-8"><SelectValue /></SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="baixo">Baixo</SelectItem>
+                                        <SelectItem value="medio">Médio</SelectItem>
+                                        <SelectItem value="alto">Alto</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => updateOcorrenciaItem(o.id)}><Save className="h-3 w-3" /></Button>
+                                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditingOcorrenciaId(null)}><X className="h-3 w-3" /></Button>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <div key={o.id} className="flex items-center gap-2 p-2 rounded border">
+                                  <span className="flex-1 text-sm">{o.descricao}</span>
+                                  <Badge variant={o.impacto === 'alto' ? 'destructive' : o.impacto === 'medio' ? 'secondary' : 'outline'}>
+                                    {o.impacto}
+                                  </Badge>
+                                  {canEditDelete && (
+                                    <div className="flex gap-1">
+                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
+                                        setEditingOcorrenciaId(o.id);
+                                        setEditOcorrenciaDesc(o.descricao);
+                                        setEditOcorrenciaImpacto(o.impacto);
+                                      }}><Pencil className="h-3 w-3" /></Button>
+                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteOcorrenciaItem(o.id)}><Trash2 className="h-3 w-3" /></Button>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </CardContent>
