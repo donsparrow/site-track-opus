@@ -155,7 +155,7 @@ export default function Financeiro() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); fetchAnexos(); }, [filterObra]);
+  useEffect(() => { if (!obrasFilterLoading) { fetchData(); fetchAnexos(); } }, [filterObra, obrasFilterLoading]);
 
   const getAnexosPorRegistro = (registroId: string, tipoRegistro: string) => {
     return anexos.filter(a => a.registro_id === registroId && a.tipo_registro === tipoRegistro);
