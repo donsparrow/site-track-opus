@@ -443,7 +443,7 @@ export default function ObraDetail() {
       </Card>
 
       {/* Documentos card */}
-      {pode('documentos', 'visualizar') && (
+      {canSeeDocs && (
         <Card className="mb-8">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="font-display text-base flex items-center gap-2">
