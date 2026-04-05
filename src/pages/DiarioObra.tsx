@@ -545,8 +545,8 @@ export default function DiarioObra() {
                       <div className="flex gap-1 mt-2">
                         <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={(e) => {
                           e.stopPropagation();
-                          setEditingDiario({ ...d });
-                          setEditDiarioOpen(true);
+                          fetchDiarioDetails(d);
+                          setTimeout(() => enterEditMode(), 100);
                         }}>
                           <Pencil className="h-3 w-3 mr-1" />Editar
                         </Button>
