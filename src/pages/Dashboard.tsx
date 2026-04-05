@@ -37,6 +37,10 @@ export default function Dashboard() {
   const { canEdit } = useAuth();
   const navigate = useNavigate();
   const { filterObras, loading: obrasFilterLoading } = useObrasFiltered();
+  const { pode } = usePermissions();
+  const canSeeFinanceiro = pode('financeiro', 'visualizar');
+  const canSeeDiario = pode('diario_obra', 'visualizar');
+  const canSeeCronograma = pode('cronograma', 'visualizar');
   const [obras, setObras] = useState<ObraResumo[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
