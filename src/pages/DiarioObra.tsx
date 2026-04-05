@@ -568,21 +568,64 @@ export default function DiarioObra() {
           {/* Right: detail */}
           <div className="lg:col-span-2">
             {selectedDiario ? (
-              <div className="space-y-4">
+              <div className={`space-y-4 ${globalEditMode ? 'ring-2 ring-accent rounded-lg p-3' : ''}`}>
+                {/* Edit mode bar */}
+                {globalEditMode && (
+                  <div className="flex items-center justify-between bg-accent/10 rounded-lg p-3 border border-accent">
+                    <span className="text-sm font-medium text-accent flex items-center gap-2"><Pencil className="h-4 w-4" />Modo Edição Ativo</span>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={exitEditMode}><X className="h-3 w-3 mr-1" />Cancelar</Button>
+                      <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={saveHeaderChanges}><Save className="h-3 w-3 mr-1" />Salvar Alterações</Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Non-edit mode: show edit button */}
+                {!globalEditMode && canEditDelete && (
+                  <div className="flex justify-end">
+                    <Button size="sm" variant="outline" onClick={enterEditMode}><Pencil className="h-3 w-3 mr-1" />Editar Diário</Button>
+                  </div>
+                )}
+
                 <Card>
                   <CardHeader className="pb-3">
-                    <div className="flex items-center gap-3">
-                      <ClimaIcon className="h-6 w-6 text-accent" />
-                      <div>
-                        <CardTitle className="font-display">{new Date(selectedDiario.data + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</CardTitle>
-                        <p className="text-sm text-muted-foreground">
-                          {selectedDiario.horario_inicio?.slice(0,5)} - {selectedDiario.horario_fim?.slice(0,5)}
-                          {selectedDiario.temperatura && ` · ${selectedDiario.temperatura}`}
-                        </p>
+                    {globalEditMode ? (
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
+                          <div><Label className="text-xs">Data</Label><Input type="date" value={editHeaderData} onChange={e => setEditHeaderData(e.target.value)} /></div>
+                          <div>
+                            <Label className="text-xs">Clima</Label>
+                            <Select value={editHeaderClima} onValueChange={setEditHeaderClima}>
+                              <SelectTrigger><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="sol">☀️ Sol</SelectItem>
+                                <SelectItem value="nublado">☁️ Nublado</SelectItem>
+                                <SelectItem value="chuva">🌧️ Chuva</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                          <div><Label className="text-xs">Temperatura</Label><Input placeholder="Ex: 28°C" value={editHeaderTemp} onChange={e => setEditHeaderTemp(e.target.value)} /></div>
+                          <div><Label className="text-xs">Horário Início</Label><Input type="time" value={editHeaderInicio} onChange={e => setEditHeaderInicio(e.target.value)} /></div>
+                          <div><Label className="text-xs">Horário Fim</Label><Input type="time" value={editHeaderFim} onChange={e => setEditHeaderFim(e.target.value)} /></div>
+                        </div>
+                        <div><Label className="text-xs">Observações</Label><Textarea value={editHeaderObs} onChange={e => setEditHeaderObs(e.target.value)} className="min-h-[60px]" /></div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <ClimaIcon className="h-6 w-6 text-accent" />
+                        <div>
+                          <CardTitle className="font-display">{new Date(selectedDiario.data + 'T00:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</CardTitle>
+                          <p className="text-sm text-muted-foreground">
+                            {selectedDiario.horario_inicio?.slice(0,5)} - {selectedDiario.horario_fim?.slice(0,5)}
+                            {selectedDiario.temperatura && ` · ${selectedDiario.temperatura}`}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </CardHeader>
-                  {selectedDiario.observacoes_gerais && (
+                  {!globalEditMode && selectedDiario.observacoes_gerais && (
                     <CardContent className="pt-0">
                       <p className="text-sm">{selectedDiario.observacoes_gerais}</p>
                     </CardContent>
