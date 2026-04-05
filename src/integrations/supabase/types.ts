@@ -1516,6 +1516,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_obra: { Args: { _obra_id: string }; Returns: boolean }
+      can_manage_usuario_obra: {
+        Args: { _obra_id: string; _target_user_id: string }
+        Returns: boolean
+      }
       create_empresa_and_link: {
         Args: { _cnpj?: string; _nome: string }
         Returns: string
