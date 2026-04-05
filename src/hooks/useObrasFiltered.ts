@@ -10,7 +10,7 @@ export function useObrasFiltered() {
   useEffect(() => {
     if (!user) { setLoading(false); return; }
 
-    if (role === 'admin' || role === 'trabalhador' || role === 'super_admin') {
+    if (role === 'admin' || role === 'super_admin') {
       setAllowedObraIds(null); // null = all obras
       setLoading(false);
       return;
