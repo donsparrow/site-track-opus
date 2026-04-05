@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Plus, Sun, Cloud, CloudRain, Trash2, Upload, Users, Wrench, Package, AlertTriangle, Image as ImageIcon, PauseCircle, Pencil, Save, X } from 'lucide-react';
@@ -39,7 +40,7 @@ function mapLegacyStatus(s: string) {
 }
 
 export default function DiarioObra() {
-  const { canEdit, user } = useAuth();
+  const { canEdit, isAdmin, isSuperAdmin, user } = useAuth();
   const { filterObras } = useObrasFiltered();
   const [obras, setObras] = useState<any[]>([]);
   const [selectedObra, setSelectedObra] = useState('');
@@ -47,6 +48,12 @@ export default function DiarioObra() {
   const [selectedDiario, setSelectedDiario] = useState<any>(null);
   const [diarioOpen, setDiarioOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [editingDiario, setEditingDiario] = useState<any>(null);
+  const [editDiarioOpen, setEditDiarioOpen] = useState(false);
+  const [deleteDiarioId, setDeleteDiarioId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const canEditDelete = isAdmin || isSuperAdmin;
 
   // New diario form
   const [formData, setFormData] = useState({
@@ -192,6 +199,46 @@ export default function DiarioObra() {
     setDiarioOpen(false);
     fetchDiarios(selectedObra);
     if (data) fetchDiarioDetails(data);
+  };
+
+  const handleEditDiario = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDiario) return;
+    const { error } = await supabase.from('diario_obra').update({
+      data: editingDiario.data,
+      clima: editingDiario.clima,
+      temperatura: editingDiario.temperatura || null,
+      horario_inicio: editingDiario.horario_inicio || null,
+      horario_fim: editingDiario.horario_fim || null,
+      observacoes_gerais: editingDiario.observacoes_gerais || null,
+    }).eq('id', editingDiario.id);
+    if (error) { toast.error('Erro: ' + error.message); return; }
+    toast.success('Diário atualizado!');
+    setEditDiarioOpen(false);
+    setEditingDiario(null);
+    fetchDiarios(selectedObra);
+    if (selectedDiario?.id === editingDiario.id) {
+      fetchDiarioDetails({ ...selectedDiario, ...editingDiario });
+    }
+  };
+
+  const handleDeleteDiario = async () => {
+    if (!deleteDiarioId) return;
+    await Promise.all([
+      supabase.from('diario_equipe').delete().eq('diario_id', deleteDiarioId),
+      supabase.from('diario_atividades').delete().eq('diario_id', deleteDiarioId),
+      supabase.from('diario_materiais').delete().eq('diario_id', deleteDiarioId),
+      supabase.from('diario_ocorrencias').delete().eq('diario_id', deleteDiarioId),
+      supabase.from('diario_imagens').delete().eq('diario_id', deleteDiarioId),
+      supabase.from('diario_paralisacoes').delete().eq('diario_id', deleteDiarioId),
+    ]);
+    const { error } = await supabase.from('diario_obra').delete().eq('id', deleteDiarioId);
+    if (error) { toast.error('Erro ao excluir: ' + error.message); return; }
+    toast.success('Diário excluído!');
+    setDeleteDialogOpen(false);
+    setDeleteDiarioId(null);
+    if (selectedDiario?.id === deleteDiarioId) setSelectedDiario(null);
+    fetchDiarios(selectedObra);
   };
 
   const addEquipeItem = async (nome: string, funcao: string, horas: string) => {
@@ -349,10 +396,10 @@ export default function DiarioObra() {
               diarios.map(d => {
                 const Icon = climaIcons[d.clima] || Sun;
                 return (
-                  <button
+                  <div
                     key={d.id}
                     onClick={() => fetchDiarioDetails(d)}
-                    className={`w-full text-left p-3 rounded-lg border transition-colors ${selectedDiario?.id === d.id ? 'bg-accent/10 border-accent' : 'hover:bg-muted'}`}
+                    className={`w-full text-left p-3 rounded-lg border transition-colors cursor-pointer ${selectedDiario?.id === d.id ? 'bg-accent/10 border-accent' : 'hover:bg-muted'}`}
                   >
                     <div className="flex items-center gap-2">
                       <Icon className="h-4 w-4 text-muted-foreground" />
@@ -362,7 +409,25 @@ export default function DiarioObra() {
                     {d.horario_inicio && d.horario_fim && (
                       <p className="text-xs text-muted-foreground mt-1">{d.horario_inicio?.slice(0,5)} - {d.horario_fim?.slice(0,5)}</p>
                     )}
-                  </button>
+                    {canEditDelete && (
+                      <div className="flex gap-1 mt-2">
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingDiario({ ...d });
+                          setEditDiarioOpen(true);
+                        }}>
+                          <Pencil className="h-3 w-3 mr-1" />Editar
+                        </Button>
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-xs text-destructive" onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteDiarioId(d.id);
+                          setDeleteDialogOpen(true);
+                        }}>
+                          <Trash2 className="h-3 w-3 mr-1" />Excluir
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 );
               })
             )}
@@ -640,6 +705,59 @@ export default function DiarioObra() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog Editar Diário */}
+      <Dialog open={editDiarioOpen} onOpenChange={setEditDiarioOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display">Editar Diário de Obra</DialogTitle>
+            <DialogDescription>Altere os dados do diário e clique em salvar.</DialogDescription>
+          </DialogHeader>
+          {editingDiario && (
+            <form onSubmit={handleEditDiario} className="space-y-4">
+              <div><Label>Data *</Label><Input type="date" value={editingDiario.data} onChange={e => setEditingDiario({ ...editingDiario, data: e.target.value })} required /></div>
+              <div>
+                <Label>Clima</Label>
+                <Select value={editingDiario.clima} onValueChange={v => setEditingDiario({ ...editingDiario, clima: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sol">☀️ Sol</SelectItem>
+                    <SelectItem value="nublado">☁️ Nublado</SelectItem>
+                    <SelectItem value="chuva">🌧️ Chuva</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Temperatura</Label><Input placeholder="Ex: 28°C" value={editingDiario.temperatura || ''} onChange={e => setEditingDiario({ ...editingDiario, temperatura: e.target.value })} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Horário Início</Label><Input type="time" value={editingDiario.horario_inicio || ''} onChange={e => setEditingDiario({ ...editingDiario, horario_inicio: e.target.value })} /></div>
+                <div><Label>Horário Fim</Label><Input type="time" value={editingDiario.horario_fim || ''} onChange={e => setEditingDiario({ ...editingDiario, horario_fim: e.target.value })} /></div>
+              </div>
+              <div><Label>Observações Gerais</Label><Textarea value={editingDiario.observacoes_gerais || ''} onChange={e => setEditingDiario({ ...editingDiario, observacoes_gerais: e.target.value })} /></div>
+              <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">Salvar Alterações</Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Confirmar Exclusão */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir diário de obra?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este diário? Todos os dados relacionados (equipe, atividades, materiais, ocorrências, imagens e paralisações) serão removidos permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteDiario} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
