@@ -38,6 +38,8 @@ interface Despesa {
 export default function ObraDetail() {
   const { id } = useParams<{ id: string }>();
   const { canEdit, role } = useAuth();
+  const { pode } = usePermissions();
+  const canSeeDocs = pode('documentos', 'visualizar');
   const [obra, setObra] = useState<any>(null);
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
   const [despesas, setDespesas] = useState<Despesa[]>([]);
@@ -46,6 +48,11 @@ export default function ObraDetail() {
   const [exportingPdf, setExportingPdf] = useState(false);
   const [saldoPrazo, setSaldoPrazo] = useState<number | null>(null);
   const chartRef = useRef<HTMLDivElement>(null);
+
+  // Documentos
+  const [docStats, setDocStats] = useState<{ totalPastas: number; totalArquivos: number; pdfs: number; imagens: number; recentFiles: { nome: string; tipo: string; created_at: string }[] }>({
+    totalPastas: 0, totalArquivos: 0, pdfs: 0, imagens: 0, recentFiles: [],
+  });
 
   // Delete obra
   const [deleteObraOpen, setDeleteObraOpen] = useState(false);
