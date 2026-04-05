@@ -8,7 +8,7 @@ export function useObrasFiltered() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) { setLoading(false); return; }
+    if (!user) { setAllowedObraIds(null); setLoading(false); return; }
 
     if (role === 'admin' || role === 'super_admin') {
       setAllowedObraIds(null); // null = all obras
@@ -16,8 +16,9 @@ export function useObrasFiltered() {
       return;
     }
 
-    // cliente/sindico: fetch linked obras
-    const fetch = async () => {
+    // trabalhador/cliente/sindico: fetch linked obras
+    const fetchLinks = async () => {
+      setLoading(true);
       const { data } = await supabase
         .from('usuario_obras')
         .select('obra_id')
@@ -25,15 +26,18 @@ export function useObrasFiltered() {
       setAllowedObraIds((data || []).map((d: any) => d.obra_id));
       setLoading(false);
     };
-    fetch();
+    fetchLinks();
   }, [user, role]);
 
   const filterObras = <T extends { id: string }>(obras: T[]): T[] => {
+    // While loading, return empty to prevent data leakage
+    if (loading) return [];
     if (allowedObraIds === null) return obras;
     return obras.filter(o => allowedObraIds.includes(o.id));
   };
 
   const isObraAllowed = (obraId: string): boolean => {
+    if (loading) return false;
     if (allowedObraIds === null) return true;
     return allowedObraIds.includes(obraId);
   };
