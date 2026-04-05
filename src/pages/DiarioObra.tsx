@@ -201,6 +201,46 @@ export default function DiarioObra() {
     if (data) fetchDiarioDetails(data);
   };
 
+  const handleEditDiario = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDiario) return;
+    const { error } = await supabase.from('diario_obra').update({
+      data: editingDiario.data,
+      clima: editingDiario.clima,
+      temperatura: editingDiario.temperatura || null,
+      horario_inicio: editingDiario.horario_inicio || null,
+      horario_fim: editingDiario.horario_fim || null,
+      observacoes_gerais: editingDiario.observacoes_gerais || null,
+    }).eq('id', editingDiario.id);
+    if (error) { toast.error('Erro: ' + error.message); return; }
+    toast.success('Diário atualizado!');
+    setEditDiarioOpen(false);
+    setEditingDiario(null);
+    fetchDiarios(selectedObra);
+    if (selectedDiario?.id === editingDiario.id) {
+      fetchDiarioDetails({ ...selectedDiario, ...editingDiario });
+    }
+  };
+
+  const handleDeleteDiario = async () => {
+    if (!deleteDiarioId) return;
+    await Promise.all([
+      supabase.from('diario_equipe').delete().eq('diario_id', deleteDiarioId),
+      supabase.from('diario_atividades').delete().eq('diario_id', deleteDiarioId),
+      supabase.from('diario_materiais').delete().eq('diario_id', deleteDiarioId),
+      supabase.from('diario_ocorrencias').delete().eq('diario_id', deleteDiarioId),
+      supabase.from('diario_imagens').delete().eq('diario_id', deleteDiarioId),
+      supabase.from('diario_paralisacoes').delete().eq('diario_id', deleteDiarioId),
+    ]);
+    const { error } = await supabase.from('diario_obra').delete().eq('id', deleteDiarioId);
+    if (error) { toast.error('Erro ao excluir: ' + error.message); return; }
+    toast.success('Diário excluído!');
+    setDeleteDialogOpen(false);
+    setDeleteDiarioId(null);
+    if (selectedDiario?.id === deleteDiarioId) setSelectedDiario(null);
+    fetchDiarios(selectedObra);
+  };
+
   const addEquipeItem = async (nome: string, funcao: string, horas: string) => {
     if (!selectedDiario) return;
     const { error } = await supabase.from('diario_equipe').insert({
