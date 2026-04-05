@@ -173,7 +173,7 @@ export default function Clientes() {
                           <Button variant="outline" size="sm" onClick={() => openEdit(c)}>
                             <Pencil className="h-4 w-4 mr-1" /> Editar
                           </Button>
-                          {isAdmin && (
+                          {canDelete && (
                             <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => openDelete(c)}>
                               <Trash2 className="h-4 w-4 mr-1" /> Excluir
                             </Button>
