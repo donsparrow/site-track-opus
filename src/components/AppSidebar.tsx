@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions, ROUTE_MODULE_MAP } from '@/hooks/usePermissions';
 import {
   Building2, LayoutDashboard, Wallet, FileText,
   Users, LogOut, HardHat, UserCircle, ClipboardList, Settings, FolderOpen, CalendarRange
@@ -24,6 +25,7 @@ const navItemsAll = [
 
 export default function AppSidebar() {
   const { signOut, role, isAdmin, user } = useAuth();
+  const { pode, loading: permLoading } = usePermissions();
   const navigate = useNavigate();
   const empresaNome = useEmpresaNome();
 
@@ -32,7 +34,15 @@ export default function AppSidebar() {
     navigate('/');
   };
 
-  const visibleItems = navItemsAll.filter(item => role && item.roles.includes(role));
+  const visibleItems = navItemsAll.filter(item => {
+    if (!role || !item.roles.includes(role)) return false;
+    // Check module permission for items that have a module mapping
+    const modulo = ROUTE_MODULE_MAP[item.to];
+    if (modulo && !permLoading) {
+      return pode(modulo, 'visualizar');
+    }
+    return true; // items without module mapping (obras, clientes, empresas) use role-only
+  });
 
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
