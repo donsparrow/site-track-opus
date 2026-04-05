@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useObrasFiltered } from '@/hooks/useObrasFiltered';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +37,7 @@ const statusLabels: Record<string, string> = {
 export default function Obras() {
   const { role, isSuperAdmin, isAdmin } = useAuth();
   const { filterObras, loading: obrasFilterLoading } = useObrasFiltered();
+  const { pode } = usePermissions();
   const [obras, setObras] = useState<any[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
   const [novaObraOpen, setNovaObraOpen] = useState(false);
@@ -44,6 +46,7 @@ export default function Obras() {
   const [loading, setLoading] = useState(false);
 
   const canManage = isSuperAdmin || isAdmin;
+  const canCreate = pode('dashboard', 'criar') || canManage;
   const canView = true;
 
   const fetchObras = async () => {
