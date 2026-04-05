@@ -33,7 +33,7 @@ type ViewMode = 'list' | 'edit';
 
 export default function Relatorios() {
   const { canEdit, user, role } = useAuth();
-  const { filterObras, isObraAllowed } = useObrasFiltered();
+  const { filterObras, isObraAllowed, loading: obrasFilterLoading } = useObrasFiltered();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [obras, setObras] = useState<any[]>([]);
   const [selectedObra, setSelectedObra] = useState('');

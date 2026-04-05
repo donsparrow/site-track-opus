@@ -33,7 +33,7 @@ interface Anexo {
 
 export default function Financeiro() {
   const { canEdit, role } = useAuth();
-  const { filterObras } = useObrasFiltered();
+  const { filterObras, loading: obrasFilterLoading } = useObrasFiltered();
   const [receitas, setReceitas] = useState<any[]>([]);
   const [despesas, setDespesas] = useState<any[]>([]);
   const [expandedReceita, setExpandedReceita] = useState<string | null>(null);
