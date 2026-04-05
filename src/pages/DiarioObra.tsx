@@ -344,6 +344,7 @@ export default function DiarioObra() {
     else { toast.success('Atualizado!'); setEditingParalisacaoId(null); fetchDiarioDetails(selectedDiario); }
   };
 
+  const deleteEquipeItem = async (id: string) => {
     const { error } = await supabase.from('diario_equipe').delete().eq('id', id);
     if (error) toast.error(error.message);
     else { toast.success('Removido!'); fetchDiarioDetails(selectedDiario); }
