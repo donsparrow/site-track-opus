@@ -36,6 +36,7 @@ export const ROUTE_MODULE_MAP: Record<string, Modulo> = {
   '/documentacao': 'documentos',
   '/usuarios': 'usuarios',
   '/configuracoes': 'configuracoes',
+  '/clientes': 'clientes',
 };
 
 export { MODULOS, MODULO_LABELS };
