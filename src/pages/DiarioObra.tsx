@@ -659,6 +659,11 @@ export default function DiarioObra() {
                                 <Badge variant={o.impacto === 'alto' ? 'destructive' : o.impacto === 'medio' ? 'secondary' : 'outline'}>
                                   {o.impacto}
                                 </Badge>
+                                {canEditDelete && (
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteOcorrenciaItem(o.id)}>
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                )}
                               </div>
                             ))}
                           </div>
