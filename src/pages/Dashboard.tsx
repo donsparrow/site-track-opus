@@ -177,10 +177,12 @@ export default function Dashboard() {
                 Criar Diário
               </Button>
             )}
-            <Button onClick={() => setDialogOpen(true)} className="bg-accent text-accent-foreground hover:bg-accent/90">
-              <Plus className="h-4 w-4 mr-2" />
-              Nova Obra
-            </Button>
+            {pode('dashboard', 'criar') && (
+              <Button onClick={() => setDialogOpen(true)} className="bg-accent text-accent-foreground hover:bg-accent/90">
+                <Plus className="h-4 w-4 mr-2" />
+                Nova Obra
+              </Button>
+            )}
           </div>
         )}
       </div>

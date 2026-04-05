@@ -60,12 +60,10 @@ export default function ObraDetail() {
 
   const { isObraAllowed, loading: obrasFilterLoading } = useObrasFiltered();
 
-  const canSeeDocs = pode('documentos', 'visualizar');
-
   useEffect(() => {
     if (!id) return;
     if (!obrasFilterLoading && !permissionsLoading) fetchData();
-  }, [id, obrasFilterLoading, permissionsLoading, canSeeDocs]);
+  }, [id, obrasFilterLoading, permissionsLoading]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -443,7 +441,7 @@ export default function ObraDetail() {
       </Card>
 
       {/* Documentos card */}
-      {canSeeDocs && (
+      {pode('documentos', 'visualizar') && (
         <Card className="mb-8">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="font-display text-base flex items-center gap-2">

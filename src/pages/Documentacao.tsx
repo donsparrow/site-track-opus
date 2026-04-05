@@ -184,13 +184,17 @@ export default function Documentacao() {
       const { data: urlData } = supabase.storage.from('anexos').getPublicUrl(path);
 
       const tipo = file.type.startsWith('image') ? 'imagem' : 'pdf';
-      await supabase.from('documentos_arquivos').insert({
+      const { error: insertErr } = await supabase.from('documentos_arquivos').insert({
         pasta_id: pastaAberta,
         nome_arquivo: file.name,
         tipo,
         url_arquivo: urlData.publicUrl,
         tamanho: file.size,
       });
+      if (insertErr) {
+        toast.error(`Erro ao salvar registro: ${file.name} - ${insertErr.message}`);
+        continue;
+      }
     }
 
     toast.success('Upload concluído');
