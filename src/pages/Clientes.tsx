@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -12,7 +13,11 @@ import { Plus, Users, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Clientes() {
-  const { canEdit, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
+  const { pode } = usePermissions();
+  const canCreate = pode('clientes', 'criar');
+  const canEditCliente = pode('clientes', 'editar');
+  const canDelete = pode('clientes', 'excluir');
   const [clientes, setClientes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -122,7 +127,7 @@ export default function Clientes() {
           <h1 className="text-3xl font-display font-bold text-foreground">Clientes</h1>
           <p className="text-muted-foreground mt-1">Gerenciamento de clientes e condomínios</p>
         </div>
-        {canEdit && (
+        {canCreate && (
           <Button onClick={openNew} className="bg-accent text-accent-foreground hover:bg-accent/90">
             <Plus className="h-4 w-4 mr-2" /> Novo Cliente
           </Button>
@@ -151,7 +156,7 @@ export default function Clientes() {
                   <TableHead>Administradora</TableHead>
                   <TableHead>Telefone</TableHead>
                   <TableHead>E-mail</TableHead>
-                  {canEdit && <TableHead>Ações</TableHead>}
+                  {canEditCliente && <TableHead>Ações</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -162,13 +167,13 @@ export default function Clientes() {
                     <TableCell>{c.administradora || '—'}</TableCell>
                     <TableCell>{c.telefone || '—'}</TableCell>
                     <TableCell>{c.email || '—'}</TableCell>
-                    {canEdit && (
+                    {canEditCliente && (
                       <TableCell>
                         <div className="flex gap-2">
                           <Button variant="outline" size="sm" onClick={() => openEdit(c)}>
                             <Pencil className="h-4 w-4 mr-1" /> Editar
                           </Button>
-                          {isAdmin && (
+                          {canDelete && (
                             <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => openDelete(c)}>
                               <Trash2 className="h-4 w-4 mr-1" /> Excluir
                             </Button>

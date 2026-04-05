@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Building2, Plus, TrendingUp, TrendingDown, DollarSign, AlertTriangle, ClipboardList } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useObrasFiltered } from '@/hooks/useObrasFiltered';
+import { usePermissions } from '@/hooks/usePermissions';
 import NovaObraDialog from '@/components/NovaObraDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -36,6 +37,10 @@ export default function Dashboard() {
   const { canEdit } = useAuth();
   const navigate = useNavigate();
   const { filterObras, loading: obrasFilterLoading } = useObrasFiltered();
+  const { pode } = usePermissions();
+  const canSeeFinanceiro = pode('financeiro', 'visualizar');
+  const canSeeDiario = pode('diario_obra', 'visualizar');
+  const canSeeCronograma = pode('cronograma', 'visualizar');
   const [obras, setObras] = useState<ObraResumo[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -155,21 +160,23 @@ export default function Dashboard() {
         </div>
         {canEdit && (
           <div className="flex items-center gap-3">
-            <Button
-              onClick={() => {
-                if (obras.length === 1) {
-                  navigate(`/diario?obra=${obras[0].id}`);
-                } else {
-                  setSelectedObraDiario('');
-                  setDiarioDialogOpen(true);
-                }
-              }}
-              size="lg"
-              className="bg-accent text-accent-foreground hover:bg-accent/90 h-12 text-base px-[23px] mx-[3px]"
-            >
-              <ClipboardList className="h-5 w-5 mr-2" />
-              Criar Diário
-            </Button>
+            {canSeeDiario && (
+              <Button
+                onClick={() => {
+                  if (obras.length === 1) {
+                    navigate(`/diario?obra=${obras[0].id}`);
+                  } else {
+                    setSelectedObraDiario('');
+                    setDiarioDialogOpen(true);
+                  }
+                }}
+                size="lg"
+                className="bg-accent text-accent-foreground hover:bg-accent/90 h-12 text-base px-[23px] mx-[3px]"
+              >
+                <ClipboardList className="h-5 w-5 mr-2" />
+                Criar Diário
+              </Button>
+            )}
             <Button onClick={() => setDialogOpen(true)} className="bg-accent text-accent-foreground hover:bg-accent/90">
               <Plus className="h-4 w-4 mr-2" />
               Nova Obra
@@ -178,56 +185,58 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Contratos</p>
-                <p className="text-2xl font-display font-bold">{formatCurrency(totalGeral)}</p>
+      {/* Summary cards - only if user can see financeiro */}
+      {canSeeFinanceiro && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Contratos</p>
+                  <p className="text-2xl font-display font-bold">{formatCurrency(totalGeral)}</p>
+                </div>
+                <DollarSign className="h-8 w-8 text-accent" />
               </div>
-              <DollarSign className="h-8 w-8 text-accent" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Recebido</p>
-                <p className="text-2xl font-display font-bold text-success">{formatCurrency(totalRecebidoGeral)}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Recebido</p>
+                  <p className="text-2xl font-display font-bold text-success">{formatCurrency(totalRecebidoGeral)}</p>
+                </div>
+                <TrendingUp className="h-8 w-8 text-success" />
               </div>
-              <TrendingUp className="h-8 w-8 text-success" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Total Gastos</p>
-                <p className="text-2xl font-display font-bold text-destructive">{formatCurrency(totalGastoGeral)}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Gastos</p>
+                  <p className="text-2xl font-display font-bold text-destructive">{formatCurrency(totalGastoGeral)}</p>
+                </div>
+                <TrendingDown className="h-8 w-8 text-destructive" />
               </div>
-              <TrendingDown className="h-8 w-8 text-destructive" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Parcelas Atrasadas</p>
-                <p className={`text-2xl font-display font-bold ${parcelasAtrasadas > 0 ? 'text-destructive' : 'text-foreground'}`}>{parcelasAtrasadas}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">Parcelas Atrasadas</p>
+                  <p className={`text-2xl font-display font-bold ${parcelasAtrasadas > 0 ? 'text-destructive' : 'text-foreground'}`}>{parcelasAtrasadas}</p>
+                </div>
+                <AlertTriangle className={`h-8 w-8 ${parcelasAtrasadas > 0 ? 'text-destructive' : 'text-muted-foreground'}`} />
               </div>
-              <AlertTriangle className={`h-8 w-8 ${parcelasAtrasadas > 0 ? 'text-destructive' : 'text-muted-foreground'}`} />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Charts */}
-      {(despesasPorTipo.length > 0 || evolucaoMensal.length > 0) && (
+      {canSeeFinanceiro && (despesasPorTipo.length > 0 || evolucaoMensal.length > 0) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           {despesasPorTipo.length > 0 && (
             <Card>
@@ -304,26 +313,30 @@ export default function Dashboard() {
                     )}
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>
-                        <p className="text-muted-foreground">Contrato</p>
-                        <p className="font-semibold">{formatCurrency(obra.total_receitas)}</p>
+                    {canSeeFinanceiro ? (
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <p className="text-muted-foreground">Contrato</p>
+                          <p className="font-semibold">{formatCurrency(obra.total_receitas)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Recebido</p>
+                          <p className="font-semibold text-success">{formatCurrency(obra.total_recebido)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Gastos</p>
+                          <p className="font-semibold text-destructive">{formatCurrency(obra.total_despesas)}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground">Saldo</p>
+                          <p className={`font-semibold ${saldo < 0 ? 'text-destructive' : 'text-success'}`}>
+                            {formatCurrency(saldo)}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-muted-foreground">Recebido</p>
-                        <p className="font-semibold text-success">{formatCurrency(obra.total_recebido)}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Gastos</p>
-                        <p className="font-semibold text-destructive">{formatCurrency(obra.total_despesas)}</p>
-                      </div>
-                      <div>
-                        <p className="text-muted-foreground">Saldo</p>
-                        <p className={`font-semibold ${saldo < 0 ? 'text-destructive' : 'text-success'}`}>
-                          {formatCurrency(saldo)}
-                        </p>
-                      </div>
-                    </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Status: {statusConfig[obra.status]?.label || obra.status}</p>
+                    )}
                   </CardContent>
                 </Card>
               </Link>
