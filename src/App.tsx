@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import Auth from "./pages/Auth";
 import AppLayout from "./components/AppLayout";
 import Dashboard from "./pages/Dashboard";
@@ -32,17 +33,17 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Auth />} />
             <Route element={<AppLayout />}>
-              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/dashboard" element={<ProtectedRoute modulo="dashboard"><Dashboard /></ProtectedRoute>} />
               <Route path="/obras" element={<Obras />} />
               <Route path="/obras/:id" element={<ObraDetail />} />
-              <Route path="/financeiro" element={<Financeiro />} />
-              <Route path="/diario" element={<DiarioObra />} />
-              <Route path="/relatorios" element={<Relatorios />} />
-              <Route path="/configuracoes" element={<Configuracoes />} />
-              <Route path="/cronograma" element={<Cronograma />} />
+              <Route path="/financeiro" element={<ProtectedRoute modulo="financeiro"><Financeiro /></ProtectedRoute>} />
+              <Route path="/diario" element={<ProtectedRoute modulo="diario_obra"><DiarioObra /></ProtectedRoute>} />
+              <Route path="/relatorios" element={<ProtectedRoute modulo="relatorios"><Relatorios /></ProtectedRoute>} />
+              <Route path="/configuracoes" element={<ProtectedRoute modulo="configuracoes"><Configuracoes /></ProtectedRoute>} />
+              <Route path="/cronograma" element={<ProtectedRoute modulo="cronograma"><Cronograma /></ProtectedRoute>} />
               <Route path="/clientes" element={<Clientes />} />
-              <Route path="/documentacao" element={<Documentacao />} />
-              <Route path="/usuarios" element={<Usuarios />} />
+              <Route path="/documentacao" element={<ProtectedRoute modulo="documentos"><Documentacao /></ProtectedRoute>} />
+              <Route path="/usuarios" element={<ProtectedRoute modulo="usuarios"><Usuarios /></ProtectedRoute>} />
               <Route path="/empresas" element={<Empresas />} />
             </Route>
             <Route path="*" element={<NotFound />} />

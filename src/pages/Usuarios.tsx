@@ -49,6 +49,7 @@ const DEFAULT_PERMISSIONS: Record<string, Record<Modulo, { v: boolean; c: boolea
     relatorios: { v: true, c: false, e: false, x: false },
     documentos: { v: true, c: false, e: false, x: false },
     usuarios: { v: false, c: false, e: false, x: false },
+    configuracoes: { v: false, c: false, e: false, x: false },
   },
   sindico: {
     dashboard: { v: true, c: false, e: false, x: false },
@@ -58,6 +59,7 @@ const DEFAULT_PERMISSIONS: Record<string, Record<Modulo, { v: boolean; c: boolea
     relatorios: { v: true, c: false, e: false, x: false },
     documentos: { v: true, c: false, e: false, x: false },
     usuarios: { v: false, c: false, e: false, x: false },
+    configuracoes: { v: false, c: false, e: false, x: false },
   },
   cliente: {
     dashboard: { v: true, c: false, e: false, x: false },
@@ -67,6 +69,7 @@ const DEFAULT_PERMISSIONS: Record<string, Record<Modulo, { v: boolean; c: boolea
     relatorios: { v: true, c: false, e: false, x: false },
     documentos: { v: true, c: false, e: false, x: false },
     usuarios: { v: false, c: false, e: false, x: false },
+    configuracoes: { v: false, c: false, e: false, x: false },
   },
 };
 

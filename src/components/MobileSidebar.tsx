@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions, ROUTE_MODULE_MAP } from '@/hooks/usePermissions';
 import {
   Building2, LayoutDashboard, Wallet, FileText,
   Users, LogOut, HardHat, UserCircle, ClipboardList, Settings, FolderOpen, CalendarRange, Menu, X
@@ -26,6 +27,7 @@ const navItemsAll = [
 
 export default function MobileSidebar() {
   const { signOut, role, user } = useAuth();
+  const { pode, loading: permLoading } = usePermissions();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const empresaNome = useEmpresaNome();
@@ -36,7 +38,14 @@ export default function MobileSidebar() {
     navigate('/');
   };
 
-  const visibleItems = navItemsAll.filter(item => role && item.roles.includes(role));
+  const visibleItems = navItemsAll.filter(item => {
+    if (!role || !item.roles.includes(role)) return false;
+    const modulo = ROUTE_MODULE_MAP[item.to];
+    if (modulo && !permLoading) {
+      return pode(modulo, 'visualizar');
+    }
+    return true;
+  });
 
   return (
     <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-sidebar border-b border-sidebar-border">
