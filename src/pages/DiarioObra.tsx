@@ -710,7 +710,7 @@ export default function DiarioObra() {
                         {addingParalisacao && <InlineParalisacaoForm onSave={addParalisacaoItem} onCancel={() => setAddingParalisacao(false)} />}
                         {paralisacoes.length === 0 && !addingParalisacao ? <p className="text-sm text-muted-foreground text-center py-4">Nenhum registro</p> : (
                           <Table>
-                            <TableHeader><TableRow><TableHead>Motivo</TableHead><TableHead>Início</TableHead><TableHead>Fim</TableHead><TableHead>Dias</TableHead></TableRow></TableHeader>
+                            <TableHeader><TableRow><TableHead>Motivo</TableHead><TableHead>Início</TableHead><TableHead>Fim</TableHead><TableHead>Dias</TableHead>{canEditDelete && <TableHead className="w-10"></TableHead>}</TableRow></TableHeader>
                             <TableBody>
                               {paralisacoes.map(p => (
                                 <TableRow key={p.id}>
@@ -718,6 +718,13 @@ export default function DiarioObra() {
                                   <TableCell>{new Date(p.data_inicio + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
                                   <TableCell>{p.data_fim ? new Date(p.data_fim + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
                                   <TableCell>{p.total_dias}</TableCell>
+                                  {canEditDelete && (
+                                    <TableCell>
+                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteParalisacaoItem(p.id)}>
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </TableCell>
+                                  )}
                                 </TableRow>
                               ))}
                             </TableBody>
