@@ -40,7 +40,7 @@ function mapLegacyStatus(s: string) {
 }
 
 export default function DiarioObra() {
-  const { canEdit, user } = useAuth();
+  const { canEdit, isAdmin, isSuperAdmin, user } = useAuth();
   const { filterObras } = useObrasFiltered();
   const [obras, setObras] = useState<any[]>([]);
   const [selectedObra, setSelectedObra] = useState('');
@@ -48,6 +48,12 @@ export default function DiarioObra() {
   const [selectedDiario, setSelectedDiario] = useState<any>(null);
   const [diarioOpen, setDiarioOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [editingDiario, setEditingDiario] = useState<any>(null);
+  const [editDiarioOpen, setEditDiarioOpen] = useState(false);
+  const [deleteDiarioId, setDeleteDiarioId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const canEditDelete = isAdmin || isSuperAdmin;
 
   // New diario form
   const [formData, setFormData] = useState({
