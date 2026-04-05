@@ -53,7 +53,7 @@ export default function DiarioObra() {
   const [deleteDiarioId, setDeleteDiarioId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const canEditDelete = isAdmin || isSuperAdmin;
+  const canEditDelete = canEdit; // admin, trabalhador e super_admin
 
   // New diario form
   const [formData, setFormData] = useState({
