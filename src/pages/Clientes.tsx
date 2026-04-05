@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -12,7 +13,11 @@ import { Plus, Users, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Clientes() {
-  const { canEdit, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
+  const { pode } = usePermissions();
+  const canCreate = pode('clientes', 'criar');
+  const canEditCliente = pode('clientes', 'editar');
+  const canDelete = pode('clientes', 'excluir');
   const [clientes, setClientes] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
