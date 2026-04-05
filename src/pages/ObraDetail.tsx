@@ -60,10 +60,12 @@ export default function ObraDetail() {
 
   const { isObraAllowed, loading: obrasFilterLoading } = useObrasFiltered();
 
+  const canSeeDocs = pode('documentos', 'visualizar');
+
   useEffect(() => {
     if (!id) return;
     if (!obrasFilterLoading && !permissionsLoading) fetchData();
-  }, [id, obrasFilterLoading, permissionsLoading]);
+  }, [id, obrasFilterLoading, permissionsLoading, canSeeDocs]);
 
   const fetchData = async () => {
     setLoading(true);
