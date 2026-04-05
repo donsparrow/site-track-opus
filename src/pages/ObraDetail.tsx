@@ -122,8 +122,8 @@ export default function ObraDetail() {
     setDespesas((despesasData || []) as Despesa[]);
     const totalGasto = (despesasData || []).reduce((s, d) => s + Number(d.valor), 0);
 
-    // Fetch document stats
-    if (pode('documentos', 'visualizar')) {
+    // Fetch document stats (always fetch, render is gated by permission)
+    {
       const { data: pastas } = await supabase.from('documentos_pastas').select('id').eq('obra_id', id!);
       const pastaIds = (pastas || []).map(p => p.id);
       if (pastaIds.length > 0) {
