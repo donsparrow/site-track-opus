@@ -33,7 +33,7 @@ interface Anexo {
 
 export default function Financeiro() {
   const { canEdit, role } = useAuth();
-  const { filterObras } = useObrasFiltered();
+  const { filterObras, loading: obrasFilterLoading } = useObrasFiltered();
   const [receitas, setReceitas] = useState<any[]>([]);
   const [despesas, setDespesas] = useState<any[]>([]);
   const [expandedReceita, setExpandedReceita] = useState<string | null>(null);
@@ -155,7 +155,7 @@ export default function Financeiro() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); fetchAnexos(); }, [filterObra]);
+  useEffect(() => { if (!obrasFilterLoading) { fetchData(); fetchAnexos(); } }, [filterObra, obrasFilterLoading]);
 
   const getAnexosPorRegistro = (registroId: string, tipoRegistro: string) => {
     return anexos.filter(a => a.registro_id === registroId && a.tipo_registro === tipoRegistro);

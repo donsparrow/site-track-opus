@@ -137,7 +137,7 @@ export default function Dashboard() {
     setLoading(false);
   };
 
-  useEffect(() => { fetchObras(); }, []);
+  useEffect(() => { if (!obrasFilterLoading) fetchObras(); }, [obrasFilterLoading]);
 
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);

@@ -234,12 +234,12 @@ export default function Usuarios() {
       let obrasCount = 0;
       if (userRoleName === 'super_admin') {
         obrasCount = allObras.length;
-      } else if (userRoleName === 'admin' || userRoleName === 'trabalhador') {
+      } else if (userRoleName === 'admin') {
         obrasCount = p.empresa_id 
           ? allObras.filter((o: any) => o.empresa_id === p.empresa_id).length 
           : 0;
       } else {
-        // cliente/sindico: only usuario_obras links
+        // trabalhador/cliente/sindico: only usuario_obras links
         const linkedObraIds = new Set(userLinks.map((l: any) => l.obra_id));
         obrasCount = linkedObraIds.size;
       }

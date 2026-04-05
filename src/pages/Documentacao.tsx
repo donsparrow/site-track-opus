@@ -17,7 +17,7 @@ type Arquivo = { id: string; pasta_id: string; nome_arquivo: string; tipo: strin
 
 export default function Documentacao() {
   const { role, isAdmin } = useAuth();
-  const { filterObras } = useObrasFiltered();
+  const { filterObras, loading: obrasFilterLoading } = useObrasFiltered();
   const canManage = role === 'admin' || role === 'trabalhador';
 
   const [obras, setObras] = useState<{ id: string; nome: string }[]>([]);
@@ -75,8 +75,8 @@ export default function Documentacao() {
       const { data } = await supabase.from('obras').select('id, nome').order('nome');
       if (data) setObras(filterObras(data));
     };
-    load();
-  }, [filterObras]);
+    if (!obrasFilterLoading) load();
+  }, [obrasFilterLoading]);
 
   // Load pastas when obra changes
   useEffect(() => {

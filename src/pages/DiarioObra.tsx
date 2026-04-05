@@ -41,7 +41,7 @@ function mapLegacyStatus(s: string) {
 
 export default function DiarioObra() {
   const { canEdit, isAdmin, isSuperAdmin, user } = useAuth();
-  const { filterObras } = useObrasFiltered();
+  const { filterObras, loading: obrasFilterLoading } = useObrasFiltered();
   const [obras, setObras] = useState<any[]>([]);
   const [selectedObra, setSelectedObra] = useState('');
   const [diarios, setDiarios] = useState<any[]>([]);
@@ -120,8 +120,10 @@ export default function DiarioObra() {
   const [editHeaderObs, setEditHeaderObs] = useState('');
 
   useEffect(() => {
-    supabase.from('obras').select('id, nome, prazo_contratual_dias').order('nome').then(({ data }) => setObras(filterObras(data || [])));
-  }, []);
+    if (!obrasFilterLoading) {
+      supabase.from('obras').select('id, nome, prazo_contratual_dias').order('nome').then(({ data }) => setObras(filterObras(data || [])));
+    }
+  }, [obrasFilterLoading]);
 
   const fetchDiarios = async (obraId: string) => {
     setLoading(true);

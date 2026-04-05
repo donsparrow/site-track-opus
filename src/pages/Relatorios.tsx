@@ -33,7 +33,7 @@ type ViewMode = 'list' | 'edit';
 
 export default function Relatorios() {
   const { canEdit, user, role } = useAuth();
-  const { filterObras, isObraAllowed } = useObrasFiltered();
+  const { filterObras, isObraAllowed, loading: obrasFilterLoading } = useObrasFiltered();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [obras, setObras] = useState<any[]>([]);
   const [selectedObra, setSelectedObra] = useState('');
@@ -77,10 +77,12 @@ export default function Relatorios() {
   const [signTipo, setSignTipo] = useState('responsavel_tecnico');
 
   useEffect(() => {
-    supabase.from('obras').select('id, nome, data_inicio, data_fim_prevista, endereco, responsavel, prazo_contratual_dias, clientes(nome, cpf_cnpj, email, telefone)').order('nome').then(({ data }) => setObras(filterObras((data || []) as any[])));
-    supabase.from('configuracoes_empresa').select('*').limit(1).single().then(({ data }) => setEmpresa(data));
-    loadRelatoriosList();
-  }, []);
+    if (!obrasFilterLoading) {
+      supabase.from('obras').select('id, nome, data_inicio, data_fim_prevista, endereco, responsavel, prazo_contratual_dias, clientes(nome, cpf_cnpj, email, telefone)').order('nome').then(({ data }) => setObras(filterObras((data || []) as any[])));
+      supabase.from('configuracoes_empresa').select('*').limit(1).single().then(({ data }) => setEmpresa(data));
+      loadRelatoriosList();
+    }
+  }, [obrasFilterLoading]);
 
   const loadRelatoriosList = async () => {
     const { data } = await supabase
