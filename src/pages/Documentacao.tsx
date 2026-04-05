@@ -12,11 +12,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { FolderPlus, Upload, Trash2, Eye, Folder, FileText, Image, X, Pencil, Download } from 'lucide-react';
 
-type Pasta = { id: string; obra_id: string; nome_pasta: string; created_at: string };
+type Pasta = { id: string; obra_id: string; nome_pasta: string; created_at: string; empresa_id?: string | null };
 type Arquivo = { id: string; pasta_id: string; nome_arquivo: string; tipo: string; url_arquivo: string; tamanho: number; created_at: string };
 
 export default function Documentacao() {
-  const { role, isAdmin } = useAuth();
+  const { role, empresaId } = useAuth();
   const { filterObras, loading: obrasFilterLoading } = useObrasFiltered();
   const canManage = role === 'admin' || role === 'trabalhador';
 
@@ -111,12 +111,18 @@ export default function Documentacao() {
   }, [pastaAberta]);
 
   const criarPasta = async () => {
-    if (!novaPastaNome.trim()) return;
+    if (!novaPastaNome.trim() || !obraSelecionada) return;
+    if (!empresaId) {
+      toast.error('Não foi possível identificar a empresa do usuário.');
+      return;
+    }
+
     const { error } = await supabase.from('documentos_pastas').insert({
       obra_id: obraSelecionada,
       nome_pasta: novaPastaNome.trim(),
+      empresa_id: empresaId,
     });
-    if (error) { toast.error('Erro ao criar pasta'); return; }
+    if (error) { toast.error(`Erro ao criar pasta: ${error.message}`); return; }
     toast.success('Pasta criada com sucesso');
     setNovaPastaOpen(false);
     setNovaPastaNome('');
@@ -222,7 +228,7 @@ export default function Documentacao() {
             contentType: file.type || undefined,
           });
 
-          console.log('Resposta upload:', resposta);
+          console.log('Upload resposta:', resposta);
 
           if (resposta.error || !resposta.data?.path) {
             throw new Error(resposta.error?.message || `Falha no upload do arquivo ${file.name}.`);
