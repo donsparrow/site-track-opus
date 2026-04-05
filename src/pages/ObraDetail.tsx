@@ -38,8 +38,7 @@ interface Despesa {
 export default function ObraDetail() {
   const { id } = useParams<{ id: string }>();
   const { canEdit, role } = useAuth();
-  const { pode } = usePermissions();
-  const canSeeDocs = pode('documentos', 'visualizar');
+  const { pode, loading: permissionsLoading } = usePermissions();
   const [obra, setObra] = useState<any>(null);
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
   const [despesas, setDespesas] = useState<Despesa[]>([]);
@@ -63,8 +62,8 @@ export default function ObraDetail() {
 
   useEffect(() => {
     if (!id) return;
-    if (!obrasFilterLoading) fetchData();
-  }, [id, obrasFilterLoading]);
+    if (!obrasFilterLoading && !permissionsLoading) fetchData();
+  }, [id, obrasFilterLoading, permissionsLoading]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -122,7 +121,7 @@ export default function ObraDetail() {
     const totalGasto = (despesasData || []).reduce((s, d) => s + Number(d.valor), 0);
 
     // Fetch document stats
-    if (canSeeDocs) {
+    if (pode('documentos', 'visualizar')) {
       const { data: pastas } = await supabase.from('documentos_pastas').select('id').eq('obra_id', id!);
       const pastaIds = (pastas || []).map(p => p.id);
       if (pastaIds.length > 0) {
@@ -442,7 +441,7 @@ export default function ObraDetail() {
       </Card>
 
       {/* Documentos card */}
-      {canSeeDocs && (
+      {pode('documentos', 'visualizar') && (
         <Card className="mb-8">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="font-display text-base flex items-center gap-2">
