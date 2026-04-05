@@ -241,6 +241,36 @@ export default function DiarioObra() {
     fetchDiarios(selectedObra);
   };
 
+  const deleteEquipeItem = async (id: string) => {
+    const { error } = await supabase.from('diario_equipe').delete().eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('Removido!'); fetchDiarioDetails(selectedDiario); }
+  };
+
+  const deleteMaterialItem = async (id: string) => {
+    const { error } = await supabase.from('diario_materiais').delete().eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('Removido!'); fetchDiarioDetails(selectedDiario); }
+  };
+
+  const deleteOcorrenciaItem = async (id: string) => {
+    const { error } = await supabase.from('diario_ocorrencias').delete().eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('Removido!'); fetchDiarioDetails(selectedDiario); }
+  };
+
+  const deleteImagemItem = async (id: string) => {
+    const { error } = await supabase.from('diario_imagens').delete().eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('Removido!'); fetchDiarioDetails(selectedDiario); }
+  };
+
+  const deleteParalisacaoItem = async (id: string) => {
+    const { error } = await supabase.from('diario_paralisacoes').delete().eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('Removido!'); fetchDiarioDetails(selectedDiario); }
+  };
+
   const addEquipeItem = async (nome: string, funcao: string, horas: string) => {
     if (!selectedDiario) return;
     const { error } = await supabase.from('diario_equipe').insert({
@@ -478,10 +508,21 @@ export default function DiarioObra() {
                         {addingEquipe && <InlineEquipeForm onSave={addEquipeItem} onCancel={() => setAddingEquipe(false)} />}
                         {equipe.length === 0 && !addingEquipe ? <p className="text-sm text-muted-foreground text-center py-4">Nenhum registro</p> : (
                           <Table>
-                            <TableHeader><TableRow><TableHead>Funcionário</TableHead><TableHead>Função</TableHead><TableHead>Horas</TableHead></TableRow></TableHeader>
+                            <TableHeader><TableRow><TableHead>Funcionário</TableHead><TableHead>Função</TableHead><TableHead>Horas</TableHead>{canEditDelete && <TableHead className="w-10"></TableHead>}</TableRow></TableHeader>
                             <TableBody>
                               {equipe.map(e => (
-                                <TableRow key={e.id}><TableCell>{e.nome_funcionario}</TableCell><TableCell>{e.funcao || '—'}</TableCell><TableCell>{e.horas_trabalhadas}h</TableCell></TableRow>
+                                <TableRow key={e.id}>
+                                  <TableCell>{e.nome_funcionario}</TableCell>
+                                  <TableCell>{e.funcao || '—'}</TableCell>
+                                  <TableCell>{e.horas_trabalhadas}h</TableCell>
+                                  {canEditDelete && (
+                                    <TableCell>
+                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteEquipeItem(e.id)}>
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </TableCell>
+                                  )}
+                                </TableRow>
                               ))}
                             </TableBody>
                           </Table>
@@ -578,10 +619,21 @@ export default function DiarioObra() {
                         {addingMaterial && <InlineMaterialForm onSave={addMaterialItem} onCancel={() => setAddingMaterial(false)} />}
                         {materiais.length === 0 && !addingMaterial ? <p className="text-sm text-muted-foreground text-center py-4">Nenhum registro</p> : (
                           <Table>
-                            <TableHeader><TableRow><TableHead>Material</TableHead><TableHead>Qtd</TableHead><TableHead>Unidade</TableHead></TableRow></TableHeader>
+                            <TableHeader><TableRow><TableHead>Material</TableHead><TableHead>Qtd</TableHead><TableHead>Unidade</TableHead>{canEditDelete && <TableHead className="w-10"></TableHead>}</TableRow></TableHeader>
                             <TableBody>
                               {materiais.map(m => (
-                                <TableRow key={m.id}><TableCell>{m.material}</TableCell><TableCell>{m.quantidade}</TableCell><TableCell>{m.unidade}</TableCell></TableRow>
+                                <TableRow key={m.id}>
+                                  <TableCell>{m.material}</TableCell>
+                                  <TableCell>{m.quantidade}</TableCell>
+                                  <TableCell>{m.unidade}</TableCell>
+                                  {canEditDelete && (
+                                    <TableCell>
+                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteMaterialItem(m.id)}>
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </TableCell>
+                                  )}
+                                </TableRow>
                               ))}
                             </TableBody>
                           </Table>
@@ -607,6 +659,11 @@ export default function DiarioObra() {
                                 <Badge variant={o.impacto === 'alto' ? 'destructive' : o.impacto === 'medio' ? 'secondary' : 'outline'}>
                                   {o.impacto}
                                 </Badge>
+                                {canEditDelete && (
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteOcorrenciaItem(o.id)}>
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -626,9 +683,14 @@ export default function DiarioObra() {
                         {imagens.length === 0 ? <p className="text-sm text-muted-foreground text-center py-4">Nenhuma imagem</p> : (
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                             {imagens.map(img => (
-                              <div key={img.id} className="relative rounded-lg overflow-hidden border">
+                              <div key={img.id} className="relative rounded-lg overflow-hidden border group">
                                 <img src={img.url} alt={img.descricao || ''} className="w-full h-32 object-cover" />
                                 {img.descricao && <p className="text-xs p-1 truncate">{img.descricao}</p>}
+                                {canEditDelete && (
+                                  <Button size="sm" variant="destructive" className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deleteImagemItem(img.id)}>
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -648,7 +710,7 @@ export default function DiarioObra() {
                         {addingParalisacao && <InlineParalisacaoForm onSave={addParalisacaoItem} onCancel={() => setAddingParalisacao(false)} />}
                         {paralisacoes.length === 0 && !addingParalisacao ? <p className="text-sm text-muted-foreground text-center py-4">Nenhum registro</p> : (
                           <Table>
-                            <TableHeader><TableRow><TableHead>Motivo</TableHead><TableHead>Início</TableHead><TableHead>Fim</TableHead><TableHead>Dias</TableHead></TableRow></TableHeader>
+                            <TableHeader><TableRow><TableHead>Motivo</TableHead><TableHead>Início</TableHead><TableHead>Fim</TableHead><TableHead>Dias</TableHead>{canEditDelete && <TableHead className="w-10"></TableHead>}</TableRow></TableHeader>
                             <TableBody>
                               {paralisacoes.map(p => (
                                 <TableRow key={p.id}>
@@ -656,6 +718,13 @@ export default function DiarioObra() {
                                   <TableCell>{new Date(p.data_inicio + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
                                   <TableCell>{p.data_fim ? new Date(p.data_fim + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
                                   <TableCell>{p.total_dias}</TableCell>
+                                  {canEditDelete && (
+                                    <TableCell>
+                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteParalisacaoItem(p.id)}>
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </TableCell>
+                                  )}
                                 </TableRow>
                               ))}
                             </TableBody>
