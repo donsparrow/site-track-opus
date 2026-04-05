@@ -127,7 +127,7 @@ export default function Clientes() {
           <h1 className="text-3xl font-display font-bold text-foreground">Clientes</h1>
           <p className="text-muted-foreground mt-1">Gerenciamento de clientes e condomínios</p>
         </div>
-        {canEdit && (
+        {canEditCliente && (
           <Button onClick={openNew} className="bg-accent text-accent-foreground hover:bg-accent/90">
             <Plus className="h-4 w-4 mr-2" /> Novo Cliente
           </Button>
@@ -156,7 +156,7 @@ export default function Clientes() {
                   <TableHead>Administradora</TableHead>
                   <TableHead>Telefone</TableHead>
                   <TableHead>E-mail</TableHead>
-                  {canEdit && <TableHead>Ações</TableHead>}
+                  {canEditCliente && <TableHead>Ações</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -167,7 +167,7 @@ export default function Clientes() {
                     <TableCell>{c.administradora || '—'}</TableCell>
                     <TableCell>{c.telefone || '—'}</TableCell>
                     <TableCell>{c.email || '—'}</TableCell>
-                    {canEdit && (
+                    {canEditCliente && (
                       <TableCell>
                         <div className="flex gap-2">
                           <Button variant="outline" size="sm" onClick={() => openEdit(c)}>
