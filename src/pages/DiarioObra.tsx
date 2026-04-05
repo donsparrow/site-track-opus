@@ -705,6 +705,59 @@ export default function DiarioObra() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog Editar Diário */}
+      <Dialog open={editDiarioOpen} onOpenChange={setEditDiarioOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display">Editar Diário de Obra</DialogTitle>
+            <DialogDescription>Altere os dados do diário e clique em salvar.</DialogDescription>
+          </DialogHeader>
+          {editingDiario && (
+            <form onSubmit={handleEditDiario} className="space-y-4">
+              <div><Label>Data *</Label><Input type="date" value={editingDiario.data} onChange={e => setEditingDiario({ ...editingDiario, data: e.target.value })} required /></div>
+              <div>
+                <Label>Clima</Label>
+                <Select value={editingDiario.clima} onValueChange={v => setEditingDiario({ ...editingDiario, clima: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sol">☀️ Sol</SelectItem>
+                    <SelectItem value="nublado">☁️ Nublado</SelectItem>
+                    <SelectItem value="chuva">🌧️ Chuva</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Temperatura</Label><Input placeholder="Ex: 28°C" value={editingDiario.temperatura || ''} onChange={e => setEditingDiario({ ...editingDiario, temperatura: e.target.value })} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Horário Início</Label><Input type="time" value={editingDiario.horario_inicio || ''} onChange={e => setEditingDiario({ ...editingDiario, horario_inicio: e.target.value })} /></div>
+                <div><Label>Horário Fim</Label><Input type="time" value={editingDiario.horario_fim || ''} onChange={e => setEditingDiario({ ...editingDiario, horario_fim: e.target.value })} /></div>
+              </div>
+              <div><Label>Observações Gerais</Label><Textarea value={editingDiario.observacoes_gerais || ''} onChange={e => setEditingDiario({ ...editingDiario, observacoes_gerais: e.target.value })} /></div>
+              <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">Salvar Alterações</Button>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Confirmar Exclusão */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir diário de obra?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este diário? Todos os dados relacionados (equipe, atividades, materiais, ocorrências, imagens e paralisações) serão removidos permanentemente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteDiario} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
