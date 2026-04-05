@@ -683,9 +683,14 @@ export default function DiarioObra() {
                         {imagens.length === 0 ? <p className="text-sm text-muted-foreground text-center py-4">Nenhuma imagem</p> : (
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                             {imagens.map(img => (
-                              <div key={img.id} className="relative rounded-lg overflow-hidden border">
+                              <div key={img.id} className="relative rounded-lg overflow-hidden border group">
                                 <img src={img.url} alt={img.descricao || ''} className="w-full h-32 object-cover" />
                                 {img.descricao && <p className="text-xs p-1 truncate">{img.descricao}</p>}
+                                {canEditDelete && (
+                                  <Button size="sm" variant="destructive" className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => deleteImagemItem(img.id)}>
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                )}
                               </div>
                             ))}
                           </div>
