@@ -273,7 +273,77 @@ export default function DiarioObra() {
     fetchDiarios(selectedObra);
   };
 
-  const deleteEquipeItem = async (id: string) => {
+  const enterEditMode = () => {
+    if (!selectedDiario) return;
+    setGlobalEditMode(true);
+    setEditHeaderData(selectedDiario.data);
+    setEditHeaderClima(selectedDiario.clima);
+    setEditHeaderTemp(selectedDiario.temperatura || '');
+    setEditHeaderInicio(selectedDiario.horario_inicio || '');
+    setEditHeaderFim(selectedDiario.horario_fim || '');
+    setEditHeaderObs(selectedDiario.observacoes_gerais || '');
+  };
+
+  const exitEditMode = () => {
+    setGlobalEditMode(false);
+    setEditingEquipeId(null);
+    setEditingMaterialId(null);
+    setEditingOcorrenciaId(null);
+    setEditingParalisacaoId(null);
+    setEditingAtividadeId(null);
+    if (selectedDiario) fetchDiarioDetails(selectedDiario);
+  };
+
+  const saveHeaderChanges = async () => {
+    if (!selectedDiario) return;
+    const { error } = await supabase.from('diario_obra').update({
+      data: editHeaderData,
+      clima: editHeaderClima,
+      temperatura: editHeaderTemp || null,
+      horario_inicio: editHeaderInicio || null,
+      horario_fim: editHeaderFim || null,
+      observacoes_gerais: editHeaderObs || null,
+    }).eq('id', selectedDiario.id);
+    if (error) { toast.error('Erro: ' + error.message); return; }
+    toast.success('Diário atualizado!');
+    setGlobalEditMode(false);
+    fetchDiarios(selectedObra);
+    fetchDiarioDetails({ ...selectedDiario, data: editHeaderData, clima: editHeaderClima, temperatura: editHeaderTemp, horario_inicio: editHeaderInicio, horario_fim: editHeaderFim, observacoes_gerais: editHeaderObs });
+  };
+
+  const updateEquipeItem = async (id: string) => {
+    const { error } = await supabase.from('diario_equipe').update({
+      nome_funcionario: editEquipeNome, funcao: editEquipeFuncao || null, horas_trabalhadas: parseFloat(editEquipeHoras) || 0
+    }).eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('Atualizado!'); setEditingEquipeId(null); fetchDiarioDetails(selectedDiario); }
+  };
+
+  const updateMaterialItem = async (id: string) => {
+    const { error } = await supabase.from('diario_materiais').update({
+      material: editMaterialNome, quantidade: parseFloat(editMaterialQtd) || 0, unidade: editMaterialUnidade
+    }).eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('Atualizado!'); setEditingMaterialId(null); fetchDiarioDetails(selectedDiario); }
+  };
+
+  const updateOcorrenciaItem = async (id: string) => {
+    const { error } = await supabase.from('diario_ocorrencias').update({
+      descricao: editOcorrenciaDesc, impacto: editOcorrenciaImpacto
+    }).eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('Atualizado!'); setEditingOcorrenciaId(null); fetchDiarioDetails(selectedDiario); }
+  };
+
+  const updateParalisacaoItem = async (id: string) => {
+    const dias = editParalisacaoFim ? Math.ceil((new Date(editParalisacaoFim).getTime() - new Date(editParalisacaoInicio).getTime()) / 86400000) : 0;
+    const { error } = await supabase.from('diario_paralisacoes').update({
+      motivo: editParalisacaoMotivo, data_inicio: editParalisacaoInicio, data_fim: editParalisacaoFim || null, total_dias: dias
+    }).eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('Atualizado!'); setEditingParalisacaoId(null); fetchDiarioDetails(selectedDiario); }
+  };
+
     const { error } = await supabase.from('diario_equipe').delete().eq('id', id);
     if (error) toast.error(error.message);
     else { toast.success('Removido!'); fetchDiarioDetails(selectedDiario); }
