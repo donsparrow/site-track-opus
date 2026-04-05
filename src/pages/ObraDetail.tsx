@@ -441,6 +441,61 @@ export default function ObraDetail() {
         </CardContent>
       </Card>
 
+      {/* Documentos card */}
+      {canSeeDocs && (
+        <Card className="mb-8">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="font-display text-base flex items-center gap-2">
+              <FolderOpen className="h-5 w-5 text-accent" /> Documentos
+            </CardTitle>
+            <Link to={`/documentacao?obra=${id}`}>
+              <Button variant="outline" size="sm">Ver Documentos</Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="text-center p-3 rounded-lg bg-muted/50">
+                <p className="text-2xl font-display font-bold text-foreground">{docStats.totalArquivos}</p>
+                <p className="text-xs text-muted-foreground">Arquivos</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-muted/50">
+                <p className="text-2xl font-display font-bold text-foreground">{docStats.totalPastas}</p>
+                <p className="text-xs text-muted-foreground">Pastas</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-muted/50">
+                <p className="text-2xl font-display font-bold text-accent">{docStats.pdfs}</p>
+                <p className="text-xs text-muted-foreground flex items-center justify-center gap-1"><File className="h-3 w-3" /> PDFs</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-muted/50">
+                <p className="text-2xl font-display font-bold text-primary">{docStats.imagens}</p>
+                <p className="text-xs text-muted-foreground flex items-center justify-center gap-1"><FileImage className="h-3 w-3" /> Imagens</p>
+              </div>
+            </div>
+            {docStats.recentFiles.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2">Últimos arquivos</p>
+                <div className="space-y-1.5">
+                  {docStats.recentFiles.map((f, i) => (
+                    <div key={i} className="flex items-center justify-between text-sm py-1 px-2 rounded bg-muted/30">
+                      <div className="flex items-center gap-2 truncate">
+                        {f.nome.toLowerCase().endsWith('.pdf') ? <File className="h-3.5 w-3.5 text-accent flex-shrink-0" /> : <FileImage className="h-3.5 w-3.5 text-primary flex-shrink-0" />}
+                        <span className="truncate">{f.nome}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
+                        {new Date(f.created_at).toLocaleDateString('pt-BR')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {docStats.totalArquivos === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-2">Nenhum documento anexado.</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Delete Obra Confirm */}
       <AlertDialog open={deleteObraOpen} onOpenChange={setDeleteObraOpen}>
         <AlertDialogContent>
