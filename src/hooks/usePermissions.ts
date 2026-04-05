@@ -12,7 +12,7 @@ export interface Permissao {
   pode_excluir: boolean;
 }
 
-const MODULOS: Modulo[] = ['dashboard', 'financeiro', 'diario_obra', 'cronograma', 'relatorios', 'documentos', 'usuarios', 'configuracoes'];
+const MODULOS: Modulo[] = ['dashboard', 'financeiro', 'diario_obra', 'cronograma', 'relatorios', 'documentos', 'usuarios', 'configuracoes', 'clientes'];
 
 const MODULO_LABELS: Record<Modulo, string> = {
   dashboard: 'Dashboard',
@@ -23,6 +23,7 @@ const MODULO_LABELS: Record<Modulo, string> = {
   documentos: 'Documentação',
   usuarios: 'Usuários',
   configuracoes: 'Configurações',
+  clientes: 'Clientes',
 };
 
 // Map route paths to module names
