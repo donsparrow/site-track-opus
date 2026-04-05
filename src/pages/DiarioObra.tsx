@@ -647,28 +647,51 @@ export default function DiarioObra() {
                     <Card>
                       <CardHeader className="flex flex-row items-center justify-between py-3">
                         <CardTitle className="text-sm font-display">Equipe</CardTitle>
-                        {canEdit && <Button size="sm" variant="outline" onClick={() => setAddingEquipe(true)}><Plus className="h-3 w-3 mr-1" />Adicionar</Button>}
+                        {(canEdit || globalEditMode) && <Button size="sm" variant="outline" onClick={() => setAddingEquipe(true)}><Plus className="h-3 w-3 mr-1" />Adicionar</Button>}
                       </CardHeader>
                       <CardContent>
                         {addingEquipe && <InlineEquipeForm onSave={addEquipeItem} onCancel={() => setAddingEquipe(false)} />}
                         {equipe.length === 0 && !addingEquipe ? <p className="text-sm text-muted-foreground text-center py-4">Nenhum registro</p> : (
                           <Table>
-                            <TableHeader><TableRow><TableHead>Funcionário</TableHead><TableHead>Função</TableHead><TableHead>Horas</TableHead>{canEditDelete && <TableHead className="w-10"></TableHead>}</TableRow></TableHeader>
+                            <TableHeader><TableRow><TableHead>Funcionário</TableHead><TableHead>Função</TableHead><TableHead>Horas</TableHead>{canEditDelete && <TableHead className="w-20"></TableHead>}</TableRow></TableHeader>
                             <TableBody>
-                              {equipe.map(e => (
-                                <TableRow key={e.id}>
-                                  <TableCell>{e.nome_funcionario}</TableCell>
-                                  <TableCell>{e.funcao || '—'}</TableCell>
-                                  <TableCell>{e.horas_trabalhadas}h</TableCell>
-                                  {canEditDelete && (
-                                    <TableCell>
-                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteEquipeItem(e.id)}>
-                                        <Trash2 className="h-3 w-3" />
-                                      </Button>
-                                    </TableCell>
-                                  )}
-                                </TableRow>
-                              ))}
+                              {equipe.map(e => {
+                                if (editingEquipeId === e.id) {
+                                  return (
+                                    <TableRow key={e.id}>
+                                      <TableCell><Input value={editEquipeNome} onChange={ev => setEditEquipeNome(ev.target.value)} className="h-8" /></TableCell>
+                                      <TableCell><Input value={editEquipeFuncao} onChange={ev => setEditEquipeFuncao(ev.target.value)} className="h-8" /></TableCell>
+                                      <TableCell><Input type="number" value={editEquipeHoras} onChange={ev => setEditEquipeHoras(ev.target.value)} className="h-8 w-20" /></TableCell>
+                                      <TableCell>
+                                        <div className="flex gap-1">
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => updateEquipeItem(e.id)}><Save className="h-3 w-3" /></Button>
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditingEquipeId(null)}><X className="h-3 w-3" /></Button>
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                }
+                                return (
+                                  <TableRow key={e.id}>
+                                    <TableCell>{e.nome_funcionario}</TableCell>
+                                    <TableCell>{e.funcao || '—'}</TableCell>
+                                    <TableCell>{e.horas_trabalhadas}h</TableCell>
+                                    {canEditDelete && (
+                                      <TableCell>
+                                        <div className="flex gap-1">
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
+                                            setEditingEquipeId(e.id);
+                                            setEditEquipeNome(e.nome_funcionario);
+                                            setEditEquipeFuncao(e.funcao || '');
+                                            setEditEquipeHoras(String(e.horas_trabalhadas || 0));
+                                          }}><Pencil className="h-3 w-3" /></Button>
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteEquipeItem(e.id)}><Trash2 className="h-3 w-3" /></Button>
+                                        </div>
+                                      </TableCell>
+                                    )}
+                                  </TableRow>
+                                );
+                              })}
                             </TableBody>
                           </Table>
                         )}
