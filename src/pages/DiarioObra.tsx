@@ -508,10 +508,21 @@ export default function DiarioObra() {
                         {addingEquipe && <InlineEquipeForm onSave={addEquipeItem} onCancel={() => setAddingEquipe(false)} />}
                         {equipe.length === 0 && !addingEquipe ? <p className="text-sm text-muted-foreground text-center py-4">Nenhum registro</p> : (
                           <Table>
-                            <TableHeader><TableRow><TableHead>Funcionário</TableHead><TableHead>Função</TableHead><TableHead>Horas</TableHead></TableRow></TableHeader>
+                            <TableHeader><TableRow><TableHead>Funcionário</TableHead><TableHead>Função</TableHead><TableHead>Horas</TableHead>{canEditDelete && <TableHead className="w-10"></TableHead>}</TableRow></TableHeader>
                             <TableBody>
                               {equipe.map(e => (
-                                <TableRow key={e.id}><TableCell>{e.nome_funcionario}</TableCell><TableCell>{e.funcao || '—'}</TableCell><TableCell>{e.horas_trabalhadas}h</TableCell></TableRow>
+                                <TableRow key={e.id}>
+                                  <TableCell>{e.nome_funcionario}</TableCell>
+                                  <TableCell>{e.funcao || '—'}</TableCell>
+                                  <TableCell>{e.horas_trabalhadas}h</TableCell>
+                                  {canEditDelete && (
+                                    <TableCell>
+                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteEquipeItem(e.id)}>
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </TableCell>
+                                  )}
+                                </TableRow>
                               ))}
                             </TableBody>
                           </Table>
