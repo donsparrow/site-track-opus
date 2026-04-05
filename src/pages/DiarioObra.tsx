@@ -52,6 +52,7 @@ export default function DiarioObra() {
   const [editDiarioOpen, setEditDiarioOpen] = useState(false);
   const [deleteDiarioId, setDeleteDiarioId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [globalEditMode, setGlobalEditMode] = useState(false);
 
   const canEditDelete = canEdit; // admin, trabalhador e super_admin
 
@@ -86,6 +87,37 @@ export default function DiarioObra() {
   const [editAtivDesc, setEditAtivDesc] = useState('');
   const [editAtivStatus, setEditAtivStatus] = useState('');
   const [editAtivPercentual, setEditAtivPercentual] = useState(0);
+
+  // Editing equipe inline
+  const [editingEquipeId, setEditingEquipeId] = useState<string | null>(null);
+  const [editEquipeNome, setEditEquipeNome] = useState('');
+  const [editEquipeFuncao, setEditEquipeFuncao] = useState('');
+  const [editEquipeHoras, setEditEquipeHoras] = useState('');
+
+  // Editing material inline
+  const [editingMaterialId, setEditingMaterialId] = useState<string | null>(null);
+  const [editMaterialNome, setEditMaterialNome] = useState('');
+  const [editMaterialQtd, setEditMaterialQtd] = useState('');
+  const [editMaterialUnidade, setEditMaterialUnidade] = useState('');
+
+  // Editing ocorrencia inline
+  const [editingOcorrenciaId, setEditingOcorrenciaId] = useState<string | null>(null);
+  const [editOcorrenciaDesc, setEditOcorrenciaDesc] = useState('');
+  const [editOcorrenciaImpacto, setEditOcorrenciaImpacto] = useState('');
+
+  // Editing paralisacao inline
+  const [editingParalisacaoId, setEditingParalisacaoId] = useState<string | null>(null);
+  const [editParalisacaoMotivo, setEditParalisacaoMotivo] = useState('');
+  const [editParalisacaoInicio, setEditParalisacaoInicio] = useState('');
+  const [editParalisacaoFim, setEditParalisacaoFim] = useState('');
+
+  // Editable header fields
+  const [editHeaderData, setEditHeaderData] = useState('');
+  const [editHeaderClima, setEditHeaderClima] = useState('');
+  const [editHeaderTemp, setEditHeaderTemp] = useState('');
+  const [editHeaderInicio, setEditHeaderInicio] = useState('');
+  const [editHeaderFim, setEditHeaderFim] = useState('');
+  const [editHeaderObs, setEditHeaderObs] = useState('');
 
   useEffect(() => {
     supabase.from('obras').select('id, nome, prazo_contratual_dias').order('nome').then(({ data }) => setObras(filterObras(data || [])));
