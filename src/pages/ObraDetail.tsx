@@ -55,8 +55,8 @@ export default function ObraDetail() {
 
   useEffect(() => {
     if (!id) return;
-    fetchData();
-  }, [id]);
+    if (!obrasFilterLoading) fetchData();
+  }, [id, obrasFilterLoading]);
 
   const fetchData = async () => {
     setLoading(true);
