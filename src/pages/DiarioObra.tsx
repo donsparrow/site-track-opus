@@ -241,6 +241,36 @@ export default function DiarioObra() {
     fetchDiarios(selectedObra);
   };
 
+  const deleteEquipeItem = async (id: string) => {
+    const { error } = await supabase.from('diario_equipe').delete().eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('Removido!'); fetchDiarioDetails(selectedDiario); }
+  };
+
+  const deleteMaterialItem = async (id: string) => {
+    const { error } = await supabase.from('diario_materiais').delete().eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('Removido!'); fetchDiarioDetails(selectedDiario); }
+  };
+
+  const deleteOcorrenciaItem = async (id: string) => {
+    const { error } = await supabase.from('diario_ocorrencias').delete().eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('Removido!'); fetchDiarioDetails(selectedDiario); }
+  };
+
+  const deleteImagemItem = async (id: string) => {
+    const { error } = await supabase.from('diario_imagens').delete().eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('Removido!'); fetchDiarioDetails(selectedDiario); }
+  };
+
+  const deleteParalisacaoItem = async (id: string) => {
+    const { error } = await supabase.from('diario_paralisacoes').delete().eq('id', id);
+    if (error) toast.error(error.message);
+    else { toast.success('Removido!'); fetchDiarioDetails(selectedDiario); }
+  };
+
   const addEquipeItem = async (nome: string, funcao: string, horas: string) => {
     if (!selectedDiario) return;
     const { error } = await supabase.from('diario_equipe').insert({
