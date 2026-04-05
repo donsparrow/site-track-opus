@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type Modulo = 'dashboard' | 'financeiro' | 'diario_obra' | 'cronograma' | 'relatorios' | 'documentos' | 'usuarios' | 'configuracoes';
+export type Modulo = 'dashboard' | 'financeiro' | 'diario_obra' | 'cronograma' | 'relatorios' | 'documentos' | 'usuarios' | 'configuracoes' | 'clientes';
 
 export interface Permissao {
   modulo: Modulo;
