@@ -164,45 +164,131 @@ export default function Documentacao() {
     return match ? decodeURIComponent(match[1]) : null;
   };
 
+  const getFileExtension = (fileName: string) => fileName.split('.').pop()?.trim().toLowerCase() ?? '';
+
+  const getTipoArquivo = (file: File): 'imagem' | 'pdf' | null => {
+    const extension = getFileExtension(file.name);
+    const isPdf = extension === 'pdf' || file.type === 'application/pdf' || file.type === 'application/x-pdf';
+    const isImage = ['jpg', 'jpeg', 'png'].includes(extension) || file.type === 'image/jpeg' || file.type === 'image/png';
+
+    if (isPdf) return 'pdf';
+    if (isImage) return 'imagem';
+    return null;
+  };
+
+  const buildStoragePath = (fileName: string) => {
+    const safeName = fileName
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^\w.-]+/g, '-');
+
+    return `documentos/${obraSelecionada}/${pastaAberta}/${crypto.randomUUID()}_${safeName}`;
+  };
+
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!pastaAberta || !e.target.files?.length) return;
-    const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+    const input = e.target;
+    const files = Array.from(input.files);
+    const maxFileSize = 20 * 1024 * 1024;
+    let uploadedCount = 0;
+    const uploadErrors: string[] = [];
+
     setUploading(true);
 
-    for (const file of Array.from(e.target.files)) {
-      if (!allowedTypes.includes(file.type)) {
-        toast.error(`Tipo não permitido: ${file.name}`);
-        continue;
+    try {
+      for (const file of files) {
+        const tipo = getTipoArquivo(file);
+
+        if (!tipo) {
+          const erro = new Error(`Tipo não permitido: ${file.name}. Envie PDF, JPG ou PNG.`);
+          console.log('Erro upload:', erro);
+          uploadErrors.push(erro.message);
+          continue;
+        }
+
+        if (file.size > maxFileSize) {
+          const erro = new Error(`Arquivo muito grande: ${file.name}. O limite é 20MB.`);
+          console.log('Erro upload:', erro);
+          uploadErrors.push(erro.message);
+          continue;
+        }
+
+        const path = buildStoragePath(file.name);
+
+        try {
+          const resposta = await supabase.storage.from('anexos').upload(path, file, {
+            cacheControl: '3600',
+            upsert: false,
+            contentType: file.type || undefined,
+          });
+
+          console.log('Resposta upload:', resposta);
+
+          if (resposta.error || !resposta.data?.path) {
+            throw new Error(resposta.error?.message || `Falha no upload do arquivo ${file.name}.`);
+          }
+
+          const { data: urlData } = supabase.storage.from('anexos').getPublicUrl(resposta.data.path);
+
+          if (!urlData?.publicUrl) {
+            await supabase.storage.from('anexos').remove([resposta.data.path]);
+            throw new Error(`Não foi possível obter a URL do arquivo ${file.name}.`);
+          }
+
+          const { error: insertErr } = await supabase.from('documentos_arquivos').insert({
+            pasta_id: pastaAberta,
+            nome_arquivo: file.name,
+            tipo,
+            url_arquivo: urlData.publicUrl,
+            tamanho: file.size,
+          });
+
+          if (insertErr) {
+            await supabase.storage.from('anexos').remove([resposta.data.path]);
+            throw new Error(`Erro ao salvar registro: ${insertErr.message}`);
+          }
+
+          uploadedCount += 1;
+        } catch (erro) {
+          console.log('Erro upload:', erro);
+          uploadErrors.push(
+            erro instanceof Error
+              ? `${file.name}: ${erro.message}`
+              : `${file.name}: erro desconhecido no upload`
+          );
+        }
       }
 
-      const ext = file.name.split('.').pop();
-      const path = `documentos/${obraSelecionada}/${pastaAberta}/${Date.now()}_${file.name}`;
+      if (uploadedCount > 0) {
+        const { data, error } = await supabase
+          .from('documentos_arquivos')
+          .select('*')
+          .eq('pasta_id', pastaAberta)
+          .order('created_at');
 
-      const { error: upErr } = await supabase.storage.from('anexos').upload(path, file);
-      if (upErr) { toast.error(`Erro upload: ${file.name}`); continue; }
-
-      const { data: urlData } = supabase.storage.from('anexos').getPublicUrl(path);
-
-      const tipo = file.type.startsWith('image') ? 'imagem' : 'pdf';
-      const { error: insertErr } = await supabase.from('documentos_arquivos').insert({
-        pasta_id: pastaAberta,
-        nome_arquivo: file.name,
-        tipo,
-        url_arquivo: urlData.publicUrl,
-        tamanho: file.size,
-      });
-      if (insertErr) {
-        toast.error(`Erro ao salvar registro: ${file.name} - ${insertErr.message}`);
-        continue;
+        if (error) throw error;
+        setArquivos((data as Arquivo[]) || []);
       }
+
+      if (uploadErrors.length === 0 && uploadedCount > 0) {
+        toast.success(uploadedCount === 1 ? 'Upload concluído com sucesso.' : 'Uploads concluídos com sucesso.');
+        return;
+      }
+
+      if (uploadErrors.length > 0) {
+        toast.error(
+          uploadedCount > 0
+            ? `Upload parcial: ${uploadedCount} arquivo(s) enviado(s) e ${uploadErrors.length} falharam. ${uploadErrors[0]}`
+            : uploadErrors[0]
+        );
+      }
+    } catch (erro) {
+      console.log('Erro upload:', erro);
+      toast.error(erro instanceof Error ? erro.message : 'Falha ao concluir upload.');
+    } finally {
+      setUploading(false);
+      input.value = '';
     }
-
-    toast.success('Upload concluído');
-    setUploading(false);
-    e.target.value = '';
-    // Reload
-    const { data } = await supabase.from('documentos_arquivos').select('*').eq('pasta_id', pastaAberta).order('created_at');
-    setArquivos((data as Arquivo[]) || []);
   };
 
   const excluirArquivo = async () => {
