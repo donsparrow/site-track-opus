@@ -111,7 +111,10 @@ export default function Financeiro() {
   const fetchData = async () => {
     setLoading(true);
     const { data: obrasData } = await supabase.from('obras').select('id, nome').order('nome');
-    setObras(filterObras(obrasData || []));
+    const filteredObrasData = filterObras(obrasData || []);
+    setObras(filteredObrasData);
+
+    const allowedObraIds = filteredObrasData.map(o => o.id);
 
     let rQuery = supabase.from('receitas').select('*, obras(nome)').order('created_at', { ascending: false });
     let dQuery = supabase.from('despesas').select('*, obras(nome)').order('data', { ascending: false });
@@ -119,6 +122,16 @@ export default function Financeiro() {
     if (filterObra !== 'all') {
       rQuery = rQuery.eq('obra_id', filterObra);
       dQuery = dQuery.eq('obra_id', filterObra);
+    } else if (allowedObraIds.length > 0) {
+      rQuery = rQuery.in('obra_id', allowedObraIds);
+      dQuery = dQuery.in('obra_id', allowedObraIds);
+    } else {
+      // No obras accessible - show empty
+      setReceitas([]);
+      setDespesas([]);
+      setParcelasRecebidas([]);
+      setLoading(false);
+      return;
     }
 
     const { data: r } = await rQuery;
