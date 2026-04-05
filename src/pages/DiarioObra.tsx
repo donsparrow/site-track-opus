@@ -787,22 +787,45 @@ export default function DiarioObra() {
                         {addingMaterial && <InlineMaterialForm onSave={addMaterialItem} onCancel={() => setAddingMaterial(false)} />}
                         {materiais.length === 0 && !addingMaterial ? <p className="text-sm text-muted-foreground text-center py-4">Nenhum registro</p> : (
                           <Table>
-                            <TableHeader><TableRow><TableHead>Material</TableHead><TableHead>Qtd</TableHead><TableHead>Unidade</TableHead>{canEditDelete && <TableHead className="w-10"></TableHead>}</TableRow></TableHeader>
+                            <TableHeader><TableRow><TableHead>Material</TableHead><TableHead>Qtd</TableHead><TableHead>Unidade</TableHead>{canEditDelete && <TableHead className="w-20"></TableHead>}</TableRow></TableHeader>
                             <TableBody>
-                              {materiais.map(m => (
-                                <TableRow key={m.id}>
-                                  <TableCell>{m.material}</TableCell>
-                                  <TableCell>{m.quantidade}</TableCell>
-                                  <TableCell>{m.unidade}</TableCell>
-                                  {canEditDelete && (
-                                    <TableCell>
-                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteMaterialItem(m.id)}>
-                                        <Trash2 className="h-3 w-3" />
-                                      </Button>
-                                    </TableCell>
-                                  )}
-                                </TableRow>
-                              ))}
+                              {materiais.map(m => {
+                                if (editingMaterialId === m.id) {
+                                  return (
+                                    <TableRow key={m.id}>
+                                      <TableCell><Input value={editMaterialNome} onChange={ev => setEditMaterialNome(ev.target.value)} className="h-8" /></TableCell>
+                                      <TableCell><Input type="number" value={editMaterialQtd} onChange={ev => setEditMaterialQtd(ev.target.value)} className="h-8 w-20" /></TableCell>
+                                      <TableCell><Input value={editMaterialUnidade} onChange={ev => setEditMaterialUnidade(ev.target.value)} className="h-8 w-16" /></TableCell>
+                                      <TableCell>
+                                        <div className="flex gap-1">
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => updateMaterialItem(m.id)}><Save className="h-3 w-3" /></Button>
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditingMaterialId(null)}><X className="h-3 w-3" /></Button>
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  );
+                                }
+                                return (
+                                  <TableRow key={m.id}>
+                                    <TableCell>{m.material}</TableCell>
+                                    <TableCell>{m.quantidade}</TableCell>
+                                    <TableCell>{m.unidade}</TableCell>
+                                    {canEditDelete && (
+                                      <TableCell>
+                                        <div className="flex gap-1">
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => {
+                                            setEditingMaterialId(m.id);
+                                            setEditMaterialNome(m.material);
+                                            setEditMaterialQtd(String(m.quantidade || 0));
+                                            setEditMaterialUnidade(m.unidade || 'un');
+                                          }}><Pencil className="h-3 w-3" /></Button>
+                                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteMaterialItem(m.id)}><Trash2 className="h-3 w-3" /></Button>
+                                        </div>
+                                      </TableCell>
+                                    )}
+                                  </TableRow>
+                                );
+                              })}
                             </TableBody>
                           </Table>
                         )}
