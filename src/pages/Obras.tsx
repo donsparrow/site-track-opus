@@ -35,7 +35,7 @@ const statusLabels: Record<string, string> = {
 
 export default function Obras() {
   const { role, isSuperAdmin, isAdmin } = useAuth();
-  const { filterObras } = useObrasFiltered();
+  const { filterObras, loading: obrasFilterLoading } = useObrasFiltered();
   const [obras, setObras] = useState<any[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
   const [novaObraOpen, setNovaObraOpen] = useState(false);
@@ -60,9 +60,11 @@ export default function Obras() {
   };
 
   useEffect(() => {
-    fetchObras();
-    fetchClientes();
-  }, []);
+    if (!obrasFilterLoading) {
+      fetchObras();
+      fetchClientes();
+    }
+  }, [obrasFilterLoading]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir esta obra?')) return;

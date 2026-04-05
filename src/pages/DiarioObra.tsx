@@ -120,8 +120,10 @@ export default function DiarioObra() {
   const [editHeaderObs, setEditHeaderObs] = useState('');
 
   useEffect(() => {
-    supabase.from('obras').select('id, nome, prazo_contratual_dias').order('nome').then(({ data }) => setObras(filterObras(data || [])));
-  }, []);
+    if (!obrasFilterLoading) {
+      supabase.from('obras').select('id, nome, prazo_contratual_dias').order('nome').then(({ data }) => setObras(filterObras(data || [])));
+    }
+  }, [obrasFilterLoading]);
 
   const fetchDiarios = async (obraId: string) => {
     setLoading(true);

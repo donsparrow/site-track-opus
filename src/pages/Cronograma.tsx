@@ -78,10 +78,12 @@ export default function Cronograma() {
 
   // Fetch obras
   useEffect(() => {
-    supabase.from('obras').select('id, nome').order('nome').then(({ data }) => {
-      setObras(filterObras((data || []) as { id: string; nome: string }[]));
-    });
-  }, []);
+    if (!obrasFilterLoading) {
+      supabase.from('obras').select('id, nome').order('nome').then(({ data }) => {
+        setObras(filterObras((data || []) as { id: string; nome: string }[]));
+      });
+    }
+  }, [obrasFilterLoading]);
 
   useEffect(() => {
     if (obraIdParam && obraIdParam !== obraId) setObraId(obraIdParam);
