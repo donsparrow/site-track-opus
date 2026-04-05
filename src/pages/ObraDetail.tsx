@@ -3,10 +3,11 @@ import { useParams, Link, Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useObrasFiltered } from '@/hooks/useObrasFiltered';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ClipboardList, FileText, Clock, Timer, Download, Trash2 } from 'lucide-react';
+import { ArrowLeft, ClipboardList, FileText, Clock, Timer, Download, Trash2, FolderOpen, FileImage, File } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
@@ -37,6 +38,8 @@ interface Despesa {
 export default function ObraDetail() {
   const { id } = useParams<{ id: string }>();
   const { canEdit, role } = useAuth();
+  const { pode } = usePermissions();
+  const canSeeDocs = pode('documentos', 'visualizar');
   const [obra, setObra] = useState<any>(null);
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
   const [despesas, setDespesas] = useState<Despesa[]>([]);
@@ -45,6 +48,11 @@ export default function ObraDetail() {
   const [exportingPdf, setExportingPdf] = useState(false);
   const [saldoPrazo, setSaldoPrazo] = useState<number | null>(null);
   const chartRef = useRef<HTMLDivElement>(null);
+
+  // Documentos
+  const [docStats, setDocStats] = useState<{ totalPastas: number; totalArquivos: number; pdfs: number; imagens: number; recentFiles: { nome: string; tipo: string; created_at: string }[] }>({
+    totalPastas: 0, totalArquivos: 0, pdfs: 0, imagens: 0, recentFiles: [],
+  });
 
   // Delete obra
   const [deleteObraOpen, setDeleteObraOpen] = useState(false);
@@ -113,13 +121,31 @@ export default function ObraDetail() {
     setDespesas((despesasData || []) as Despesa[]);
     const totalGasto = (despesasData || []).reduce((s, d) => s + Number(d.valor), 0);
 
-    setFinanceiro({
-      contrato: totalContrato,
-      recebido: totalRecebido,
-      aReceber: totalAReceber,
-      gasto: totalGasto,
-      saldo: totalRecebido - totalGasto,
-    });
+    // Fetch document stats
+    if (canSeeDocs) {
+      const { data: pastas } = await supabase.from('documentos_pastas').select('id').eq('obra_id', id!);
+      const pastaIds = (pastas || []).map(p => p.id);
+      if (pastaIds.length > 0) {
+        const { data: arquivos } = await supabase
+          .from('documentos_arquivos')
+          .select('nome_arquivo, tipo, created_at')
+          .in('pasta_id', pastaIds)
+          .order('created_at', { ascending: false });
+        const files = arquivos || [];
+        const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+        const pdfs = files.filter(f => f.tipo === 'pdf' || f.nome_arquivo.toLowerCase().endsWith('.pdf')).length;
+        const imgs = files.filter(f => imageExts.some(ext => f.nome_arquivo.toLowerCase().endsWith(`.${ext}`))).length;
+        setDocStats({
+          totalPastas: pastaIds.length,
+          totalArquivos: files.length,
+          pdfs,
+          imagens: imgs,
+          recentFiles: files.slice(0, 5).map(f => ({ nome: f.nome_arquivo, tipo: f.tipo, created_at: f.created_at })),
+        });
+      } else {
+        setDocStats({ totalPastas: 0, totalArquivos: 0, pdfs: 0, imagens: 0, recentFiles: [] });
+      }
+    }
 
     setLoading(false);
   };
@@ -414,6 +440,61 @@ export default function ObraDetail() {
           )}
         </CardContent>
       </Card>
+
+      {/* Documentos card */}
+      {canSeeDocs && (
+        <Card className="mb-8">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="font-display text-base flex items-center gap-2">
+              <FolderOpen className="h-5 w-5 text-accent" /> Documentos
+            </CardTitle>
+            <Link to={`/documentacao?obra=${id}`}>
+              <Button variant="outline" size="sm">Ver Documentos</Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="text-center p-3 rounded-lg bg-muted/50">
+                <p className="text-2xl font-display font-bold text-foreground">{docStats.totalArquivos}</p>
+                <p className="text-xs text-muted-foreground">Arquivos</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-muted/50">
+                <p className="text-2xl font-display font-bold text-foreground">{docStats.totalPastas}</p>
+                <p className="text-xs text-muted-foreground">Pastas</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-muted/50">
+                <p className="text-2xl font-display font-bold text-accent">{docStats.pdfs}</p>
+                <p className="text-xs text-muted-foreground flex items-center justify-center gap-1"><File className="h-3 w-3" /> PDFs</p>
+              </div>
+              <div className="text-center p-3 rounded-lg bg-muted/50">
+                <p className="text-2xl font-display font-bold text-primary">{docStats.imagens}</p>
+                <p className="text-xs text-muted-foreground flex items-center justify-center gap-1"><FileImage className="h-3 w-3" /> Imagens</p>
+              </div>
+            </div>
+            {docStats.recentFiles.length > 0 && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2">Últimos arquivos</p>
+                <div className="space-y-1.5">
+                  {docStats.recentFiles.map((f, i) => (
+                    <div key={i} className="flex items-center justify-between text-sm py-1 px-2 rounded bg-muted/30">
+                      <div className="flex items-center gap-2 truncate">
+                        {f.nome.toLowerCase().endsWith('.pdf') ? <File className="h-3.5 w-3.5 text-accent flex-shrink-0" /> : <FileImage className="h-3.5 w-3.5 text-primary flex-shrink-0" />}
+                        <span className="truncate">{f.nome}</span>
+                      </div>
+                      <span className="text-xs text-muted-foreground flex-shrink-0 ml-2">
+                        {new Date(f.created_at).toLocaleDateString('pt-BR')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {docStats.totalArquivos === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-2">Nenhum documento anexado.</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Delete Obra Confirm */}
       <AlertDialog open={deleteObraOpen} onOpenChange={setDeleteObraOpen}>
