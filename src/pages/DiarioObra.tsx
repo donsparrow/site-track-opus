@@ -619,10 +619,21 @@ export default function DiarioObra() {
                         {addingMaterial && <InlineMaterialForm onSave={addMaterialItem} onCancel={() => setAddingMaterial(false)} />}
                         {materiais.length === 0 && !addingMaterial ? <p className="text-sm text-muted-foreground text-center py-4">Nenhum registro</p> : (
                           <Table>
-                            <TableHeader><TableRow><TableHead>Material</TableHead><TableHead>Qtd</TableHead><TableHead>Unidade</TableHead></TableRow></TableHeader>
+                            <TableHeader><TableRow><TableHead>Material</TableHead><TableHead>Qtd</TableHead><TableHead>Unidade</TableHead>{canEditDelete && <TableHead className="w-10"></TableHead>}</TableRow></TableHeader>
                             <TableBody>
                               {materiais.map(m => (
-                                <TableRow key={m.id}><TableCell>{m.material}</TableCell><TableCell>{m.quantidade}</TableCell><TableCell>{m.unidade}</TableCell></TableRow>
+                                <TableRow key={m.id}>
+                                  <TableCell>{m.material}</TableCell>
+                                  <TableCell>{m.quantidade}</TableCell>
+                                  <TableCell>{m.unidade}</TableCell>
+                                  {canEditDelete && (
+                                    <TableCell>
+                                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive" onClick={() => deleteMaterialItem(m.id)}>
+                                        <Trash2 className="h-3 w-3" />
+                                      </Button>
+                                    </TableCell>
+                                  )}
+                                </TableRow>
                               ))}
                             </TableBody>
                           </Table>
