@@ -9,6 +9,7 @@ interface AuthContextType {
   session: Session | null;
   role: AppRole | null;
   loading: boolean;
+  hasCheckedEmpresa: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, nome: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -27,14 +28,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<AppRole | null>(null);
   const [empresaId, setEmpresaId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasCheckedEmpresa, setHasCheckedEmpresa] = useState(false);
 
-  const fetchRole = async (userId: string) => {
+  const fetchRole = async (userId: string): Promise<AppRole | null> => {
     const { data } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
       .single();
-    if (data) setRole(data.role as AppRole);
+    const r = (data?.role as AppRole) || null;
+    setRole(r);
+    return r;
   };
 
   const fetchEmpresa = async (userId: string) => {
@@ -43,7 +47,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select('empresa_id')
       .eq('user_id', userId)
       .single();
-    setEmpresaId(data?.empresa_id || null);
+    const eid = data?.empresa_id || null;
+    setEmpresaId(eid);
+    console.log("empresa_id:", eid);
+    return eid;
+  };
+
+  const fetchUserMeta = async (userId: string) => {
+    try {
+      await Promise.all([fetchRole(userId), fetchEmpresa(userId)]);
+    } catch (err) {
+      console.error("Erro ao buscar metadados:", err);
+    } finally {
+      setHasCheckedEmpresa(true);
+      console.log("verificação concluída:", true);
+    }
   };
 
   const refreshEmpresa = async () => {
@@ -51,31 +69,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    let initialLoad = true;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          setTimeout(() => {
-            fetchRole(session.user.id);
-            fetchEmpresa(session.user.id);
-          }, 0);
+          // Avoid duplicate fetch on initial load (getSession handles it)
+          if (!initialLoad) {
+            await fetchUserMeta(session.user.id);
+          }
         } else {
           setRole(null);
           setEmpresaId(null);
+          setHasCheckedEmpresa(true);
         }
         setLoading(false);
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchRole(session.user.id);
-        fetchEmpresa(session.user.id);
+        await fetchUserMeta(session.user.id);
+      } else {
+        setHasCheckedEmpresa(true);
       }
       setLoading(false);
+      initialLoad = false;
     });
 
     return () => subscription.unsubscribe();
@@ -106,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isSuperAdmin = role === 'super_admin';
 
   return (
-    <AuthContext.Provider value={{ user, session, role, loading, signIn, signUp, signOut, canEdit, isAdmin, isSuperAdmin, empresaId, refreshEmpresa }}>
+    <AuthContext.Provider value={{ user, session, role, loading, hasCheckedEmpresa, signIn, signUp, signOut, canEdit, isAdmin, isSuperAdmin, empresaId, refreshEmpresa }}>
       {children}
     </AuthContext.Provider>
   );
