@@ -26,7 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
-  const [empresaId, setEmpresaId] = useState<string | null>(null);
+  const [empresaId, setEmpresaId] = useState<string | null | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [hasCheckedEmpresa, setHasCheckedEmpresa] = useState(false);
 
