@@ -9,7 +9,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useEmpresaNome } from '@/hooks/useEmpresaNome';
-import { useEmpresaLogo } from '@/hooks/useEmpresaLogo';
+import logoSistema from '@/assets/logo-sistema.jpeg';
 
 const navItemsAll = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
