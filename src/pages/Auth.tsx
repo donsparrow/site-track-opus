@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import constructionHero from '@/assets/construction-hero.jpg';
-import { HardHat } from 'lucide-react';
+import logoSistema from '@/assets/logo-sistema.jpeg';
 import GlobalFooter from '@/components/GlobalFooter';
 
 export default function Auth() {
@@ -43,8 +43,8 @@ export default function Auth() {
       <div className="absolute inset-0 bg-primary/70" />
       <Card className="relative z-10 w-full max-w-md mx-4 border-0 shadow-2xl">
         <CardHeader className="text-center pb-2">
-          <div className="mx-auto mb-3 flex h-[104px] w-[104px] items-center justify-center rounded-xl overflow-hidden bg-sidebar-primary">
-            <HardHat className="h-14 w-14 text-sidebar-primary-foreground" />
+          <div className="mx-auto mb-3 flex h-[104px] w-auto items-center justify-center rounded-xl overflow-hidden">
+            <img src={logoSistema} alt="J&A GestãoPro" className="h-full w-auto object-contain" />
           </div>
           <CardTitle className="leading-none tracking-tight text-base text-center font-medium mx-[63px] px-0 rounded-none shadow-none">
             {isLogin ? 'Entrar' : 'Criar conta'}

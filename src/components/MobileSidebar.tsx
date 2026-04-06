@@ -9,7 +9,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useEmpresaNome } from '@/hooks/useEmpresaNome';
-import { useEmpresaLogo } from '@/hooks/useEmpresaLogo';
+import logoSistema from '@/assets/logo-sistema.jpeg';
 
 const navItemsAll = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
@@ -31,7 +31,7 @@ export default function MobileSidebar() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const empresaNome = useEmpresaNome();
-  const { logoUrl } = useEmpresaLogo();
+  
 
   const handleLogout = async () => {
     setOpen(false);
@@ -52,13 +52,7 @@ export default function MobileSidebar() {
     <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-sidebar border-b border-sidebar-border">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
-          {logoUrl ? (
-            <img src={logoUrl} alt={empresaNome} className="h-12 w-auto max-w-[100px] rounded-lg object-contain p-0.5" />
-          ) : (
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-sidebar-primary">
-              <HardHat className="h-6 w-6 text-sidebar-primary-foreground" />
-            </div>
-          )}
+          <img src={logoSistema} alt="J&A GestãoPro" className="h-12 w-auto max-w-[100px] rounded-lg object-contain p-0.5" />
           <h1 className="font-display text-sm font-bold text-sidebar-foreground">{empresaNome}</h1>
         </div>
 
@@ -70,13 +64,7 @@ export default function MobileSidebar() {
           </SheetTrigger>
           <SheetContent side="left" className="w-72 p-0 bg-sidebar border-sidebar-border">
             <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border">
-              {logoUrl ? (
-                <img src={logoUrl} alt={empresaNome} className="h-10 w-auto max-w-[80px] rounded-lg object-contain" />
-              ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sidebar-primary">
-                  <HardHat className="h-5 w-5 text-sidebar-primary-foreground" />
-                </div>
-              )}
+              <img src={logoSistema} alt="J&A GestãoPro" className="h-10 w-auto max-w-[80px] rounded-lg object-contain" />
               <div>
                 <h1 className="font-display text-base font-bold text-sidebar-foreground">{empresaNome}</h1>
                 <p className="text-xs text-sidebar-foreground/60 capitalize">{role || 'carregando...'}</p>
