@@ -268,7 +268,7 @@ export default function ObraDetail() {
 
   const statusLabels: Record<string, string> = { planejamento: 'Planejamento', andamento: 'Em andamento', concluida: 'Concluída' };
   const atrasadas = parcelas.filter(p => p.status === 'atrasado').length;
-  const isAdmin = role === 'admin';
+  
 
   const chartData = [
     { name: 'Recebido', value: financeiro.recebido, color: 'hsl(142, 70%, 40%)' },
