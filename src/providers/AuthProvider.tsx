@@ -1,27 +1,7 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { useEffect, useState, type ReactNode } from 'react';
+import { type Session, type User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-
-type AppRole = 'admin' | 'trabalhador' | 'sindico' | 'cliente' | 'super_admin';
-
-interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  role: AppRole | null;
-  loading: boolean;
-  hasCheckedEmpresa: boolean;
-  empresaStatusCarregado: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, nome: string) => Promise<{ error: Error | null }>;
-  signOut: () => Promise<void>;
-  canEdit: boolean;
-  isAdmin: boolean;
-  isSuperAdmin: boolean;
-  empresaId: string | null | undefined;
-  refreshEmpresa: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import { AuthContext, type AppRole } from '@/contexts/AuthContext';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -49,9 +29,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select('role')
       .eq('user_id', userId)
       .single();
-    const r = (data?.role as AppRole) || null;
-    setRole(r);
-    return r;
+
+    const currentRole = (data?.role as AppRole) || null;
+    setRole(currentRole);
+    return currentRole;
   };
 
   const fetchEmpresa = async (userId: string) => {
@@ -60,10 +41,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select('empresa_id')
       .eq('user_id', userId)
       .single();
-    const eid = data?.empresa_id ?? null;
-    setEmpresaId(eid);
-    console.log('empresaId:', eid, typeof eid);
-    return eid;
+
+    const currentEmpresaId = data?.empresa_id ?? null;
+    setEmpresaId(currentEmpresaId);
+    console.log('empresaId:', currentEmpresaId, typeof currentEmpresaId);
+    return currentEmpresaId;
   };
 
   const fetchUserMeta = async (userId: string) => {
@@ -96,35 +78,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let initialLoad = true;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
 
-        if (session?.user) {
-          resetEmpresaState();
+      if (currentSession?.user) {
+        resetEmpresaState();
 
-          if (!initialLoad) {
-            setLoading(true);
-            fetchUserMeta(session.user.id).then(() => setLoading(false));
-          }
-
-          return;
+        if (!initialLoad) {
+          setLoading(true);
+          fetchUserMeta(currentSession.user.id).then(() => setLoading(false));
         }
 
-        setRole(null);
-        resetEmpresaState();
-        markEmpresaStateLoaded();
-        setLoading(false);
+        return;
       }
-    );
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+      setRole(null);
+      resetEmpresaState();
+      markEmpresaStateLoaded();
+      setLoading(false);
+    });
 
-      if (session?.user) {
-        await fetchUserMeta(session.user.id);
+    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
+      setSession(currentSession);
+      setUser(currentSession?.user ?? null);
+
+      if (currentSession?.user) {
+        await fetchUserMeta(currentSession.user.id);
       } else {
         markEmpresaStateLoaded();
       }
@@ -147,6 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password,
       options: { data: { nome } },
     });
+
     return { error: error as Error | null };
   };
 
@@ -161,14 +144,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isSuperAdmin = role === 'super_admin';
 
   return (
-    <AuthContext.Provider value={{ user, session, role, loading, hasCheckedEmpresa, empresaStatusCarregado, signIn, signUp, signOut, canEdit, isAdmin, isSuperAdmin, empresaId, refreshEmpresa }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        role,
+        loading,
+        hasCheckedEmpresa,
+        empresaStatusCarregado,
+        signIn,
+        signUp,
+        signOut,
+        canEdit,
+        isAdmin,
+        isSuperAdmin,
+        empresaId,
+        refreshEmpresa,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within an AuthProvider');
-  return context;
 }
