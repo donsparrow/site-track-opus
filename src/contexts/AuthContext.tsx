@@ -10,6 +10,7 @@ interface AuthContextType {
   role: AppRole | null;
   loading: boolean;
   hasCheckedEmpresa: boolean;
+  empresaStatusCarregado: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, nome: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -29,6 +30,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [empresaId, setEmpresaId] = useState<string | null | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [hasCheckedEmpresa, setHasCheckedEmpresa] = useState(false);
+  const [empresaStatusCarregado, setEmpresaStatusCarregado] = useState(false);
+
+  const resetEmpresaState = () => {
+    setEmpresaId(undefined);
+    setHasCheckedEmpresa(false);
+    setEmpresaStatusCarregado(false);
+  };
+
+  const markEmpresaStateLoaded = () => {
+    setHasCheckedEmpresa(true);
+    setEmpresaStatusCarregado(true);
+  };
 
   const fetchRole = async (userId: string): Promise<AppRole | null> => {
     const { data } = await supabase
@@ -47,25 +60,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select('empresa_id')
       .eq('user_id', userId)
       .single();
-    const eid = data?.empresa_id || null;
+    const eid = data?.empresa_id ?? null;
     setEmpresaId(eid);
-    console.log("empresaId:", eid, typeof eid);
+    console.log('empresaId:', eid, typeof eid);
     return eid;
   };
 
   const fetchUserMeta = async (userId: string) => {
+    resetEmpresaState();
+
     try {
       await Promise.all([fetchRole(userId), fetchEmpresa(userId)]);
     } catch (err) {
-      console.error("Erro ao buscar metadados:", err);
+      console.error('Erro ao buscar metadados:', err);
     } finally {
-      setHasCheckedEmpresa(true);
-      console.log("verificação concluída:", true);
+      markEmpresaStateLoaded();
+      console.log('verificação concluída:', true);
     }
   };
 
   const refreshEmpresa = async () => {
-    if (user) await fetchEmpresa(user.id);
+    if (!user) return;
+
+    resetEmpresaState();
+
+    try {
+      await fetchEmpresa(user.id);
+    } catch (err) {
+      console.error('Erro ao atualizar empresa:', err);
+    } finally {
+      markEmpresaStateLoaded();
+    }
   };
 
   useEffect(() => {
@@ -75,16 +100,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+
         if (session?.user) {
+          resetEmpresaState();
+
           if (!initialLoad) {
+            setLoading(true);
             fetchUserMeta(session.user.id).then(() => setLoading(false));
-            return;
           }
-        } else {
-          setRole(null);
-          setEmpresaId(undefined);
-          setHasCheckedEmpresa(true);
+
+          return;
         }
+
+        setRole(null);
+        resetEmpresaState();
+        markEmpresaStateLoaded();
         setLoading(false);
       }
     );
@@ -92,11 +122,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+
       if (session?.user) {
         await fetchUserMeta(session.user.id);
       } else {
-        setHasCheckedEmpresa(true);
+        markEmpresaStateLoaded();
       }
+
       setLoading(false);
       initialLoad = false;
     });
@@ -121,7 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setRole(null);
-    setEmpresaId(null);
+    resetEmpresaState();
   };
 
   const canEdit = role === 'admin' || role === 'trabalhador' || role === 'super_admin';
@@ -129,7 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const isSuperAdmin = role === 'super_admin';
 
   return (
-    <AuthContext.Provider value={{ user, session, role, loading, hasCheckedEmpresa, signIn, signUp, signOut, canEdit, isAdmin, isSuperAdmin, empresaId, refreshEmpresa }}>
+    <AuthContext.Provider value={{ user, session, role, loading, hasCheckedEmpresa, empresaStatusCarregado, signIn, signUp, signOut, canEdit, isAdmin, isSuperAdmin, empresaId, refreshEmpresa }}>
       {children}
     </AuthContext.Provider>
   );
