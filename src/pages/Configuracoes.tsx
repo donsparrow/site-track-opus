@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { Settings, Upload } from 'lucide-react';
 
 export default function Configuracoes() {
-  const { isAdmin } = useAuth();
+  const { isAdmin, empresaId } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [configId, setConfigId] = useState<string | null>(null);
@@ -25,11 +25,17 @@ export default function Configuracoes() {
   });
 
   useEffect(() => {
-    fetchConfig();
-  }, []);
+    if (empresaId) fetchConfig();
+  }, [empresaId]);
 
   const fetchConfig = async () => {
-    const { data } = await supabase.from('configuracoes_empresa').select('*').limit(1).single();
+    if (!empresaId) return;
+    const { data } = await supabase
+      .from('configuracoes_empresa')
+      .select('*')
+      .eq('empresa_id', empresaId)
+      .limit(1)
+      .single();
     if (data) {
       setConfigId(data.id);
       setForm({
@@ -54,7 +60,7 @@ export default function Configuracoes() {
       if (error) toast.error(error.message);
       else toast.success('Configurações salvas!');
     } else {
-      const { error } = await supabase.from('configuracoes_empresa').insert(form);
+      const { error } = await supabase.from('configuracoes_empresa').insert({ ...form, empresa_id: empresaId });
       if (error) toast.error(error.message);
       else { toast.success('Configurações criadas!'); fetchConfig(); }
     }
@@ -62,8 +68,12 @@ export default function Configuracoes() {
   };
 
   const handleLogoUpload = async (file: File) => {
+    if (!empresaId) {
+      toast.error('Empresa não identificada.');
+      return;
+    }
     const ext = file.name.split('.').pop();
-    const filePath = `empresa/logo.${ext}`;
+    const filePath = `empresa/${empresaId}/logo.${ext}`;
     const { error: upErr } = await supabase.storage.from('anexos').upload(filePath, file, { upsert: true });
     if (upErr) { toast.error(upErr.message); return; }
     const { data: urlData } = supabase.storage.from('anexos').getPublicUrl(filePath);

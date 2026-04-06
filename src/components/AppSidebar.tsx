@@ -6,8 +6,8 @@ import {
   Users, LogOut, HardHat, UserCircle, ClipboardList, Settings, FolderOpen, CalendarRange
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import logoJa from '@/assets/logo-ja-gestaopro.jpeg';
 import { useEmpresaNome } from '@/hooks/useEmpresaNome';
+import { useEmpresaLogo } from '@/hooks/useEmpresaLogo';
 
 const navItemsAll = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
@@ -28,6 +28,7 @@ export default function AppSidebar() {
   const { pode, loading: permLoading } = usePermissions();
   const navigate = useNavigate();
   const empresaNome = useEmpresaNome();
+  const { logoUrl } = useEmpresaLogo();
 
   const handleLogout = async () => {
     await signOut();
@@ -36,18 +37,23 @@ export default function AppSidebar() {
 
   const visibleItems = navItemsAll.filter(item => {
     if (!role || !item.roles.includes(role)) return false;
-    // Check module permission for items that have a module mapping
     const modulo = ROUTE_MODULE_MAP[item.to];
     if (modulo && !permLoading) {
       return pode(modulo, 'visualizar');
     }
-    return true; // items without module mapping (obras, clientes, empresas) use role-only
+    return true;
   });
 
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col bg-sidebar text-sidebar-foreground border-r border-sidebar-border">
       <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border">
-        <img src={logoJa} alt="J&A GestãoPro" className="h-16 w-auto max-w-[120px] rounded-lg object-contain p-1" />
+        {logoUrl ? (
+          <img src={logoUrl} alt={empresaNome} className="h-16 w-auto max-w-[120px] rounded-lg object-contain p-1" />
+        ) : (
+          <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-sidebar-primary">
+            <HardHat className="h-8 w-8 text-sidebar-primary-foreground" />
+          </div>
+        )}
         <div>
           <h1 className="font-display text-base font-bold text-sidebar-foreground">{empresaNome}</h1>
           <p className="text-xs text-sidebar-foreground/60 capitalize">{{ super_admin: 'Adm. Geral', admin: 'Diretor', trabalhador: 'Funcionário', sindico: 'Síndico', cliente: 'Cliente' }[role || ''] || 'carregando...'}</p>
