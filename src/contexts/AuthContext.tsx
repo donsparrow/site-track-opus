@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .single();
     const eid = data?.empresa_id || null;
     setEmpresaId(eid);
-    console.log("empresa_id:", eid);
+    console.log("empresaId:", eid, typeof eid);
     return eid;
   };
 
