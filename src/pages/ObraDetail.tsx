@@ -302,7 +302,7 @@ export default function ObraDetail() {
           <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={exportingPdf}>
             <Download className="h-4 w-4 mr-1" /> {exportingPdf ? 'Exportando...' : 'Exportar PDF'}
           </Button>
-          {isAdmin && (
+          {(isSuperAdmin || isAdmin) && (
             <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={handleCheckDeleteObra}>
               <Trash2 className="h-4 w-4 mr-1" /> Excluir Obra
             </Button>
