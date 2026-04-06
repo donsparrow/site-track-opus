@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { Building2, Plus, Clock } from 'lucide-react';
 
 export default function EmpresaSetup() {
-  const { user, isSuperAdmin, empresaId, refreshEmpresa } = useAuth();
+  const { user, isSuperAdmin, empresaId, hasCheckedEmpresa, refreshEmpresa } = useAuth();
   const [step, setStep] = useState<'choose' | 'create'>('choose');
   const [nome, setNome] = useState('');
   const [cnpj, setCnpj] = useState('');
@@ -18,8 +18,8 @@ export default function EmpresaSetup() {
   const [endereco, setEndereco] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Show for any logged-in user without empresa, except super_admin
-  const open = !!user && !isSuperAdmin && !empresaId;
+  // Only show modal after empresa check is complete
+  const open = hasCheckedEmpresa && !!user && !isSuperAdmin && !empresaId;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
