@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import constructionHero from '@/assets/construction-hero.jpg';
-import { HardHat } from 'lucide-react';
+import logoSistema from '@/assets/logo-sistema.jpeg';
 import GlobalFooter from '@/components/GlobalFooter';
 
 export default function Auth() {
