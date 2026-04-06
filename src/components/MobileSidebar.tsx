@@ -31,7 +31,7 @@ export default function MobileSidebar() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const empresaNome = useEmpresaNome();
-  const { logoUrl } = useEmpresaLogo();
+  
 
   const handleLogout = async () => {
     setOpen(false);

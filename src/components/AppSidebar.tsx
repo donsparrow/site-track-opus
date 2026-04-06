@@ -28,7 +28,7 @@ export default function AppSidebar() {
   const { pode, loading: permLoading } = usePermissions();
   const navigate = useNavigate();
   const empresaNome = useEmpresaNome();
-  const { logoUrl } = useEmpresaLogo();
+  
 
   const handleLogout = async () => {
     await signOut();
