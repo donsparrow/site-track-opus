@@ -37,7 +37,7 @@ interface Despesa {
 
 export default function ObraDetail() {
   const { id } = useParams<{ id: string }>();
-  const { canEdit, role } = useAuth();
+  const { canEdit, role, isSuperAdmin, isAdmin } = useAuth();
   const { pode, loading: permissionsLoading } = usePermissions();
   const [obra, setObra] = useState<any>(null);
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
