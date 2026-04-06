@@ -19,7 +19,7 @@ export default function EmpresaSetup() {
   const [saving, setSaving] = useState(false);
 
   // Only show modal after empresa check is complete
-  const open = hasCheckedEmpresa && !!user && !isSuperAdmin && !empresaId;
+  const open = hasCheckedEmpresa && !!user && !isSuperAdmin && empresaId === null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

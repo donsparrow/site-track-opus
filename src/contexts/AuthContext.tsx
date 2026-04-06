@@ -16,7 +16,7 @@ interface AuthContextType {
   canEdit: boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
-  empresaId: string | null;
+  empresaId: string | null | undefined;
   refreshEmpresa: () => Promise<void>;
 }
 
@@ -26,7 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
-  const [empresaId, setEmpresaId] = useState<string | null>(null);
+  const [empresaId, setEmpresaId] = useState<string | null | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [hasCheckedEmpresa, setHasCheckedEmpresa] = useState(false);
 
@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .single();
     const eid = data?.empresa_id || null;
     setEmpresaId(eid);
-    console.log("empresa_id:", eid);
+    console.log("empresaId:", eid, typeof eid);
     return eid;
   };
 
@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         } else {
           setRole(null);
-          setEmpresaId(null);
+          setEmpresaId(undefined);
           setHasCheckedEmpresa(true);
         }
         setLoading(false);
