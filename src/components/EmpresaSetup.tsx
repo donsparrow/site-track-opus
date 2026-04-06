@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { Building2, Plus, Clock } from 'lucide-react';
 
 export default function EmpresaSetup() {
-  const { user, isSuperAdmin, empresaId, hasCheckedEmpresa, refreshEmpresa } = useAuth();
+  const { user, isSuperAdmin, empresaId, hasCheckedEmpresa, empresaStatusCarregado, refreshEmpresa } = useAuth();
   const [step, setStep] = useState<'choose' | 'create'>('choose');
   const [nome, setNome] = useState('');
   const [cnpj, setCnpj] = useState('');
@@ -18,8 +18,13 @@ export default function EmpresaSetup() {
   const [endereco, setEndereco] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Only show modal after empresa check is complete
-  const open = hasCheckedEmpresa && !!user && !isSuperAdmin && empresaId === null;
+  const open = hasCheckedEmpresa && empresaStatusCarregado && !!user && !isSuperAdmin && empresaId === null;
+
+  useEffect(() => {
+    console.log('empresaId FINAL:', empresaId);
+    console.log('empresaStatusCarregado:', empresaStatusCarregado);
+    console.log('modal aberto:', open);
+  }, [empresaId, empresaStatusCarregado, open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,7 +39,6 @@ export default function EmpresaSetup() {
 
       if (error) throw error;
 
-      // Save additional config if provided
       if (data && (telefone || email || endereco)) {
         await supabase.from('configuracoes_empresa').insert({
           empresa_id: data,
@@ -48,7 +52,6 @@ export default function EmpresaSetup() {
 
       toast.success('Empresa criada com sucesso! Você agora é Diretor.');
       await refreshEmpresa();
-      // Force page reload to refresh role/permissions
       window.location.reload();
     } catch (err: any) {
       toast.error('Erro: ' + err.message);
