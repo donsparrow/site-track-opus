@@ -64,13 +64,7 @@ export default function MobileSidebar() {
           </SheetTrigger>
           <SheetContent side="left" className="w-72 p-0 bg-sidebar border-sidebar-border">
             <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border">
-              {logoUrl ? (
-                <img src={logoUrl} alt={empresaNome} className="h-10 w-auto max-w-[80px] rounded-lg object-contain" />
-              ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sidebar-primary">
-                  <HardHat className="h-5 w-5 text-sidebar-primary-foreground" />
-                </div>
-              )}
+              <img src={logoSistema} alt="J&A GestãoPro" className="h-10 w-auto max-w-[80px] rounded-lg object-contain" />
               <div>
                 <h1 className="font-display text-base font-bold text-sidebar-foreground">{empresaNome}</h1>
                 <p className="text-xs text-sidebar-foreground/60 capitalize">{role || 'carregando...'}</p>
