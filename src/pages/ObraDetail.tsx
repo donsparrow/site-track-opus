@@ -37,7 +37,7 @@ interface Despesa {
 
 export default function ObraDetail() {
   const { id } = useParams<{ id: string }>();
-  const { canEdit, role } = useAuth();
+  const { canEdit, role, isSuperAdmin, isAdmin } = useAuth();
   const { pode, loading: permissionsLoading } = usePermissions();
   const [obra, setObra] = useState<any>(null);
   const [parcelas, setParcelas] = useState<Parcela[]>([]);
@@ -268,7 +268,7 @@ export default function ObraDetail() {
 
   const statusLabels: Record<string, string> = { planejamento: 'Planejamento', andamento: 'Em andamento', concluida: 'Concluída' };
   const atrasadas = parcelas.filter(p => p.status === 'atrasado').length;
-  const isAdmin = role === 'admin';
+  
 
   const chartData = [
     { name: 'Recebido', value: financeiro.recebido, color: 'hsl(142, 70%, 40%)' },
@@ -302,7 +302,7 @@ export default function ObraDetail() {
           <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={exportingPdf}>
             <Download className="h-4 w-4 mr-1" /> {exportingPdf ? 'Exportando...' : 'Exportar PDF'}
           </Button>
-          {isAdmin && (
+          {(isSuperAdmin || isAdmin) && (
             <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={handleCheckDeleteObra}>
               <Trash2 className="h-4 w-4 mr-1" /> Excluir Obra
             </Button>
