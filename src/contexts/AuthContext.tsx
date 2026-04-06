@@ -51,23 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await Promise.all([
-            fetchRole(session.user.id),
-            fetchEmpresa(session.user.id),
-          ]);
-        } else {
-          setRole(null);
-          setEmpresaId(null);
-        }
-        setLoading(false);
-      }
-    );
-
+    // First, restore session from storage
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -79,6 +63,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       setLoading(false);
     });
+
+    // Then listen for subsequent auth changes (fire-and-forget, no await)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          // Fire-and-forget to avoid deadlock
+          Promise.all([
+            fetchRole(session.user.id),
+            fetchEmpresa(session.user.id),
+          ]);
+        } else {
+          setRole(null);
+          setEmpresaId(null);
+        }
+      }
+    );
 
     return () => subscription.unsubscribe();
   }, []);
