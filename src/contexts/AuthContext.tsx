@@ -16,7 +16,7 @@ interface AuthContextType {
   canEdit: boolean;
   isAdmin: boolean;
   isSuperAdmin: boolean;
-  empresaId: string | null;
+  empresaId: string | null | undefined;
   refreshEmpresa: () => Promise<void>;
 }
 
