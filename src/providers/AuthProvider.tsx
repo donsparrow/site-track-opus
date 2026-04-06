@@ -85,9 +85,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(currentSession?.user ?? null);
 
       if (currentSession?.user) {
-        resetEmpresaState();
-
         if (!initialLoad) {
+          resetEmpresaState();
           setLoading(true);
           fetchUserMeta(currentSession.user.id).then(() => setLoading(false));
         }
