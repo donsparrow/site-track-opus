@@ -82,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         } else {
           setRole(null);
-          setEmpresaId(null);
+          setEmpresaId(undefined);
           setHasCheckedEmpresa(true);
         }
         setLoading(false);
