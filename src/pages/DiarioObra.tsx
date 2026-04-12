@@ -738,8 +738,20 @@ export default function DiarioObra() {
                                       </Badge>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                      <span className="text-xs text-muted-foreground w-8">{editAtivPercentual}%</span>
-                                      <Slider value={[editAtivPercentual]} onValueChange={v => setEditAtivPercentual(v[0])} min={0} max={100} step={5} className="flex-1" />
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        max={100}
+                                        step={0.5}
+                                        value={editAtivPercentual}
+                                        onChange={e => {
+                                          const v = parseFloat(e.target.value);
+                                          setEditAtivPercentual(isNaN(v) ? 0 : Math.min(100, Math.max(0, v)));
+                                        }}
+                                        className="w-20 h-8"
+                                      />
+                                      <span className="text-xs text-muted-foreground">%</span>
+                                      <Slider value={[editAtivPercentual]} onValueChange={v => setEditAtivPercentual(v[0])} min={0} max={100} step={1} className="flex-1" />
                                       <Button size="sm" variant="ghost" onClick={() => updateAtividadeItem(a.id)}>
                                         <Save className="h-3 w-3" />
                                       </Button>
@@ -1071,8 +1083,20 @@ function InlineAtividadeForm({ onSave, onCancel }: { onSave: (d: string, s: stri
         </Badge>
       </div>
       <div className="flex items-center gap-3">
-        <span className="text-xs text-muted-foreground w-8">{p}%</span>
-        <Slider value={[p]} onValueChange={v => setP(v[0])} min={0} max={100} step={5} className="flex-1" />
+        <Input
+          type="number"
+          min={0}
+          max={100}
+          step={0.5}
+          value={p}
+          onChange={e => {
+            const v = parseFloat(e.target.value);
+            setP(isNaN(v) ? 0 : Math.min(100, Math.max(0, v)));
+          }}
+          className="w-20 h-8"
+        />
+        <span className="text-xs text-muted-foreground">%</span>
+        <Slider value={[p]} onValueChange={v => setP(v[0])} min={0} max={100} step={1} className="flex-1" />
       </div>
       <div className="flex gap-2 justify-end">
         <Button size="sm" onClick={() => d && onSave(d, autoStatus, p)}>OK</Button>
