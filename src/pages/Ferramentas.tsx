@@ -369,10 +369,44 @@ export default function Ferramentas() {
                         <TableCell>{f.numero_cadastro}</TableCell>
                         <TableCell>{TIPO_LABELS[f.tipo] || f.tipo}</TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="gap-1.5">
-                            <span className={`h-2 w-2 rounded-full ${sc.color}`} />
-                            {sc.label}
-                          </Badge>
+                          {canEdit ? (
+                            <Select value={f.status} onValueChange={async (newStatus) => {
+                              const old = f.status;
+                              if (newStatus === old) return;
+                              const { error } = await supabase.from('ferramentas').update({ status: newStatus }).eq('id', f.id);
+                              if (error) { toast.error('Erro ao alterar status'); return; }
+                              await supabase.from('ferramentas_historico').insert({
+                                ferramenta_id: f.id,
+                                tipo_evento: 'status',
+                                descricao: `Status alterado: ${STATUS_CONFIG[old]?.label} → ${STATUS_CONFIG[newStatus]?.label}`,
+                                obra_id: f.obra_id,
+                              });
+                              toast.success('Status atualizado');
+                              fetchData();
+                            }}>
+                              <SelectTrigger className="w-[140px] h-8">
+                                <Badge variant="outline" className="gap-1.5 border-0">
+                                  <span className={`h-2 w-2 rounded-full ${sc.color}`} />
+                                  {sc.label}
+                                </Badge>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Object.entries(STATUS_CONFIG).map(([k, v]) => (
+                                  <SelectItem key={k} value={k}>
+                                    <span className="flex items-center gap-1.5">
+                                      <span className={`h-2 w-2 rounded-full ${v.color}`} />
+                                      {v.label}
+                                    </span>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <Badge variant="outline" className="gap-1.5">
+                              <span className={`h-2 w-2 rounded-full ${sc.color}`} />
+                              {sc.label}
+                            </Badge>
+                          )}
                         </TableCell>
                         <TableCell>{obraNome}</TableCell>
                         <TableCell>{f.ultima_manutencao ? new Date(f.ultima_manutencao + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>

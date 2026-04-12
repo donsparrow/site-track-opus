@@ -341,7 +341,7 @@ export default function Financeiro() {
   const handleEditDespesa = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editDespesaItem) return;
-    const { error } = await supabase.from('despesas').update({
+    const updatedValues = {
       valor: parseFloat(edValor),
       descricao: edDescricao,
       data: edData,
@@ -349,9 +349,23 @@ export default function Financeiro() {
       forma_pagamento: edFormaPgto || null,
       tipo_pagamento: edTipoPgto,
       data_vencimento: edTipoPgto === 'prazo' ? edDataVencimento : null,
-    } as any).eq('id', editDespesaItem.id);
-    if (error) toast.error('Erro: ' + error.message);
-    else { toast.success('Despesa atualizada com sucesso!'); setEditDespesaOpen(false); fetchData(); }
+    };
+    const { error } = await supabase.from('despesas').update(updatedValues as any).eq('id', editDespesaItem.id);
+    if (error) { toast.error('Erro: ' + error.message); return; }
+
+    // Sync back to manutencao_ferramentas if linked
+    if (editDespesaItem.manutencao_id) {
+      await supabase.from('manutencao_ferramentas').update({
+        valor: parseFloat(edValor),
+        data: edData,
+        descricao: edDescricao,
+        forma_pagamento: edFormaPgto || null,
+      } as any).eq('id', editDespesaItem.manutencao_id);
+    }
+
+    toast.success('Despesa atualizada com sucesso!');
+    setEditDespesaOpen(false);
+    fetchData();
   };
 
   // --- DELETE DESPESA ---
