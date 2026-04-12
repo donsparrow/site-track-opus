@@ -141,6 +141,18 @@ export default function Dashboard() {
       Despesas: vals.despesas,
     })));
 
+    // Fetch ferramentas summary
+    const { data: ferData } = await supabase.from('ferramentas').select('status');
+    if (ferData) {
+      setFerramentasResumo({
+        total: ferData.length,
+        em_uso: ferData.filter(f => f.status === 'em_uso').length,
+        disponivel: ferData.filter(f => f.status === 'disponivel').length,
+        manutencao: ferData.filter(f => f.status === 'manutencao').length,
+        inativo: ferData.filter(f => f.status === 'inativo').length,
+      });
+    }
+
     setLoading(false);
   };
 
