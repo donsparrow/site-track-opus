@@ -251,6 +251,28 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Ferramentas card */}
+      {canSeeFerramentas && ferramentasResumo.total > 0 && (
+        <div className="mb-8">
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/ferramentas')}>
+            <CardHeader className="pb-2">
+              <CardTitle className="font-display text-base flex items-center gap-2">
+                <Wrench className="h-5 w-5" /> Ferramentas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                <div><p className="text-muted-foreground">Total</p><p className="text-xl font-bold">{ferramentasResumo.total}</p></div>
+                <div><p className="text-muted-foreground">Em Uso</p><p className="text-xl font-bold text-success">{ferramentasResumo.em_uso}</p></div>
+                <div><p className="text-muted-foreground">Disponíveis</p><p className="text-xl font-bold text-primary">{ferramentasResumo.disponivel}</p></div>
+                <div><p className="text-muted-foreground">Manutenção</p><p className="text-xl font-bold text-warning">{ferramentasResumo.manutencao}</p></div>
+                <div><p className="text-muted-foreground">Inativas</p><p className="text-xl font-bold text-destructive">{ferramentasResumo.inativo}</p></div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Charts */}
       {canSeeFinanceiro && (despesasPorTipo.length > 0 || evolucaoMensal.length > 0) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
