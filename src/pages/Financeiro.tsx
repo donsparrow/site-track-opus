@@ -353,14 +353,63 @@ export default function Financeiro() {
     const { error } = await supabase.from('despesas').update(updatedValues as any).eq('id', editDespesaItem.id);
     if (error) { toast.error('Erro: ' + error.message); return; }
 
-    // Sync back to manutencao_ferramentas if linked
+    // Sync back to manutencao_ferramentas if linked + register history
     if (editDespesaItem.manutencao_id) {
-      await supabase.from('manutencao_ferramentas').update({
-        valor: parseFloat(edValor),
-        data: edData,
-        descricao: edDescricao,
-        forma_pagamento: edFormaPgto || null,
-      } as any).eq('id', editDespesaItem.manutencao_id);
+      const oldValor = Number(editDespesaItem.valor);
+      const newValor = parseFloat(edValor);
+      const oldData = editDespesaItem.data;
+      const newData = edData;
+      const oldDescricao = editDespesaItem.descricao;
+      const newDescricao = edDescricao;
+
+      const hasChanges = oldValor !== newValor || oldData !== newData || oldDescricao !== newDescricao;
+
+      if (hasChanges) {
+        console.log('Atualizando manutenção via alteração financeira', editDespesaItem.manutencao_id);
+
+        await supabase.from('manutencao_ferramentas').update({
+          valor: newValor,
+          data: newData,
+          descricao: newDescricao,
+          forma_pagamento: edFormaPgto || null,
+        } as any).eq('id', editDespesaItem.manutencao_id);
+
+        // Find the ferramenta linked to this manutencao to log history
+        const { data: manutData } = await supabase
+          .from('manutencao_ferramentas')
+          .select('id, obra_id, empresa_id')
+          .eq('id', editDespesaItem.manutencao_id)
+          .single();
+
+        if (manutData) {
+          // Find ferramenta via historico entry that references this manutencao
+          const { data: histEntry } = await supabase
+            .from('ferramentas_historico')
+            .select('ferramenta_id')
+            .eq('tipo_evento', 'manutencao')
+            .eq('obra_id', manutData.obra_id)
+            .eq('empresa_id', manutData.empresa_id)
+            .order('created_at', { ascending: false })
+            .limit(1);
+
+          const ferramentaId = histEntry?.[0]?.ferramenta_id;
+
+          const changes: string[] = [];
+          if (oldValor !== newValor) changes.push(`Valor: R$ ${oldValor.toFixed(2)} → R$ ${newValor.toFixed(2)}`);
+          if (oldData !== newData) changes.push(`Data: ${new Date(oldData + 'T00:00:00').toLocaleDateString('pt-BR')} → ${new Date(newData + 'T00:00:00').toLocaleDateString('pt-BR')}`);
+          if (oldDescricao !== newDescricao) changes.push(`Descrição alterada`);
+
+          if (ferramentaId && changes.length > 0) {
+            await supabase.from('ferramentas_historico').insert({
+              ferramenta_id: ferramentaId,
+              tipo_evento: 'manutencao',
+              descricao: `Manutenção atualizada via financeiro: ${changes.join('; ')}`,
+              obra_id: manutData.obra_id,
+              empresa_id: manutData.empresa_id,
+            });
+          }
+        }
+      }
     }
 
     toast.success('Despesa atualizada com sucesso!');
