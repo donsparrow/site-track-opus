@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
-export type Modulo = 'dashboard' | 'financeiro' | 'diario_obra' | 'cronograma' | 'relatorios' | 'documentos' | 'usuarios' | 'configuracoes' | 'clientes';
+export type Modulo = 'dashboard' | 'financeiro' | 'diario_obra' | 'cronograma' | 'relatorios' | 'documentos' | 'usuarios' | 'configuracoes' | 'clientes' | 'ferramentas';
 
 export interface Permissao {
   modulo: Modulo;
@@ -12,7 +12,7 @@ export interface Permissao {
   pode_excluir: boolean;
 }
 
-const MODULOS: Modulo[] = ['dashboard', 'financeiro', 'diario_obra', 'cronograma', 'relatorios', 'documentos', 'usuarios', 'configuracoes', 'clientes'];
+const MODULOS: Modulo[] = ['dashboard', 'financeiro', 'diario_obra', 'cronograma', 'relatorios', 'documentos', 'usuarios', 'configuracoes', 'clientes', 'ferramentas'];
 
 const MODULO_LABELS: Record<Modulo, string> = {
   dashboard: 'Dashboard',
@@ -24,6 +24,7 @@ const MODULO_LABELS: Record<Modulo, string> = {
   usuarios: 'Usuários',
   configuracoes: 'Configurações',
   clientes: 'Clientes',
+  ferramentas: 'Ferramentas',
 };
 
 // Map route paths to module names
@@ -37,6 +38,7 @@ export const ROUTE_MODULE_MAP: Record<string, Modulo> = {
   '/usuarios': 'usuarios',
   '/configuracoes': 'configuracoes',
   '/clientes': 'clientes',
+  '/ferramentas': 'ferramentas',
 };
 
 export { MODULOS, MODULO_LABELS };

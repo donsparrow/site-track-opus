@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions, ROUTE_MODULE_MAP } from '@/hooks/usePermissions';
 import {
   Building2, LayoutDashboard, Wallet, FileText,
-  Users, LogOut, HardHat, UserCircle, ClipboardList, Settings, FolderOpen, CalendarRange, Menu, X
+  Users, LogOut, HardHat, UserCircle, ClipboardList, Settings, FolderOpen, CalendarRange, Menu, X, Wrench
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -21,6 +21,7 @@ const navItemsAll = [
   { to: '/cronograma', label: 'Cronograma', icon: CalendarRange, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
   { to: '/relatorios', label: 'Relatórios', icon: FileText, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
   { to: '/documentacao', label: 'Documentação', icon: FolderOpen, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
+  { to: '/ferramentas', label: 'Ferramentas', icon: Wrench, roles: ['admin', 'trabalhador', 'super_admin'] },
   { to: '/usuarios', label: 'Usuários', icon: Users, roles: ['admin', 'super_admin'] },
   { to: '/configuracoes', label: 'Configurações', icon: Settings, roles: ['admin', 'super_admin'] },
 ];

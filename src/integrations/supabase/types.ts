@@ -852,6 +852,112 @@ export type Database = {
         }
         Relationships: []
       }
+      ferramentas: {
+        Row: {
+          created_at: string
+          empresa_id: string | null
+          id: string
+          nome: string
+          numero_cadastro: string
+          obra_id: string | null
+          status: string
+          tipo: string
+          ultima_manutencao: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          empresa_id?: string | null
+          id?: string
+          nome: string
+          numero_cadastro: string
+          obra_id?: string | null
+          status?: string
+          tipo?: string
+          ultima_manutencao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          empresa_id?: string | null
+          id?: string
+          nome?: string
+          numero_cadastro?: string
+          obra_id?: string | null
+          status?: string
+          tipo?: string
+          ultima_manutencao?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ferramentas_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ferramentas_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ferramentas_historico: {
+        Row: {
+          created_at: string
+          descricao: string
+          empresa_id: string | null
+          ferramenta_id: string
+          id: string
+          obra_id: string | null
+          tipo_evento: string
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          empresa_id?: string | null
+          ferramenta_id: string
+          id?: string
+          obra_id?: string | null
+          tipo_evento?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          empresa_id?: string | null
+          ferramenta_id?: string
+          id?: string
+          obra_id?: string | null
+          tipo_evento?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ferramentas_historico_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ferramentas_historico_ferramenta_id_fkey"
+            columns: ["ferramenta_id"]
+            isOneToOne: false
+            referencedRelation: "ferramentas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ferramentas_historico_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       financeiro_anexos: {
         Row: {
           created_at: string

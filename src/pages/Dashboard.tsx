@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Building2, Plus, TrendingUp, TrendingDown, DollarSign, AlertTriangle, ClipboardList } from 'lucide-react';
+import { Building2, Plus, TrendingUp, TrendingDown, DollarSign, AlertTriangle, ClipboardList, Wrench } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useObrasFiltered } from '@/hooks/useObrasFiltered';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -41,6 +41,7 @@ export default function Dashboard() {
   const canSeeFinanceiro = pode('financeiro', 'visualizar');
   const canSeeDiario = pode('diario_obra', 'visualizar');
   const canSeeCronograma = pode('cronograma', 'visualizar');
+  const canSeeFerramentas = pode('ferramentas', 'visualizar');
   const [obras, setObras] = useState<ObraResumo[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -49,6 +50,7 @@ export default function Dashboard() {
   const [despesasPorTipo, setDespesasPorTipo] = useState<any[]>([]);
   const [evolucaoMensal, setEvolucaoMensal] = useState<any[]>([]);
   const [parcelasAtrasadas, setParcelasAtrasadas] = useState(0);
+  const [ferramentasResumo, setFerramentasResumo] = useState({ total: 0, em_uso: 0, disponivel: 0, manutencao: 0, inativo: 0 });
 
   const fetchObras = async () => {
     setLoading(true);
@@ -138,6 +140,18 @@ export default function Dashboard() {
       Receitas: vals.receitas,
       Despesas: vals.despesas,
     })));
+
+    // Fetch ferramentas summary
+    const { data: ferData } = await supabase.from('ferramentas').select('status');
+    if (ferData) {
+      setFerramentasResumo({
+        total: ferData.length,
+        em_uso: ferData.filter(f => f.status === 'em_uso').length,
+        disponivel: ferData.filter(f => f.status === 'disponivel').length,
+        manutencao: ferData.filter(f => f.status === 'manutencao').length,
+        inativo: ferData.filter(f => f.status === 'inativo').length,
+      });
+    }
 
     setLoading(false);
   };
@@ -231,6 +245,28 @@ export default function Dashboard() {
                   <p className={`text-2xl font-display font-bold ${parcelasAtrasadas > 0 ? 'text-destructive' : 'text-foreground'}`}>{parcelasAtrasadas}</p>
                 </div>
                 <AlertTriangle className={`h-8 w-8 ${parcelasAtrasadas > 0 ? 'text-destructive' : 'text-muted-foreground'}`} />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Ferramentas card */}
+      {canSeeFerramentas && ferramentasResumo.total > 0 && (
+        <div className="mb-8">
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/ferramentas')}>
+            <CardHeader className="pb-2">
+              <CardTitle className="font-display text-base flex items-center gap-2">
+                <Wrench className="h-5 w-5" /> Ferramentas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+                <div><p className="text-muted-foreground">Total</p><p className="text-xl font-bold">{ferramentasResumo.total}</p></div>
+                <div><p className="text-muted-foreground">Em Uso</p><p className="text-xl font-bold text-success">{ferramentasResumo.em_uso}</p></div>
+                <div><p className="text-muted-foreground">Disponíveis</p><p className="text-xl font-bold text-primary">{ferramentasResumo.disponivel}</p></div>
+                <div><p className="text-muted-foreground">Manutenção</p><p className="text-xl font-bold text-warning">{ferramentasResumo.manutencao}</p></div>
+                <div><p className="text-muted-foreground">Inativas</p><p className="text-xl font-bold text-destructive">{ferramentasResumo.inativo}</p></div>
               </div>
             </CardContent>
           </Card>
