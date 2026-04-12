@@ -739,6 +739,7 @@ export default function Financeiro() {
                     <TableHead>Vencimento</TableHead>
                     <TableHead>Pgto</TableHead>
                     <TableHead>Forma</TableHead>
+                    <TableHead>Manutenção ID</TableHead>
                     <TableHead>Anexos</TableHead>
                     {canEdit && <TableHead>Ações</TableHead>}
                   </TableRow>
@@ -758,6 +759,7 @@ export default function Financeiro() {
                         </Badge>
                       </TableCell>
                       <TableCell className="capitalize">{d.forma_pagamento || '—'}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground font-mono">{(d as any).manutencao_id ? String((d as any).manutencao_id).substring(0, 8) + '…' : '—'}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           {renderAnexosInline(d.id, 'despesa')}
@@ -786,7 +788,7 @@ export default function Financeiro() {
                   ))}
                   {despesas.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={canEdit ? 10 : 9} className="text-center py-8 text-muted-foreground">Nenhuma despesa cadastrada</TableCell>
+                      <TableCell colSpan={canEdit ? 11 : 10} className="text-center py-8 text-muted-foreground">Nenhuma despesa cadastrada</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
