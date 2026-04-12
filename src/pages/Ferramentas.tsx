@@ -454,7 +454,54 @@ export default function Ferramentas() {
                             </Badge>
                           )}
                         </TableCell>
-                        <TableCell>{obraNome}</TableCell>
+                        <TableCell>
+                          {canEdit ? (
+                            <Select value={f.obra_id || 'nenhuma'} onValueChange={async (newObraId) => {
+                              const realNewObraId = newObraId === 'nenhuma' ? null : newObraId;
+                              const oldObraId = f.obra_id;
+                              if (realNewObraId === oldObraId) return;
+
+                              const { error } = await supabase.from('ferramentas').update({
+                                obra_id: realNewObraId,
+                                ...(realNewObraId ? { status: 'em_uso' } : {}),
+                              }).eq('id', f.id);
+                              if (error) { toast.error('Erro ao alterar obra'); return; }
+
+                              const oldObraNome = obras.find(o => o.id === oldObraId)?.nome || 'Sem obra';
+                              const newObraNome = obras.find(o => o.id === realNewObraId)?.nome || 'Sem obra';
+                              await supabase.from('ferramentas_historico').insert({
+                                ferramenta_id: f.id,
+                                tipo_evento: 'movimentacao',
+                                descricao: `Movida de: ${oldObraNome} → ${newObraNome}`,
+                                obra_id: realNewObraId,
+                                empresa_id: empresaId,
+                              });
+
+                              if (realNewObraId && f.status !== 'em_uso') {
+                                await supabase.from('ferramentas_historico').insert({
+                                  ferramenta_id: f.id,
+                                  tipo_evento: 'status',
+                                  descricao: `Status alterado: ${STATUS_CONFIG[f.status]?.label} → Em Uso (automático)`,
+                                  obra_id: realNewObraId,
+                                  empresa_id: empresaId,
+                                });
+                              }
+
+                              toast.success('Obra da ferramenta atualizada com sucesso');
+                              fetchData();
+                            }}>
+                              <SelectTrigger className="w-[160px] h-8 text-xs">
+                                <SelectValue>{obraNome}</SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="nenhuma">Sem obra</SelectItem>
+                                {obras.map(o => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <span>{obraNome}</span>
+                          )}
+                        </TableCell>
                         <TableCell>{f.ultima_manutencao ? new Date(f.ultima_manutencao + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
