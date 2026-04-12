@@ -64,6 +64,8 @@ const DEFAULT_PERMISSIONS: Record<string, Record<Modulo, { v: boolean; c: boolea
     configuracoes: { v: false, c: false, e: false, x: false },
     clientes: { v: false, c: false, e: false, x: false },
     ferramentas: { v: false, c: false, e: false, x: false },
+  },
+  cliente: {
     dashboard: { v: true, c: false, e: false, x: false },
     financeiro: { v: false, c: false, e: false, x: false },
     diario_obra: { v: true, c: false, e: false, x: false },
@@ -73,6 +75,7 @@ const DEFAULT_PERMISSIONS: Record<string, Record<Modulo, { v: boolean; c: boolea
     usuarios: { v: false, c: false, e: false, x: false },
     configuracoes: { v: false, c: false, e: false, x: false },
     clientes: { v: false, c: false, e: false, x: false },
+    ferramentas: { v: false, c: false, e: false, x: false },
   },
 };
 
