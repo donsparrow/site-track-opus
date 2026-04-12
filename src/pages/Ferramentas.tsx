@@ -48,7 +48,7 @@ const TIPO_LABELS: Record<string, string> = {
 };
 
 export default function Ferramentas() {
-  const { canEdit } = useAuth();
+  const { canEdit, user, empresaId } = useAuth();
   const { filterObras, loading: obrasFilterLoading } = useObrasFiltered();
   const [ferramentas, setFerramentas] = useState<Ferramenta[]>([]);
   const [obras, setObras] = useState<any[]>([]);
