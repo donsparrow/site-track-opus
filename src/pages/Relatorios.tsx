@@ -16,6 +16,10 @@ import { toast } from 'sonner';
 import { gerarRelatorioPDF } from '@/lib/pdfRelatorio';
 import SignatureCanvas from 'react-signature-canvas';
 
+const fmt = (d: string) => {
+  try { return new Date(d + 'T00:00:00').toLocaleDateString('pt-BR'); } catch { return d; }
+};
+
 function calcBusinessDays(start: string, end: string): number {
   const s = new Date(start + 'T00:00:00');
   const e = new Date(end + 'T00:00:00');
