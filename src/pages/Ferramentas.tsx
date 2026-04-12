@@ -483,8 +483,8 @@ export default function Ferramentas() {
               <Label>Anexo (Nota Fiscal)</Label>
               <Input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => setManutAnexo(e.target.files?.[0] || null)} />
             </div>
-            <Button onClick={handleManutencao} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-              <Wrench className="h-4 w-4 mr-2" /> Registrar Manutenção
+            <Button onClick={handleManutencao} disabled={saving} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+              <Wrench className="h-4 w-4 mr-2" /> {saving ? 'Registrando...' : 'Registrar Manutenção'}
             </Button>
           </div>
         </DialogContent>
