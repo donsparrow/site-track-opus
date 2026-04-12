@@ -425,6 +425,7 @@ export type Database = {
           empresa_id: string | null
           forma_pagamento: string | null
           id: string
+          manutencao_id: string | null
           obra_id: string
           tipo: string
           tipo_pagamento: string
@@ -440,6 +441,7 @@ export type Database = {
           empresa_id?: string | null
           forma_pagamento?: string | null
           id?: string
+          manutencao_id?: string | null
           obra_id: string
           tipo?: string
           tipo_pagamento?: string
@@ -455,6 +457,7 @@ export type Database = {
           empresa_id?: string | null
           forma_pagamento?: string | null
           id?: string
+          manutencao_id?: string | null
           obra_id?: string
           tipo?: string
           tipo_pagamento?: string
@@ -467,6 +470,13 @@ export type Database = {
             columns: ["empresa_id"]
             isOneToOne: false
             referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "despesas_manutencao_id_fkey"
+            columns: ["manutencao_id"]
+            isOneToOne: false
+            referencedRelation: "manutencao_ferramentas"
             referencedColumns: ["id"]
           },
           {
@@ -1052,6 +1062,7 @@ export type Database = {
           created_at: string
           data: string
           descricao: string
+          despesa_id: string | null
           empresa_id: string | null
           forma_pagamento: string | null
           id: string
@@ -1065,6 +1076,7 @@ export type Database = {
           created_at?: string
           data?: string
           descricao: string
+          despesa_id?: string | null
           empresa_id?: string | null
           forma_pagamento?: string | null
           id?: string
@@ -1078,6 +1090,7 @@ export type Database = {
           created_at?: string
           data?: string
           descricao?: string
+          despesa_id?: string | null
           empresa_id?: string | null
           forma_pagamento?: string | null
           id?: string
