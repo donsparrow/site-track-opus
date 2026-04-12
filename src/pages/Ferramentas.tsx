@@ -193,11 +193,23 @@ export default function Ferramentas() {
       toast.error('Informe o valor da manutenção');
       return;
     }
+
     const ferramenta = ferramentas.find(f => f.id === manutencaoFerramentaId);
     if (!ferramenta) return;
 
+    if (!empresaId) {
+      toast.error('Empresa não identificada. Faça login novamente e tente de novo.');
+      return;
+    }
+
     if (!ferramenta.obra_id) {
       toast.error('Ferramenta não está vinculada a nenhuma obra. Vincule antes de registrar manutenção.');
+      return;
+    }
+
+    const valorNumerico = Number(manutValor);
+    if (!Number.isFinite(valorNumerico) || valorNumerico <= 0) {
+      toast.error('Informe um valor de manutenção válido');
       return;
     }
 
@@ -213,28 +225,62 @@ export default function Ferramentas() {
         anexoUrl = urlData.publicUrl;
       }
 
-      const { error } = await supabase.from('manutencao_ferramentas').insert({
-        descricao: `Manutenção - ${ferramenta.nome}`,
-        valor: parseFloat(manutValor),
-        data: manutData,
-        loja: manutLocal || null,
-        obra_id: ferramenta.obra_id,
-        numero_nota: null,
-        forma_pagamento: null,
-      });
+      const { data: manutencao, error } = await supabase
+        .from('manutencao_ferramentas')
+        .insert({
+          descricao: `Manutenção - ${ferramenta.nome}`,
+          valor: valorNumerico,
+          data: manutData,
+          loja: manutLocal || null,
+          obra_id: ferramenta.obra_id,
+          empresa_id: empresaId,
+          numero_nota: null,
+          forma_pagamento: null,
+        } as any)
+        .select('id')
+        .single();
 
-      if (error) { toast.error('Erro ao registrar manutenção: ' + error.message); return; }
+      if (error || !manutencao?.id) {
+        toast.error('Erro ao registrar manutenção: ' + (error?.message || 'ID da manutenção não retornado'));
+        return;
+      }
 
-      await supabase.from('ferramentas').update({ ultima_manutencao: manutData, status: 'manutencao' }).eq('id', manutencaoFerramentaId);
+      console.log('Criando despesa vinculada à manutenção:', manutencao.id);
 
-      await supabase.from('ferramentas_historico').insert({
-        ferramenta_id: manutencaoFerramentaId,
-        tipo_evento: 'manutencao',
-        descricao: `Manutenção: R$ ${parseFloat(manutValor).toFixed(2)} - ${manutLocal || 'Local não informado'}`,
-        obra_id: ferramenta.obra_id,
-      });
+      const { data: manutencaoVinculada, error: manutencaoLinkError } = await supabase
+        .from('manutencao_ferramentas')
+        .select('id, despesa_id')
+        .eq('id', manutencao.id)
+        .single();
 
-      toast.success('Manutenção registrada e despesa criada automaticamente');
+      if (manutencaoLinkError || !manutencaoVinculada?.despesa_id) {
+        toast.error('A manutenção foi criada, mas a despesa vinculada não foi confirmada.');
+        return;
+      }
+
+      const { data: despesaVinculada, error: despesaLinkError } = await supabase
+        .from('despesas')
+        .select('id, manutencao_id')
+        .eq('id', manutencaoVinculada.despesa_id)
+        .single();
+
+      if (despesaLinkError || despesaVinculada?.manutencao_id !== manutencao.id) {
+        toast.error('A despesa foi criada sem vínculo válido com a manutenção.');
+        return;
+      }
+
+      await Promise.all([
+        supabase.from('ferramentas').update({ ultima_manutencao: manutData, status: 'manutencao' }).eq('id', manutencaoFerramentaId),
+        supabase.from('ferramentas_historico').insert({
+          ferramenta_id: manutencaoFerramentaId,
+          tipo_evento: 'manutencao',
+          descricao: `Manutenção: R$ ${valorNumerico.toFixed(2)} - ${manutLocal || 'Local não informado'}${anexoUrl ? ' (com anexo)' : ''}`,
+          obra_id: ferramenta.obra_id,
+          empresa_id: empresaId,
+        }),
+      ]);
+
+      toast.success('Manutenção registrada e despesa vinculada com sucesso');
       setManutencaoOpen(false);
       fetchData();
     } finally {
