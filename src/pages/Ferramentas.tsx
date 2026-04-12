@@ -61,6 +61,7 @@ export default function Ferramentas() {
   const [historicoOpen, setHistoricoOpen] = useState(false);
   const [historico, setHistorico] = useState<Historico[]>([]);
   const [historicoFerramentaId, setHistoricoFerramentaId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   // Filters
   const [filtroObra, setFiltroObra] = useState('todas');
@@ -126,9 +127,6 @@ export default function Ferramentas() {
       obra_id: realObraId,
     };
 
-    console.log("dados enviados", payload);
-    console.log("usuario", user);
-    console.log("empresa_id", empresaId);
     if (editId) {
       // Check if obra changed to log history
       const old = ferramentas.find(f => f.id === editId);
