@@ -126,6 +126,9 @@ export default function Ferramentas() {
       obra_id: realObraId,
     };
 
+    console.log("dados enviados", payload);
+    console.log("usuario", user);
+    console.log("empresa_id", empresaId);
     if (editId) {
       // Check if obra changed to log history
       const old = ferramentas.find(f => f.id === editId);
