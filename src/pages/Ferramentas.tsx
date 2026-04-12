@@ -61,6 +61,7 @@ export default function Ferramentas() {
   const [historicoOpen, setHistoricoOpen] = useState(false);
   const [historico, setHistorico] = useState<Historico[]>([]);
   const [historicoFerramentaId, setHistoricoFerramentaId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   // Filters
   const [filtroObra, setFiltroObra] = useState('todas');
@@ -126,9 +127,6 @@ export default function Ferramentas() {
       obra_id: realObraId,
     };
 
-    console.log("dados enviados", payload);
-    console.log("usuario", user);
-    console.log("empresa_id", empresaId);
     if (editId) {
       // Check if obra changed to log history
       const old = ferramentas.find(f => f.id === editId);
@@ -190,6 +188,7 @@ export default function Ferramentas() {
   };
 
   const handleManutencao = async () => {
+    if (saving) return;
     if (!manutencaoFerramentaId || !manutValor) {
       toast.error('Informe o valor da manutenção');
       return;
@@ -202,43 +201,45 @@ export default function Ferramentas() {
       return;
     }
 
-    let anexoUrl: string | null = null;
-    if (manutAnexo) {
-      const ext = manutAnexo.name.split('.').pop();
-      const path = `manutencao/${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('anexos').upload(path, manutAnexo);
-      if (upErr) { toast.error('Erro ao enviar anexo'); return; }
-      const { data: urlData } = supabase.storage.from('anexos').getPublicUrl(path);
-      anexoUrl = urlData.publicUrl;
+    setSaving(true);
+    try {
+      let anexoUrl: string | null = null;
+      if (manutAnexo) {
+        const ext = manutAnexo.name.split('.').pop();
+        const path = `manutencao/${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from('anexos').upload(path, manutAnexo);
+        if (upErr) { toast.error('Erro ao enviar anexo'); return; }
+        const { data: urlData } = supabase.storage.from('anexos').getPublicUrl(path);
+        anexoUrl = urlData.publicUrl;
+      }
+
+      const { error } = await supabase.from('manutencao_ferramentas').insert({
+        descricao: `Manutenção - ${ferramenta.nome}`,
+        valor: parseFloat(manutValor),
+        data: manutData,
+        loja: manutLocal || null,
+        obra_id: ferramenta.obra_id,
+        numero_nota: null,
+        forma_pagamento: null,
+      });
+
+      if (error) { toast.error('Erro ao registrar manutenção: ' + error.message); return; }
+
+      await supabase.from('ferramentas').update({ ultima_manutencao: manutData, status: 'manutencao' }).eq('id', manutencaoFerramentaId);
+
+      await supabase.from('ferramentas_historico').insert({
+        ferramenta_id: manutencaoFerramentaId,
+        tipo_evento: 'manutencao',
+        descricao: `Manutenção: R$ ${parseFloat(manutValor).toFixed(2)} - ${manutLocal || 'Local não informado'}`,
+        obra_id: ferramenta.obra_id,
+      });
+
+      toast.success('Manutenção registrada e despesa criada automaticamente');
+      setManutencaoOpen(false);
+      fetchData();
+    } finally {
+      setSaving(false);
     }
-
-    // Insert into manutencao_ferramentas (existing table, triggers auto_despesa_manutencao)
-    const { error } = await supabase.from('manutencao_ferramentas').insert({
-      descricao: `Manutenção - ${ferramenta.nome}`,
-      valor: parseFloat(manutValor),
-      data: manutData,
-      loja: manutLocal || null,
-      obra_id: ferramenta.obra_id,
-      numero_nota: null,
-      forma_pagamento: null,
-    });
-
-    if (error) { toast.error('Erro ao registrar manutenção: ' + error.message); return; }
-
-    // Update ultima_manutencao
-    await supabase.from('ferramentas').update({ ultima_manutencao: manutData, status: 'manutencao' }).eq('id', manutencaoFerramentaId);
-
-    // Log history
-    await supabase.from('ferramentas_historico').insert({
-      ferramenta_id: manutencaoFerramentaId,
-      tipo_evento: 'manutencao',
-      descricao: `Manutenção: R$ ${parseFloat(manutValor).toFixed(2)} - ${manutLocal || 'Local não informado'}`,
-      obra_id: ferramenta.obra_id,
-    });
-
-    toast.success('Manutenção registrada e despesa criada automaticamente');
-    setManutencaoOpen(false);
-    fetchData();
   };
 
   const openHistorico = async (id: string) => {
@@ -482,8 +483,8 @@ export default function Ferramentas() {
               <Label>Anexo (Nota Fiscal)</Label>
               <Input type="file" accept=".pdf,.jpg,.jpeg,.png" onChange={e => setManutAnexo(e.target.files?.[0] || null)} />
             </div>
-            <Button onClick={handleManutencao} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
-              <Wrench className="h-4 w-4 mr-2" /> Registrar Manutenção
+            <Button onClick={handleManutencao} disabled={saving} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
+              <Wrench className="h-4 w-4 mr-2" /> {saving ? 'Registrando...' : 'Registrar Manutenção'}
             </Button>
           </div>
         </DialogContent>
