@@ -273,20 +273,51 @@ export default function Dashboard() {
       {/* Ferramentas card */}
       {canSeeFerramentas && ferramentasResumo.total > 0 && (
         <div className="mb-8">
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/ferramentas')}>
+          <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="font-display text-base flex items-center gap-2">
-                <Wrench className="h-5 w-5" /> Ferramentas
-              </CardTitle>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <CardTitle className="font-display text-base flex items-center gap-2">
+                  <Wrench className="h-5 w-5" /> Ferramentas
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Select value={selectedObraFilter} onValueChange={(v) => { setSelectedObraFilter(v === '__all__' ? '' : v); }}>
+                    <SelectTrigger className="h-8 w-[180px] text-xs">
+                      <SelectValue placeholder="Todas as obras" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Todas as obras</SelectItem>
+                      {obras.map(o => (
+                        <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => navigate('/ferramentas')}>
+                    Ver todas
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm mb-4">
                 <div><p className="text-muted-foreground">Total</p><p className="text-xl font-bold">{ferramentasResumo.total}</p></div>
-                <div><p className="text-muted-foreground">Em Uso</p><p className="text-xl font-bold text-success">{ferramentasResumo.em_uso}</p></div>
-                <div><p className="text-muted-foreground">Disponíveis</p><p className="text-xl font-bold text-primary">{ferramentasResumo.disponivel}</p></div>
-                <div><p className="text-muted-foreground">Manutenção</p><p className="text-xl font-bold text-warning">{ferramentasResumo.manutencao}</p></div>
+                <div><p className="text-muted-foreground">Em Uso</p><p className="text-xl font-bold text-blue-600">{ferramentasResumo.em_uso}</p></div>
+                <div><p className="text-muted-foreground">Disponíveis</p><p className="text-xl font-bold text-green-600">{ferramentasResumo.disponivel}</p></div>
+                <div><p className="text-muted-foreground">Manutenção</p><p className="text-xl font-bold text-yellow-600">{ferramentasResumo.manutencao}</p></div>
                 <div><p className="text-muted-foreground">Inativas</p><p className="text-xl font-bold text-destructive">{ferramentasResumo.inativo}</p></div>
               </div>
+              {!selectedObraFilter && ferramentasPorObra.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Distribuição por Obra</p>
+                  <div className="space-y-1">
+                    {ferramentasPorObra.map((item, i) => (
+                      <div key={i} className="flex items-center justify-between text-sm py-1 border-b border-border/50 last:border-0">
+                        <span className="text-foreground">{item.nome}</span>
+                        <Badge variant="secondary" className="text-xs">{item.quantidade} {item.quantidade === 1 ? 'ferramenta' : 'ferramentas'}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
