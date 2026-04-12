@@ -138,7 +138,7 @@ export default function Ferramentas() {
           ferramenta_id: editId,
           tipo_evento: 'movimentacao',
           descricao: `Movida para: ${obraNome}`,
-          obra_id: obraId || null,
+          obra_id: realObraId,
         });
       }
       if (old && old.status !== status) {
@@ -146,7 +146,7 @@ export default function Ferramentas() {
           ferramenta_id: editId,
           tipo_evento: 'status',
           descricao: `Status alterado: ${STATUS_CONFIG[old.status]?.label} → ${STATUS_CONFIG[status]?.label}`,
-          obra_id: obraId || null,
+          obra_id: realObraId,
         });
       }
       toast.success('Ferramenta atualizada');
