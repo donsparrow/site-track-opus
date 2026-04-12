@@ -715,8 +715,9 @@ export default function Relatorios() {
 
           {/* Content Tabs */}
           <Tabs defaultValue="resumo">
-            <TabsList>
+            <TabsList className="flex-wrap">
               <TabsTrigger value="resumo">Resumo</TabsTrigger>
+              <TabsTrigger value="evolucao">Evolução Diária</TabsTrigger>
               <TabsTrigger value="assinaturas">Assinaturas ({assinaturas.length})</TabsTrigger>
               <TabsTrigger value="versoes"><History className="h-3 w-3 mr-1" />Histórico ({versoes.length})</TabsTrigger>
             </TabsList>
@@ -751,6 +752,108 @@ export default function Relatorios() {
                     <p className="text-xs text-muted-foreground mt-1">
                       {allOcorrencias.filter(o => o.impacto === 'alto').length} de alto impacto
                     </p>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            <TabsContent value="evolucao">
+              <div className="space-y-6">
+                {/* Evolução das Atividades por Dia */}
+                <Card>
+                  <CardHeader className="py-3">
+                    <CardTitle className="text-sm font-display">Evolução das Atividades por Dia</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {diarios.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">Consolide os dados para visualizar</p>
+                    ) : (() => {
+                      // Group activities by description, then show daily evolution
+                      const atividadesByDesc = new Map<string, { diarioData: string; percentual: number; descricao: string }[]>();
+                      diarios.forEach(diario => {
+                        const diaAtividades = allAtividades.filter(a => a.diario_id === diario.id);
+                        diaAtividades.forEach(a => {
+                          const key = a.descricao;
+                          if (!atividadesByDesc.has(key)) atividadesByDesc.set(key, []);
+                          atividadesByDesc.get(key)!.push({ diarioData: diario.data, percentual: a.percentual || 0, descricao: a.descricao });
+                        });
+                      });
+
+                      if (atividadesByDesc.size === 0) return <p className="text-sm text-muted-foreground text-center py-4">Nenhuma atividade no período</p>;
+
+                      return (
+                        <div className="space-y-4">
+                          {Array.from(atividadesByDesc.entries()).map(([desc, entries]) => {
+                            const sorted = entries.sort((a, b) => a.diarioData.localeCompare(b.diarioData));
+                            return (
+                              <div key={desc} className="border rounded-lg p-3">
+                                <p className="font-medium text-sm mb-2">{desc}</p>
+                                <div className="space-y-1">
+                                  {sorted.map((entry, idx) => {
+                                    const prevPerc = idx > 0 ? sorted[idx - 1].percentual : 0;
+                                    const evolucao = entry.percentual - prevPerc;
+                                    return (
+                                      <div key={`${entry.diarioData}-${idx}`} className="flex items-center gap-3 text-xs">
+                                        <span className="text-muted-foreground w-20">{fmt(entry.diarioData)}</span>
+                                        <span className="w-24">anterior: {prevPerc}%</span>
+                                        <span className="w-20">atual: {entry.percentual}%</span>
+                                        <Badge variant={evolucao > 0 ? 'default' : evolucao === 0 ? 'outline' : 'destructive'} className="text-xs">
+                                          {evolucao > 0 ? '+' : ''}{evolucao}%
+                                        </Badge>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+
+                {/* Equipe por Dia */}
+                <Card>
+                  <CardHeader className="py-3">
+                    <CardTitle className="text-sm font-display">Equipe por Dia</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {diarios.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">Consolide os dados para visualizar</p>
+                    ) : (() => {
+                      const diasComEquipe = diarios.map(d => ({
+                        data: d.data,
+                        equipe: allEquipe.filter(e => e.diario_id === d.id),
+                      })).filter(d => d.equipe.length > 0);
+
+                      if (diasComEquipe.length === 0) return <p className="text-sm text-muted-foreground text-center py-4">Nenhum registro de equipe no período</p>;
+
+                      return (
+                        <div className="space-y-3">
+                          {diasComEquipe.map(dia => {
+                            // Group by function
+                            const byFuncao = new Map<string, number>();
+                            dia.equipe.forEach(e => {
+                              const key = e.funcao || 'Sem função';
+                              byFuncao.set(key, (byFuncao.get(key) || 0) + 1);
+                            });
+                            return (
+                              <div key={dia.data} className="border rounded-lg p-3">
+                                <p className="font-medium text-sm mb-1">{fmt(dia.data)}</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {Array.from(byFuncao.entries()).map(([funcao, count]) => (
+                                    <Badge key={funcao} variant="secondary" className="text-xs">
+                                      {count} {funcao}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })()}
                   </CardContent>
                 </Card>
               </div>
