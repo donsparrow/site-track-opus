@@ -188,7 +188,9 @@ export default function Ferramentas() {
   };
 
   const handleManutencao = async () => {
-    if (!manutencaoFerramentaId || !manutValor) {
+    if (saving) return;
+    setSaving(true);
+    try {
       toast.error('Informe o valor da manutenção');
       return;
     }
