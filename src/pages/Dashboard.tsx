@@ -52,6 +52,7 @@ export default function Dashboard() {
   const [parcelasAtrasadas, setParcelasAtrasadas] = useState(0);
   const [ferramentasResumo, setFerramentasResumo] = useState({ total: 0, em_uso: 0, disponivel: 0, manutencao: 0, inativo: 0 });
   const [ferramentasPorObra, setFerramentasPorObra] = useState<{ nome: string; quantidade: number }[]>([]);
+  const [ferramentasList, setFerramentasList] = useState<{ id: string; nome: string; numero_cadastro: string; status: string; tipo: string; obra_nome: string | null }[]>([]);
   const [selectedObraFilter, setSelectedObraFilter] = useState<string>('');
 
   const fetchObras = async () => {
