@@ -759,6 +759,7 @@ export default function Financeiro() {
                         </Badge>
                       </TableCell>
                       <TableCell className="capitalize">{d.forma_pagamento || '—'}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground font-mono">{(d as any).manutencao_id ? String((d as any).manutencao_id).substring(0, 8) + '…' : '—'}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           {renderAnexosInline(d.id, 'despesa')}
