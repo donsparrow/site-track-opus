@@ -116,12 +116,14 @@ export default function Ferramentas() {
       return;
     }
 
+    const realObraId = obraId && obraId !== 'nenhuma' ? obraId : null;
+
     const payload = {
       nome: nome.trim(),
       numero_cadastro: numeroCadastro.trim(),
       tipo,
       status,
-      obra_id: obraId || null,
+      obra_id: realObraId,
     };
 
     if (editId) {
@@ -136,7 +138,7 @@ export default function Ferramentas() {
           ferramenta_id: editId,
           tipo_evento: 'movimentacao',
           descricao: `Movida para: ${obraNome}`,
-          obra_id: obraId || null,
+          obra_id: realObraId,
         });
       }
       if (old && old.status !== status) {
@@ -144,7 +146,7 @@ export default function Ferramentas() {
           ferramenta_id: editId,
           tipo_evento: 'status',
           descricao: `Status alterado: ${STATUS_CONFIG[old.status]?.label} → ${STATUS_CONFIG[status]?.label}`,
-          obra_id: obraId || null,
+          obra_id: realObraId,
         });
       }
       toast.success('Ferramenta atualizada');
@@ -442,7 +444,7 @@ export default function Ferramentas() {
               <Select value={obraId} onValueChange={setObraId}>
                 <SelectTrigger><SelectValue placeholder="Nenhuma" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhuma</SelectItem>
+                  <SelectItem value="nenhuma">Nenhuma</SelectItem>
                   {obras.map(o => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
                 </SelectContent>
               </Select>
