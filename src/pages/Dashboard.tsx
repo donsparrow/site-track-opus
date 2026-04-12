@@ -145,7 +145,7 @@ export default function Dashboard() {
     })));
 
     // Fetch ferramentas summary (filtered by user's obras)
-    const { data: ferData } = await supabase.from('ferramentas').select('status, obra_id');
+    const { data: ferData } = await supabase.from('ferramentas').select('id, nome, numero_cadastro, status, tipo, obra_id');
     if (ferData) {
       const filtered = selectedObraFilter
         ? ferData.filter(f => f.obra_id === selectedObraFilter)
@@ -157,6 +157,19 @@ export default function Dashboard() {
         manutencao: filtered.filter(f => f.status === 'manutencao').length,
         inativo: filtered.filter(f => f.status === 'inativo').length,
       });
+
+      // Equipment list (max display in card)
+      setFerramentasList(filtered.map(f => {
+        const obra = filteredObras.find((o: any) => o.id === f.obra_id);
+        return {
+          id: f.id,
+          nome: f.nome,
+          numero_cadastro: f.numero_cadastro,
+          status: f.status,
+          tipo: f.tipo,
+          obra_nome: obra ? (obra as any).nome : (f.obra_id ? 'Obra desconhecida' : null),
+        };
+      }));
 
       // Distribution by obra
       const obraMap: Record<string, number> = {};
