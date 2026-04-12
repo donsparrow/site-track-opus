@@ -52,6 +52,7 @@ export default function Dashboard() {
   const [parcelasAtrasadas, setParcelasAtrasadas] = useState(0);
   const [ferramentasResumo, setFerramentasResumo] = useState({ total: 0, em_uso: 0, disponivel: 0, manutencao: 0, inativo: 0 });
   const [ferramentasPorObra, setFerramentasPorObra] = useState<{ nome: string; quantidade: number }[]>([]);
+  const [ferramentasList, setFerramentasList] = useState<{ id: string; nome: string; numero_cadastro: string; status: string; tipo: string; obra_nome: string | null }[]>([]);
   const [selectedObraFilter, setSelectedObraFilter] = useState<string>('');
 
   const fetchObras = async () => {
@@ -144,7 +145,7 @@ export default function Dashboard() {
     })));
 
     // Fetch ferramentas summary (filtered by user's obras)
-    const { data: ferData } = await supabase.from('ferramentas').select('status, obra_id');
+    const { data: ferData } = await supabase.from('ferramentas').select('id, nome, numero_cadastro, status, tipo, obra_id');
     if (ferData) {
       const filtered = selectedObraFilter
         ? ferData.filter(f => f.obra_id === selectedObraFilter)
@@ -156,6 +157,19 @@ export default function Dashboard() {
         manutencao: filtered.filter(f => f.status === 'manutencao').length,
         inativo: filtered.filter(f => f.status === 'inativo').length,
       });
+
+      // Equipment list (max display in card)
+      setFerramentasList(filtered.map(f => {
+        const obra = filteredObras.find((o: any) => o.id === f.obra_id);
+        return {
+          id: f.id,
+          nome: f.nome,
+          numero_cadastro: f.numero_cadastro,
+          status: f.status,
+          tipo: f.tipo,
+          obra_nome: obra ? (obra as any).nome : (f.obra_id ? 'Obra desconhecida' : null),
+        };
+      }));
 
       // Distribution by obra
       const obraMap: Record<string, number> = {};
@@ -305,8 +319,48 @@ export default function Dashboard() {
                 <div><p className="text-muted-foreground">Manutenção</p><p className="text-xl font-bold text-warning">{ferramentasResumo.manutencao}</p></div>
                 <div><p className="text-muted-foreground">Inativas</p><p className="text-xl font-bold text-destructive">{ferramentasResumo.inativo}</p></div>
               </div>
+              {/* Equipment list */}
+              {ferramentasList.length > 0 && (
+                <div className="mt-1">
+                  <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Equipamentos</p>
+                  <div className="space-y-2">
+                    {ferramentasList.slice(0, 5).map(f => {
+                      const statusMap: Record<string, { label: string; cls: string }> = {
+                        em_uso: { label: 'Em Uso', cls: 'bg-accent/15 text-accent border-accent/30' },
+                        disponivel: { label: 'Disponível', cls: 'bg-success/15 text-success border-success/30' },
+                        manutencao: { label: 'Manutenção', cls: 'bg-warning/15 text-warning border-warning/30' },
+                        inativo: { label: 'Inativo', cls: 'bg-destructive/15 text-destructive border-destructive/30' },
+                      };
+                      const st = statusMap[f.status] || { label: f.status, cls: 'bg-muted text-muted-foreground' };
+                      return (
+                        <div
+                          key={f.id}
+                          className="flex items-center justify-between p-2 rounded-md border border-border/50 hover:bg-muted/50 cursor-pointer transition-colors"
+                          onClick={() => navigate('/ferramentas')}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-sm text-foreground truncate">{f.nome}</span>
+                              <span className="text-xs text-muted-foreground">#{f.numero_cadastro}</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {f.obra_nome || 'Sem obra'}
+                            </p>
+                          </div>
+                          <Badge variant="outline" className={`text-[10px] shrink-0 ml-2 ${st.cls}`}>{st.label}</Badge>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {ferramentasList.length > 5 && (
+                    <Button variant="ghost" size="sm" className="w-full mt-2 text-xs text-muted-foreground" onClick={() => navigate('/ferramentas')}>
+                      Ver todos ({ferramentasList.length} equipamentos)
+                    </Button>
+                  )}
+                </div>
+              )}
               {!selectedObraFilter && ferramentasPorObra.length > 0 && (
-                <div>
+                <div className="mt-4">
                   <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Distribuição por Obra</p>
                   <div className="space-y-1">
                     {ferramentasPorObra.map((item, i) => (
