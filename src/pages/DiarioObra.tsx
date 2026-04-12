@@ -153,7 +153,7 @@ export default function DiarioObra() {
       supabase.from('diario_atividades').select('*').eq('diario_id', diario.id),
       supabase.from('diario_materiais').select('*').eq('diario_id', diario.id),
       supabase.from('diario_ocorrencias').select('*').eq('diario_id', diario.id),
-      supabase.from('diario_imagens').select('*').eq('diario_id', diario.id),
+      supabase.from('diario_imagens').select('*').eq('diario_id', diario.id).order('created_at', { ascending: true }),
       supabase.from('diario_paralisacoes').select('*').eq('diario_id', diario.id),
     ]);
     setEquipe(e.data || []);
