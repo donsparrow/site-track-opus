@@ -382,15 +382,17 @@ export default function Financeiro() {
           .single();
 
         if (manutData) {
-          // Find ferramenta by matching manutencao description pattern
-          const { data: ferramentaData } = await supabase
-            .from('ferramentas')
-            .select('id')
-            .eq('empresa_id', manutData.empresa_id)
+          // Find ferramenta via historico entry that references this manutencao
+          const { data: histEntry } = await supabase
+            .from('ferramentas_historico')
+            .select('ferramenta_id')
+            .eq('tipo_evento', 'manutencao')
             .eq('obra_id', manutData.obra_id)
+            .eq('empresa_id', manutData.empresa_id)
+            .order('created_at', { ascending: false })
             .limit(1);
 
-          const ferramentaId = ferramentaData?.[0]?.id;
+          const ferramentaId = histEntry?.[0]?.ferramenta_id;
 
           const changes: string[] = [];
           if (oldValor !== newValor) changes.push(`Valor: R$ ${oldValor.toFixed(2)} → R$ ${newValor.toFixed(2)}`);
