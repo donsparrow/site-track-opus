@@ -51,6 +51,8 @@ export default function Dashboard() {
   const [evolucaoMensal, setEvolucaoMensal] = useState<any[]>([]);
   const [parcelasAtrasadas, setParcelasAtrasadas] = useState(0);
   const [ferramentasResumo, setFerramentasResumo] = useState({ total: 0, em_uso: 0, disponivel: 0, manutencao: 0, inativo: 0 });
+  const [ferramentasPorObra, setFerramentasPorObra] = useState<{ nome: string; quantidade: number }[]>([]);
+  const [selectedObraFilter, setSelectedObraFilter] = useState<string>('');
 
   const fetchObras = async () => {
     setLoading(true);
@@ -141,22 +143,39 @@ export default function Dashboard() {
       Despesas: vals.despesas,
     })));
 
-    // Fetch ferramentas summary
-    const { data: ferData } = await supabase.from('ferramentas').select('status');
+    // Fetch ferramentas summary (filtered by user's obras)
+    const { data: ferData } = await supabase.from('ferramentas').select('status, obra_id');
     if (ferData) {
+      const filtered = selectedObraFilter
+        ? ferData.filter(f => f.obra_id === selectedObraFilter)
+        : ferData;
       setFerramentasResumo({
-        total: ferData.length,
-        em_uso: ferData.filter(f => f.status === 'em_uso').length,
-        disponivel: ferData.filter(f => f.status === 'disponivel').length,
-        manutencao: ferData.filter(f => f.status === 'manutencao').length,
-        inativo: ferData.filter(f => f.status === 'inativo').length,
+        total: filtered.length,
+        em_uso: filtered.filter(f => f.status === 'em_uso').length,
+        disponivel: filtered.filter(f => f.status === 'disponivel').length,
+        manutencao: filtered.filter(f => f.status === 'manutencao').length,
+        inativo: filtered.filter(f => f.status === 'inativo').length,
       });
+
+      // Distribution by obra
+      const obraMap: Record<string, number> = {};
+      ferData.forEach(f => {
+        const obraId = f.obra_id || '__sem_obra__';
+        obraMap[obraId] = (obraMap[obraId] || 0) + 1;
+      });
+      const dist = Object.entries(obraMap).map(([obraId, quantidade]) => {
+        if (obraId === '__sem_obra__') return { nome: 'Sem obra', quantidade };
+        const obra = filteredObras.find((o: any) => o.id === obraId);
+        return { nome: obra ? (obra as any).nome : 'Obra desconhecida', quantidade };
+      });
+      dist.sort((a, b) => b.quantidade - a.quantidade);
+      setFerramentasPorObra(dist);
     }
 
     setLoading(false);
   };
 
-  useEffect(() => { if (!obrasFilterLoading) fetchObras(); }, [obrasFilterLoading]);
+  useEffect(() => { if (!obrasFilterLoading) fetchObras(); }, [obrasFilterLoading, selectedObraFilter]);
 
   const formatCurrency = (val: number) =>
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
@@ -254,20 +273,51 @@ export default function Dashboard() {
       {/* Ferramentas card */}
       {canSeeFerramentas && ferramentasResumo.total > 0 && (
         <div className="mb-8">
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/ferramentas')}>
+          <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="font-display text-base flex items-center gap-2">
-                <Wrench className="h-5 w-5" /> Ferramentas
-              </CardTitle>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <CardTitle className="font-display text-base flex items-center gap-2">
+                  <Wrench className="h-5 w-5" /> Ferramentas
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Select value={selectedObraFilter} onValueChange={(v) => { setSelectedObraFilter(v === '__all__' ? '' : v); }}>
+                    <SelectTrigger className="h-8 w-[180px] text-xs">
+                      <SelectValue placeholder="Todas as obras" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Todas as obras</SelectItem>
+                      {obras.map(o => (
+                        <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => navigate('/ferramentas')}>
+                    Ver todas
+                  </Button>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm mb-4">
                 <div><p className="text-muted-foreground">Total</p><p className="text-xl font-bold">{ferramentasResumo.total}</p></div>
-                <div><p className="text-muted-foreground">Em Uso</p><p className="text-xl font-bold text-success">{ferramentasResumo.em_uso}</p></div>
-                <div><p className="text-muted-foreground">Disponíveis</p><p className="text-xl font-bold text-primary">{ferramentasResumo.disponivel}</p></div>
+                <div><p className="text-muted-foreground">Em Uso</p><p className="text-xl font-bold text-accent">{ferramentasResumo.em_uso}</p></div>
+                <div><p className="text-muted-foreground">Disponíveis</p><p className="text-xl font-bold text-success">{ferramentasResumo.disponivel}</p></div>
                 <div><p className="text-muted-foreground">Manutenção</p><p className="text-xl font-bold text-warning">{ferramentasResumo.manutencao}</p></div>
                 <div><p className="text-muted-foreground">Inativas</p><p className="text-xl font-bold text-destructive">{ferramentasResumo.inativo}</p></div>
               </div>
+              {!selectedObraFilter && ferramentasPorObra.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Distribuição por Obra</p>
+                  <div className="space-y-1">
+                    {ferramentasPorObra.map((item, i) => (
+                      <div key={i} className="flex items-center justify-between text-sm py-1 border-b border-border/50 last:border-0">
+                        <span className="text-foreground">{item.nome}</span>
+                        <Badge variant="secondary" className="text-xs">{item.quantidade} {item.quantidade === 1 ? 'ferramenta' : 'ferramentas'}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
