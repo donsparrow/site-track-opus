@@ -1102,6 +1102,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "manutencao_ferramentas_despesa_id_fkey"
+            columns: ["despesa_id"]
+            isOneToOne: false
+            referencedRelation: "despesas"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "manutencao_ferramentas_empresa_id_fkey"
             columns: ["empresa_id"]
             isOneToOne: false
