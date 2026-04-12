@@ -116,12 +116,14 @@ export default function Ferramentas() {
       return;
     }
 
+    const realObraId = obraId && obraId !== 'nenhuma' ? obraId : null;
+
     const payload = {
       nome: nome.trim(),
       numero_cadastro: numeroCadastro.trim(),
       tipo,
       status,
-      obra_id: obraId || null,
+      obra_id: realObraId,
     };
 
     if (editId) {
