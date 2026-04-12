@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Building2, Plus, TrendingUp, TrendingDown, DollarSign, AlertTriangle, ClipboardList } from 'lucide-react';
+import { Building2, Plus, TrendingUp, TrendingDown, DollarSign, AlertTriangle, ClipboardList, Wrench } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useObrasFiltered } from '@/hooks/useObrasFiltered';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -41,6 +41,7 @@ export default function Dashboard() {
   const canSeeFinanceiro = pode('financeiro', 'visualizar');
   const canSeeDiario = pode('diario_obra', 'visualizar');
   const canSeeCronograma = pode('cronograma', 'visualizar');
+  const canSeeFerramentas = pode('ferramentas', 'visualizar');
   const [obras, setObras] = useState<ObraResumo[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -49,6 +50,7 @@ export default function Dashboard() {
   const [despesasPorTipo, setDespesasPorTipo] = useState<any[]>([]);
   const [evolucaoMensal, setEvolucaoMensal] = useState<any[]>([]);
   const [parcelasAtrasadas, setParcelasAtrasadas] = useState(0);
+  const [ferramentasResumo, setFerramentasResumo] = useState({ total: 0, em_uso: 0, disponivel: 0, manutencao: 0, inativo: 0 });
 
   const fetchObras = async () => {
     setLoading(true);
