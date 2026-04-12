@@ -51,6 +51,8 @@ export default function Dashboard() {
   const [evolucaoMensal, setEvolucaoMensal] = useState<any[]>([]);
   const [parcelasAtrasadas, setParcelasAtrasadas] = useState(0);
   const [ferramentasResumo, setFerramentasResumo] = useState({ total: 0, em_uso: 0, disponivel: 0, manutencao: 0, inativo: 0 });
+  const [ferramentasPorObra, setFerramentasPorObra] = useState<{ nome: string; quantidade: number }[]>([]);
+  const [selectedObraFilter, setSelectedObraFilter] = useState<string>('');
 
   const fetchObras = async () => {
     setLoading(true);
