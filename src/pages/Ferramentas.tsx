@@ -48,7 +48,7 @@ const TIPO_LABELS: Record<string, string> = {
 };
 
 export default function Ferramentas() {
-  const { canEdit } = useAuth();
+  const { canEdit, user, empresaId } = useAuth();
   const { filterObras, loading: obrasFilterLoading } = useObrasFiltered();
   const [ferramentas, setFerramentas] = useState<Ferramenta[]>([]);
   const [obras, setObras] = useState<any[]>([]);
@@ -126,6 +126,9 @@ export default function Ferramentas() {
       obra_id: realObraId,
     };
 
+    console.log("dados enviados", payload);
+    console.log("usuario", user);
+    console.log("empresa_id", empresaId);
     if (editId) {
       // Check if obra changed to log history
       const old = ferramentas.find(f => f.id === editId);
