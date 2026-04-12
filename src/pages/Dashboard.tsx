@@ -143,16 +143,33 @@ export default function Dashboard() {
       Despesas: vals.despesas,
     })));
 
-    // Fetch ferramentas summary
-    const { data: ferData } = await supabase.from('ferramentas').select('status');
+    // Fetch ferramentas summary (filtered by user's obras)
+    const { data: ferData } = await supabase.from('ferramentas').select('status, obra_id');
     if (ferData) {
+      const filtered = selectedObraFilter
+        ? ferData.filter(f => f.obra_id === selectedObraFilter)
+        : ferData;
       setFerramentasResumo({
-        total: ferData.length,
-        em_uso: ferData.filter(f => f.status === 'em_uso').length,
-        disponivel: ferData.filter(f => f.status === 'disponivel').length,
-        manutencao: ferData.filter(f => f.status === 'manutencao').length,
-        inativo: ferData.filter(f => f.status === 'inativo').length,
+        total: filtered.length,
+        em_uso: filtered.filter(f => f.status === 'em_uso').length,
+        disponivel: filtered.filter(f => f.status === 'disponivel').length,
+        manutencao: filtered.filter(f => f.status === 'manutencao').length,
+        inativo: filtered.filter(f => f.status === 'inativo').length,
       });
+
+      // Distribution by obra
+      const obraMap: Record<string, number> = {};
+      ferData.forEach(f => {
+        const obraId = f.obra_id || '__sem_obra__';
+        obraMap[obraId] = (obraMap[obraId] || 0) + 1;
+      });
+      const dist = Object.entries(obraMap).map(([obraId, quantidade]) => {
+        if (obraId === '__sem_obra__') return { nome: 'Sem obra', quantidade };
+        const obra = filteredObras.find((o: any) => o.id === obraId);
+        return { nome: obra ? (obra as any).nome : 'Obra desconhecida', quantidade };
+      });
+      dist.sort((a, b) => b.quantidade - a.quantidade);
+      setFerramentasPorObra(dist);
     }
 
     setLoading(false);
