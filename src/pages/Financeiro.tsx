@@ -739,6 +739,7 @@ export default function Financeiro() {
                     <TableHead>Vencimento</TableHead>
                     <TableHead>Pgto</TableHead>
                     <TableHead>Forma</TableHead>
+                    <TableHead>Manutenção ID</TableHead>
                     <TableHead>Anexos</TableHead>
                     {canEdit && <TableHead>Ações</TableHead>}
                   </TableRow>
