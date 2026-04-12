@@ -378,38 +378,90 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   });
   y = (doc as any).lastAutoTable.finalY + 8;
 
-  // ACTIVITIES
+  // ACTIVITIES - Daily Evolution
   if (data.atividades.length > 0) {
-    sectionTitle('5. DESCRIÇÃO DOS SERVIÇOS');
-    checkPage(20);
-    autoTable(doc, {
-      startY: y,
-      head: [['Descrição', 'Status']],
-      body: data.atividades.map(a => [a.descricao, a.status]),
-      margin: { left: MARGIN, right: MARGIN },
-      styles: { fontSize: 9, cellPadding: 3 },
-      headStyles: { fillColor: [BLUE[0], BLUE[1], BLUE[2]], textColor: 255 },
-      alternateRowStyles: { fillColor: [245, 247, 250] },
-      theme: 'striped',
+    sectionTitle('5. DESCRIÇÃO DOS SERVIÇOS — EVOLUÇÃO DIÁRIA');
+
+    // Group activities by description, showing daily evolution
+    const atividadesByDesc = new Map<string, { diarioData: string; percentual: number; descricao: string }[]>();
+    data.diarios.forEach(diario => {
+      const diaAtividades = data.atividades.filter(a => a.diario_id === diario.id);
+      diaAtividades.forEach(a => {
+        const key = a.descricao;
+        if (!atividadesByDesc.has(key)) atividadesByDesc.set(key, []);
+        atividadesByDesc.get(key)!.push({ diarioData: diario.data, percentual: a.percentual || 0, descricao: a.descricao });
+      });
     });
-    y = (doc as any).lastAutoTable.finalY + 8;
+
+    atividadesByDesc.forEach((entries, desc) => {
+      checkPage(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text(`• ${desc}`, MARGIN, y);
+      y += 5;
+      doc.setFont('helvetica', 'normal');
+
+      const sorted = entries.sort((a, b) => a.diarioData.localeCompare(b.diarioData));
+      const rows = sorted.map((entry, idx) => {
+        const prevPerc = idx > 0 ? sorted[idx - 1].percentual : 0;
+        const evolucao = entry.percentual - prevPerc;
+        return [
+          fmt(entry.diarioData),
+          `${prevPerc}%`,
+          `${entry.percentual}%`,
+          `${evolucao > 0 ? '+' : ''}${evolucao}%`,
+        ];
+      });
+
+      autoTable(doc, {
+        startY: y,
+        head: [['Data', '% Anterior', '% Atual', 'Evolução']],
+        body: rows,
+        margin: { left: MARGIN + 5, right: MARGIN },
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [BLUE[0], BLUE[1], BLUE[2]], textColor: 255 },
+        alternateRowStyles: { fillColor: [245, 247, 250] },
+        theme: 'striped',
+      });
+      y = (doc as any).lastAutoTable.finalY + 5;
+    });
+    y += 3;
   }
 
-  // TEAM
+  // TEAM - Daily
   if (data.equipe.length > 0) {
-    sectionTitle('6. EQUIPE');
-    checkPage(20);
-    autoTable(doc, {
-      startY: y,
-      head: [['Funcionário', 'Função', 'Horas Trabalhadas']],
-      body: data.equipe.map(e => [e.nome_funcionario, e.funcao || '—', `${e.horas_trabalhadas || 0}h`]),
-      margin: { left: MARGIN, right: MARGIN },
-      styles: { fontSize: 9, cellPadding: 3 },
-      headStyles: { fillColor: [BLUE[0], BLUE[1], BLUE[2]], textColor: 255 },
-      alternateRowStyles: { fillColor: [245, 247, 250] },
-      theme: 'striped',
-    });
-    y = (doc as any).lastAutoTable.finalY + 8;
+    sectionTitle('6. EQUIPE POR DIA');
+
+    const diasComEquipe = data.diarios.map(d => ({
+      data: d.data,
+      equipe: data.equipe.filter(e => e.diario_id === d.id),
+    })).filter(d => d.equipe.length > 0);
+
+    if (diasComEquipe.length > 0) {
+      const rows: string[][] = [];
+      diasComEquipe.forEach(dia => {
+        const byFuncao = new Map<string, number>();
+        dia.equipe.forEach(e => {
+          const key = e.funcao || 'Sem função';
+          byFuncao.set(key, (byFuncao.get(key) || 0) + 1);
+        });
+        const resumo = Array.from(byFuncao.entries()).map(([f, c]) => `${c} ${f}`).join(', ');
+        rows.push([fmt(dia.data), String(dia.equipe.length), resumo]);
+      });
+
+      checkPage(20);
+      autoTable(doc, {
+        startY: y,
+        head: [['Data', 'Total', 'Composição']],
+        body: rows,
+        margin: { left: MARGIN, right: MARGIN },
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: [BLUE[0], BLUE[1], BLUE[2]], textColor: 255 },
+        alternateRowStyles: { fillColor: [245, 247, 250] },
+        theme: 'striped',
+      });
+      y = (doc as any).lastAutoTable.finalY + 8;
+    }
   }
 
   // MATERIALS
