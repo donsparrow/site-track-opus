@@ -207,6 +207,10 @@ export default function Obras() {
                 </div>
               </div>
               <div>
+                <Label>CREA/CAU</Label>
+                <Input value={editObra.crea_cau || ''} onChange={e => setEditObra({ ...editObra, crea_cau: e.target.value })} placeholder="Ex: CREA-MG 123456/D" />
+              </div>
+              <div>
                 <Label>Cliente</Label>
                 <Select value={editObra.cliente_id || ''} onValueChange={v => setEditObra({ ...editObra, cliente_id: v })}>
                   <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
