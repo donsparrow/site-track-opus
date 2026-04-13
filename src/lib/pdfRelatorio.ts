@@ -17,6 +17,7 @@ interface RelatorioPDFData {
     nome: string;
     endereco: string;
     responsavel?: string;
+    crea_cau?: string;
     cliente_nome: string;
     cliente_cpf_cnpj?: string;
     cliente_email?: string;

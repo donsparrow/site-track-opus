@@ -30,6 +30,8 @@ export default function NovaObraDialog({ open, onOpenChange, onCreated }: Props)
   const [nome, setNome] = useState('');
   const [endereco, setEndereco] = useState('');
   const [responsavel, setResponsavel] = useState('');
+  const [creaCau, setCreaCau] = useState('');
+
   const [clienteId, setClienteId] = useState('');
   const [dataInicio, setDataInicio] = useState('');
   const [dataFimPrevista, setDataFimPrevista] = useState('');
