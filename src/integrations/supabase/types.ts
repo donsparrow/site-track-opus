@@ -639,6 +639,7 @@ export type Database = {
           id: string
           obra_id: string
           observacoes_gerais: string | null
+          relatorio_id: string | null
           temperatura: string | null
           updated_at: string
         }
@@ -652,6 +653,7 @@ export type Database = {
           id?: string
           obra_id: string
           observacoes_gerais?: string | null
+          relatorio_id?: string | null
           temperatura?: string | null
           updated_at?: string
         }
@@ -665,6 +667,7 @@ export type Database = {
           id?: string
           obra_id?: string
           observacoes_gerais?: string | null
+          relatorio_id?: string | null
           temperatura?: string | null
           updated_at?: string
         }
@@ -681,6 +684,13 @@ export type Database = {
             columns: ["obra_id"]
             isOneToOne: false
             referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "diario_obra_relatorio_id_fkey"
+            columns: ["relatorio_id"]
+            isOneToOne: false
+            referencedRelation: "relatorios"
             referencedColumns: ["id"]
           },
         ]
