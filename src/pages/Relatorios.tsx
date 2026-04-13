@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
-import { FileText, Calendar, Clock, BarChart3, PenTool, History, Download, Save, Edit, Eye, List, Filter } from 'lucide-react';
+import { FileText, Calendar, Clock, BarChart3, PenTool, History, Download, Save, Edit, Eye, List, Filter, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { gerarRelatorioPDF } from '@/lib/pdfRelatorio';
 import SignatureCanvas from 'react-signature-canvas';
