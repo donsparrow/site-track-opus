@@ -57,7 +57,8 @@ export default function NovaObraDialog({ open, onOpenChange, onCreated }: Props)
     const { error } = await supabase.from('obras').insert({
       nome,
       endereco,
-      responsavel,
+      responsavel_tecnico: responsavel,
+      crea_cau: creaCau || null,
       cliente_id: clienteId || null,
       data_inicio: dataInicio,
       data_fim_prevista: dataFimPrevista,
@@ -69,7 +70,7 @@ export default function NovaObraDialog({ open, onOpenChange, onCreated }: Props)
       toast.error('Erro ao criar obra: ' + error.message);
     } else {
       toast.success('Obra criada!');
-      setNome(''); setEndereco(''); setResponsavel(''); setClienteId('');
+      setNome(''); setEndereco(''); setResponsavel(''); setCreaCau(''); setClienteId('');
       setDataInicio(''); setDataFimPrevista(''); setStatus('planejamento'); setPrazoContratual(0);
       onOpenChange(false);
       onCreated();
@@ -93,7 +94,7 @@ export default function NovaObraDialog({ open, onOpenChange, onCreated }: Props)
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Responsável</Label>
+              <Label>Responsável Técnico</Label>
               <Input value={responsavel} onChange={(e) => setResponsavel(e.target.value)} />
             </div>
             <div>
@@ -120,6 +121,10 @@ export default function NovaObraDialog({ open, onOpenChange, onCreated }: Props)
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div>
+            <Label>CREA/CAU</Label>
+            <Input value={creaCau} onChange={(e) => setCreaCau(e.target.value)} placeholder="Ex: CREA-MG 123456/D" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>

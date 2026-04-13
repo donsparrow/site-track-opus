@@ -84,7 +84,7 @@ export default function Relatorios() {
 
   useEffect(() => {
     if (!obrasFilterLoading) {
-      supabase.from('obras').select('id, nome, data_inicio, data_fim_prevista, endereco, responsavel, prazo_contratual_dias, clientes(nome, cpf_cnpj, email, telefone)').order('nome').then(({ data }) => setObras(filterObras((data || []) as any[])));
+      supabase.from('obras').select('id, nome, data_inicio, data_fim_prevista, endereco, responsavel_tecnico, crea_cau, prazo_contratual_dias, clientes(nome, cpf_cnpj, email, telefone)').order('nome').then(({ data }) => setObras(filterObras((data || []) as any[])));
       supabase.from('configuracoes_empresa').select('*').limit(1).single().then(({ data }) => setEmpresa(data));
       loadRelatoriosList();
     }
@@ -413,7 +413,8 @@ export default function Relatorios() {
         obra: {
           nome: obraData.nome,
           endereco: obraData.endereco || '',
-          responsavel: obraData.responsavel || '',
+          responsavel: obraData.responsavel_tecnico || '',
+          crea_cau: obraData.crea_cau || '',
           cliente_nome: obraData.clientes?.nome || '',
           cliente_cpf_cnpj: obraData.clientes?.cpf_cnpj || '',
           cliente_email: obraData.clientes?.email || '',

@@ -228,7 +228,7 @@ export default function ObraDetail() {
       await gerarDashboardPDF({
         empresa: empresaData,
         obra: {
-          nome: obra.nome, endereco: obra.endereco, responsavel: obra.responsavel,
+          nome: obra.nome, endereco: obra.endereco, responsavel: obra.responsavel_tecnico,
           status: obra.status, data_inicio: obra.data_inicio, data_fim_prevista: obra.data_fim_prevista,
           cliente_nome: obra.clientes?.nome,
           anotacoes: (role === 'admin' || role === 'trabalhador') ? obra.anotacoes : undefined,
