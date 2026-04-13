@@ -38,7 +38,7 @@ function calcBusinessDays(start: string, end: string): number {
 type ViewMode = 'list' | 'edit';
 
 export default function Relatorios() {
-  const { canEdit, user, role } = useAuth();
+  const { canEdit, user, role, isAdmin, isSuperAdmin } = useAuth();
   const { filterObras, isObraAllowed, loading: obrasFilterLoading } = useObrasFiltered();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [obras, setObras] = useState<any[]>([]);
