@@ -282,6 +282,16 @@ export default function Relatorios() {
 
     if (relatorio) {
       setRelatorioId(relatorio.id);
+
+      // Mark diaries as linked to this report
+      const diarioIds = dList.map(d => d.id);
+      if (diarioIds.length > 0) {
+        await supabase
+          .from('diario_obra')
+          .update({ relatorio_id: relatorio.id })
+          .in('id', diarioIds);
+      }
+
       const { data: vers } = await supabase.from('relatorio_versoes').select('*').eq('relatorio_id', relatorio.id).order('numero_versao', { ascending: false });
       setVersoes(vers || []);
       const { data: assin } = await supabase.from('assinaturas').select('*').eq('relatorio_id', relatorio.id).order('data_assinatura');
