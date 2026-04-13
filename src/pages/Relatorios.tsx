@@ -621,6 +621,33 @@ export default function Relatorios() {
                           <Button size="sm" variant="ghost" onClick={() => handleOpenRelatorio(r)} title="Editar">
                             <Edit className="h-4 w-4" />
                           </Button>
+                          {podeExcluir && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" title="Excluir">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Excluir Relatório</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Tem certeza que deseja excluir este relatório?
+                                    <br />
+                                    <strong>{r.obras?.nome}</strong> — {r.data_inicio ? fmt(r.data_inicio) : '—'} a {r.data_fim ? fmt(r.data_fim) : '—'}
+                                    <br /><br />
+                                    O relatório será removido da lista, mas o histórico será preservado.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleExcluirRelatorio(r)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    Confirmar Exclusão
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
