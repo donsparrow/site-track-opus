@@ -103,8 +103,28 @@ export default function Relatorios() {
     if (selectedObra) {
       const obra = obras.find(o => o.id === selectedObra);
       setObraData(obra);
-      if (obra?.data_inicio) setPeriodoInicio(obra.data_inicio);
-      if (obra?.data_fim_prevista) setPeriodoFim(obra.data_fim_prevista);
+
+      // If creating a new report (no relatorioId), auto-detect period from unused diaries
+      if (!relatorioId) {
+        (async () => {
+          const { data: unusedDiarios } = await supabase
+            .from('diario_obra')
+            .select('data')
+            .eq('obra_id', selectedObra)
+            .is('relatorio_id', null)
+            .order('data', { ascending: true });
+
+          if (unusedDiarios && unusedDiarios.length > 0) {
+            setPeriodoInicio(unusedDiarios[0].data);
+            setPeriodoFim(unusedDiarios[unusedDiarios.length - 1].data);
+          } else {
+            // No unused diaries
+            setPeriodoInicio('');
+            setPeriodoFim('');
+            toast.info('Não há novos diários para gerar relatório nesta obra.');
+          }
+        })();
+      }
     }
   }, [selectedObra, obras]);
 
@@ -262,6 +282,16 @@ export default function Relatorios() {
 
     if (relatorio) {
       setRelatorioId(relatorio.id);
+
+      // Mark diaries as linked to this report
+      const diarioIds = dList.map(d => d.id);
+      if (diarioIds.length > 0) {
+        await supabase
+          .from('diario_obra')
+          .update({ relatorio_id: relatorio.id })
+          .in('id', diarioIds);
+      }
+
       const { data: vers } = await supabase.from('relatorio_versoes').select('*').eq('relatorio_id', relatorio.id).order('numero_versao', { ascending: false });
       setVersoes(vers || []);
       const { data: assin } = await supabase.from('assinaturas').select('*').eq('relatorio_id', relatorio.id).order('data_assinatura');
@@ -524,6 +554,12 @@ export default function Relatorios() {
       toast.error('Erro ao excluir relatório');
       return;
     }
+
+    // Release linked diaries so they can be used in future reports
+    await supabase
+      .from('diario_obra')
+      .update({ relatorio_id: null })
+      .eq('relatorio_id', relatorio.id);
 
     // Log the deletion
     if (user) {
