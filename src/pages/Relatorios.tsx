@@ -53,7 +53,7 @@ export default function Relatorios() {
   // Prazo contratual comes from obra (read-only)
 
   // Computed data
-  const [prazos, setPrazos] = useState({ contratual: 0, parados: 0, ajustado: 0, trabalhados: 0, saldo: 0 });
+  const [prazos, setPrazos] = useState({ contratual: 0, parados: 0, ajustado: 0, trabalhados: 0, saldo: 0, dataInicioReal: '' });
   const [diarios, setDiarios] = useState<any[]>([]);
   const [allEquipe, setAllEquipe] = useState<any[]>([]);
   const [allAtividades, setAllAtividades] = useState<any[]>([]);
@@ -159,6 +159,17 @@ export default function Relatorios() {
       setCronogramaAtividades([]);
     }
 
+    // Fetch the FIRST diary entry for this obra (not just the period)
+    const { data: primeiroDiario } = await supabase
+      .from('diario_obra')
+      .select('data')
+      .eq('obra_id', selectedObra)
+      .order('data', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    const dataInicioReal = primeiroDiario?.data || '';
+
     const obra = obras.find(o => o.id === selectedObra);
     const prazoContratual = (obra?.prazo_contratual_dias && obra.prazo_contratual_dias > 0)
       ? obra.prazo_contratual_dias
@@ -175,7 +186,8 @@ export default function Relatorios() {
       diasParados = (parData || []).reduce((s, p) => s + (p.total_dias || 0), 0);
     }
 
-    const diasTrabalhados = (periodoInicio && periodoFim) ? calcBusinessDays(periodoInicio, periodoFim) : 0;
+    // Dias trabalhados = business days from real start to report end
+    const diasTrabalhados = (dataInicioReal && periodoFim) ? calcBusinessDays(dataInicioReal, periodoFim) : 0;
     const prazoAjustado = prazoContratual + diasParados;
     const saldoPrazo = prazoAjustado - diasTrabalhados;
 
@@ -185,6 +197,7 @@ export default function Relatorios() {
       ajustado: prazoAjustado,
       trabalhados: diasTrabalhados,
       saldo: saldoPrazo,
+      dataInicioReal,
     });
 
     // Find or create relatorio
@@ -727,18 +740,24 @@ export default function Relatorios() {
               <CardTitle className="text-sm font-display">Prazo Contratual (dias úteis)</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-wrap">
                 <span className="text-2xl font-bold">{prazos.contratual}</span>
                 <span className="text-sm text-muted-foreground">(definido na aba Obras)</span>
+                {prazos.dataInicioReal ? (
+                  <Badge variant="outline" className="text-xs">Início real: {fmt(prazos.dataInicioReal)}</Badge>
+                ) : (
+                  <Badge variant="destructive" className="text-xs">Obra ainda não iniciada</Badge>
+                )}
               </div>
             </CardContent>
           </Card>
 
           {/* Indicators */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
             {[
+              { label: 'Início Real', value: prazos.dataInicioReal ? fmt(prazos.dataInicioReal) : 'Não iniciada', icon: Calendar, color: prazos.dataInicioReal ? '' : 'text-destructive' },
               { label: 'Prazo Contratual', value: `${prazos.contratual} dias`, icon: Calendar },
-              { label: 'Dias Parados', value: `${prazos.parados} dias`, icon: Clock, color: 'text-destructive' },
+              { label: 'Dias Parados', value: `${prazos.parados} dias`, icon: Clock, color: prazos.parados > 0 ? 'text-destructive' : '' },
               { label: 'Prazo Ajustado', value: `${prazos.ajustado} dias`, icon: Calendar },
               { label: 'Dias Trabalhados', value: `${prazos.trabalhados} dias`, icon: BarChart3 },
               { label: 'Saldo de Prazo', value: `${prazos.saldo} dias`, icon: Clock, color: saldoColor },

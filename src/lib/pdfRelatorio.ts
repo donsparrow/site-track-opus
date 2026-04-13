@@ -29,6 +29,7 @@ interface RelatorioPDFData {
     ajustado: number;
     trabalhados: number;
     saldo: number;
+    dataInicioReal: string;
   };
   diarios: any[];
   equipe: any[];
@@ -441,9 +442,11 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   doc.setTextColor(0);
   doc.setFont('helvetica', 'normal');
 
-  // Prazo grid (3 columns)
-  const colW = contentW / 3;
+  // Prazo grid (4 columns)
+  const colW = contentW / 4;
+  const fmtDate = (d: string) => { try { return new Date(d + 'T00:00:00').toLocaleDateString('pt-BR'); } catch { return d; } };
   const prazoItems = [
+    { label: 'Início Real', value: data.prazos.dataInicioReal ? fmtDate(data.prazos.dataInicioReal) : 'Não iniciada' },
     { label: 'Prazo Contratual', value: `${data.prazos.contratual} dias` },
     { label: 'Prazo Ajustado', value: `${data.prazos.ajustado} dias` },
     { label: 'Saldo de Prazo', value: `${data.prazos.saldo} dias` },
@@ -456,9 +459,9 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     doc.setFontSize(7);
     doc.setTextColor(100);
     doc.text(item.label, x + colW / 2, y + 5, { align: 'center' });
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(i === 2 ? prazoStatusClr[0] : BLUE[0], i === 2 ? prazoStatusClr[1] : BLUE[1], i === 2 ? prazoStatusClr[2] : BLUE[2]);
+    doc.setTextColor(i === 3 ? prazoStatusClr[0] : BLUE[0], i === 3 ? prazoStatusClr[1] : BLUE[1], i === 3 ? prazoStatusClr[2] : BLUE[2]);
     doc.text(item.value, x + colW / 2, y + 13, { align: 'center' });
     doc.setFont('helvetica', 'normal');
   });
