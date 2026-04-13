@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
-import { FileText, Calendar, Clock, BarChart3, PenTool, History, Download, Save, Edit, Eye, List, Filter } from 'lucide-react';
+import { FileText, Calendar, Clock, BarChart3, PenTool, History, Download, Save, Edit, Eye, List, Filter, Trash2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { gerarRelatorioPDF } from '@/lib/pdfRelatorio';
 import SignatureCanvas from 'react-signature-canvas';
@@ -37,7 +38,7 @@ function calcBusinessDays(start: string, end: string): number {
 type ViewMode = 'list' | 'edit';
 
 export default function Relatorios() {
-  const { canEdit, user, role } = useAuth();
+  const { canEdit, user, role, isAdmin, isSuperAdmin } = useAuth();
   const { filterObras, isObraAllowed, loading: obrasFilterLoading } = useObrasFiltered();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [obras, setObras] = useState<any[]>([]);
@@ -94,7 +95,7 @@ export default function Relatorios() {
       .from('relatorios')
       .select('*, obras(nome, clientes(nome))')
       .order('created_at', { ascending: false });
-    const filtered = (data || []).filter((r: any) => isObraAllowed(r.obra_id));
+    const filtered = (data || []).filter((r: any) => isObraAllowed(r.obra_id) && r.status !== 'excluido');
     setRelatoriosList(filtered);
   };
 
@@ -498,6 +499,32 @@ export default function Relatorios() {
     consolidar();
   };
 
+  const podeExcluir = isAdmin || isSuperAdmin;
+
+  const handleExcluirRelatorio = async (relatorio: any) => {
+    const { error } = await supabase
+      .from('relatorios')
+      .update({ status: 'excluido' })
+      .eq('id', relatorio.id);
+
+    if (error) {
+      toast.error('Erro ao excluir relatório');
+      return;
+    }
+
+    // Log the deletion
+    if (user) {
+      await supabase.from('relatorio_logs').insert({
+        relatorio_id: relatorio.id,
+        usuario_id: user.id,
+        acao: 'excluiu',
+      });
+    }
+
+    toast.success('Relatório excluído com sucesso');
+    loadRelatoriosList();
+  };
+
   const filteredRelatorios = relatoriosList.filter(r => {
     if (filtroObra && r.obra_id !== filtroObra) return false;
     if (filtroStatus && r.status !== filtroStatus) return false;
@@ -594,6 +621,33 @@ export default function Relatorios() {
                           <Button size="sm" variant="ghost" onClick={() => handleOpenRelatorio(r)} title="Editar">
                             <Edit className="h-4 w-4" />
                           </Button>
+                          {podeExcluir && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive" title="Excluir">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Excluir Relatório</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Tem certeza que deseja excluir este relatório?
+                                    <br />
+                                    <strong>{r.obras?.nome}</strong> — {r.data_inicio ? fmt(r.data_inicio) : '—'} a {r.data_fim ? fmt(r.data_fim) : '—'}
+                                    <br /><br />
+                                    O relatório será removido da lista, mas o histórico será preservado.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleExcluirRelatorio(r)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    Confirmar Exclusão
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
