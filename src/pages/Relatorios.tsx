@@ -876,9 +876,6 @@ export default function Relatorios() {
                     ? Math.round(cronogramaAtividades.reduce((s: number, c: any) => s + ((c.peso || 0) * c.percentual_concluido), 0) / 100)
                     : Math.round(cronogramaAtividades.reduce((s: number, c: any) => s + c.percentual_concluido, 0) / cronogramaAtividades.length))
                   : 0;
-                const statusObra = prazos.saldo > 0 ? 'Dentro do prazo' : prazos.saldo === 0 ? 'Atenção' : 'Atrasado';
-                const statusClr = prazos.saldo > 0 ? 'text-success' : prazos.saldo === 0 ? 'text-warning' : 'text-destructive';
-                const statusBg = prazos.saldo > 0 ? 'bg-success/10 border-success/30' : prazos.saldo === 0 ? 'bg-warning/10 border-warning/30' : 'bg-destructive/10 border-destructive/30';
 
                 // Team stats
                 const diasComEquipe = diarios.map(d => ({
@@ -892,19 +889,30 @@ export default function Relatorios() {
                 return (
                   <div className="space-y-4">
                     {/* Status + Progress */}
-                    <Card className={`border ${statusBg}`}>
+                    <Card className={`border ${smartStatus.bg}`}>
                       <CardContent className="pt-4 pb-4">
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center gap-3">
-                            <span className={`text-2xl ${statusClr}`}>●</span>
+                            <span className={`text-2xl ${smartStatus.color}`}>●</span>
                             <div>
-                              <p className={`font-bold text-lg ${statusClr}`}>{statusObra}</p>
-                              <p className="text-xs text-muted-foreground">Obra concluída: {progressoObra}%</p>
+                              <p className={`font-bold text-lg ${smartStatus.color}`}>{smartStatus.label}</p>
+                              <p className="text-xs text-muted-foreground">Obra executada: {prazos.percentualExecutado}% | Tempo consumido: {prazos.percentualTempo}%</p>
                             </div>
                           </div>
-                          <span className="text-3xl font-bold text-primary">{progressoObra}%</span>
+                          <span className="text-3xl font-bold text-primary">{prazos.percentualExecutado}%</span>
                         </div>
-                        <Progress value={progressoObra} className="h-3" />
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span>Execução</span>
+                            <div className="flex-1"><Progress value={prazos.percentualExecutado} className="h-2" /></div>
+                            <span>{prazos.percentualExecutado}%</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <span className="w-[52px]">Tempo</span>
+                            <div className="flex-1"><Progress value={Math.min(prazos.percentualTempo, 100)} className="h-2" /></div>
+                            <span>{prazos.percentualTempo}%</span>
+                          </div>
+                        </div>
                       </CardContent>
                     </Card>
 
