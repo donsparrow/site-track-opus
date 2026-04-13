@@ -95,7 +95,7 @@ export default function Relatorios() {
       .from('relatorios')
       .select('*, obras(nome, clientes(nome))')
       .order('created_at', { ascending: false });
-    const filtered = (data || []).filter((r: any) => isObraAllowed(r.obra_id));
+    const filtered = (data || []).filter((r: any) => isObraAllowed(r.obra_id) && r.status !== 'excluido');
     setRelatoriosList(filtered);
   };
 
