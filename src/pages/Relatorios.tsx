@@ -149,7 +149,7 @@ export default function Relatorios() {
     if (cronData) {
       const { data: cronAtivs } = await supabase
         .from('cronograma_atividades')
-        .select('nome_atividade, data_inicio, data_fim, percentual_concluido, status')
+        .select('nome_atividade, data_inicio, data_fim, percentual_concluido, status, peso')
         .eq('cronograma_id', cronData.id)
         .order('ordem');
       setCronogramaAtividades(cronAtivs || []);
@@ -727,38 +727,103 @@ export default function Relatorios() {
             </TabsList>
 
             <TabsContent value="resumo">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader className="py-3"><CardTitle className="text-sm font-display">Diários no Período</CardTitle></CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-bold font-display">{diarios.length}</p>
-                    <p className="text-xs text-muted-foreground mt-1">registros encontrados</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="py-3"><CardTitle className="text-sm font-display">Equipe</CardTitle></CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-bold font-display">{allEquipe.length}</p>
-                    <p className="text-xs text-muted-foreground mt-1">registros de equipe</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="py-3"><CardTitle className="text-sm font-display">Atividades</CardTitle></CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-bold font-display">{allAtividades.length}</p>
-                    <p className="text-xs text-muted-foreground mt-1">atividades registradas</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="py-3"><CardTitle className="text-sm font-display">Ocorrências</CardTitle></CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-bold font-display">{allOcorrencias.length}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {allOcorrencias.filter(o => o.impacto === 'alto').length} de alto impacto
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
+              {/* Executive Summary */}
+              {(() => {
+                const totalPeso = cronogramaAtividades.reduce((s: number, c: any) => s + (c.peso || 0), 0);
+                const progressoObra = cronogramaAtividades.length > 0
+                  ? (totalPeso === 100
+                    ? Math.round(cronogramaAtividades.reduce((s: number, c: any) => s + ((c.peso || 0) * c.percentual_concluido), 0) / 100)
+                    : Math.round(cronogramaAtividades.reduce((s: number, c: any) => s + c.percentual_concluido, 0) / cronogramaAtividades.length))
+                  : 0;
+                const statusObra = prazos.saldo > 0 ? 'Dentro do prazo' : prazos.saldo === 0 ? 'Atenção' : 'Atrasado';
+                const statusClr = prazos.saldo > 0 ? 'text-success' : prazos.saldo === 0 ? 'text-warning' : 'text-destructive';
+                const statusBg = prazos.saldo > 0 ? 'bg-success/10 border-success/30' : prazos.saldo === 0 ? 'bg-warning/10 border-warning/30' : 'bg-destructive/10 border-destructive/30';
+
+                // Team stats
+                const diasComEquipe = diarios.map(d => ({
+                  equipe: allEquipe.filter(e => e.diario_id === d.id),
+                })).filter(d => d.equipe.length > 0);
+                const teamCounts = diasComEquipe.map(d => d.equipe.length);
+                const teamMedia = teamCounts.length > 0 ? Math.round(teamCounts.reduce((s, c) => s + c, 0) / teamCounts.length) : 0;
+                const teamMax = teamCounts.length > 0 ? Math.max(...teamCounts) : 0;
+                const teamMin = teamCounts.length > 0 ? Math.min(...teamCounts) : 0;
+
+                return (
+                  <div className="space-y-4">
+                    {/* Status + Progress */}
+                    <Card className={`border ${statusBg}`}>
+                      <CardContent className="pt-4 pb-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <span className={`text-2xl ${statusClr}`}>●</span>
+                            <div>
+                              <p className={`font-bold text-lg ${statusClr}`}>{statusObra}</p>
+                              <p className="text-xs text-muted-foreground">Obra concluída: {progressoObra}%</p>
+                            </div>
+                          </div>
+                          <span className="text-3xl font-bold text-primary">{progressoObra}%</span>
+                        </div>
+                        <Progress value={progressoObra} className="h-3" />
+                      </CardContent>
+                    </Card>
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <Card>
+                        <CardContent className="pt-4 pb-4">
+                          <p className="text-xs text-muted-foreground">Diários</p>
+                          <p className="text-2xl font-bold font-display">{diarios.length}</p>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="pt-4 pb-4">
+                          <p className="text-xs text-muted-foreground">Equipe Média</p>
+                          <p className="text-2xl font-bold font-display">{teamMedia}</p>
+                          <p className="text-[10px] text-muted-foreground">Máx: {teamMax} | Mín: {teamMin}</p>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="pt-4 pb-4">
+                          <p className="text-xs text-muted-foreground">Atividades</p>
+                          <p className="text-2xl font-bold font-display">{allAtividades.length}</p>
+                        </CardContent>
+                      </Card>
+                      <Card>
+                        <CardContent className="pt-4 pb-4">
+                          <p className="text-xs text-muted-foreground">Ocorrências</p>
+                          <p className="text-2xl font-bold font-display">{allOcorrencias.length}</p>
+                          <p className="text-[10px] text-destructive">
+                            {allOcorrencias.filter(o => o.impacto === 'alto').length} alto impacto
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Cronograma summary */}
+                    {cronogramaAtividades.length > 0 && (
+                      <Card>
+                        <CardHeader className="py-3">
+                          <CardTitle className="text-sm font-display">Cronograma da Obra</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-2">
+                            {cronogramaAtividades.map((c: any, i: number) => (
+                              <div key={i} className="flex items-center gap-3">
+                                <span className="text-xs text-muted-foreground w-8">{c.peso || 0}%</span>
+                                <span className="text-sm flex-1 truncate">{c.nome_atividade}</span>
+                                <Progress value={c.percentual_concluido} className="h-2 w-24" />
+                                <span className="text-xs font-medium w-10 text-right">{c.percentual_concluido}%</span>
+                                <Badge variant="outline" className="text-[10px]">
+                                  {c.status === 'concluido' ? 'Concluído' : c.status === 'em_andamento' ? 'Em Andamento' : 'Não Iniciado'}
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+                );
+              })()}
             </TabsContent>
 
             <TabsContent value="evolucao">
