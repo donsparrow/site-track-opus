@@ -1,0 +1,1 @@
+ALTER TABLE public.cronograma_atividades ADD COLUMN peso integer NOT NULL DEFAULT 0;
