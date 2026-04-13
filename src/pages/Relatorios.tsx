@@ -555,6 +555,12 @@ export default function Relatorios() {
       return;
     }
 
+    // Release linked diaries so they can be used in future reports
+    await supabase
+      .from('diario_obra')
+      .update({ relatorio_id: null })
+      .eq('relatorio_id', relatorio.id);
+
     // Log the deletion
     if (user) {
       await supabase.from('relatorio_logs').insert({
