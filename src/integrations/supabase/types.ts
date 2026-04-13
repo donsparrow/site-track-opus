@@ -269,7 +269,9 @@ export type Database = {
       }
       configuracoes_empresa: {
         Row: {
+          cargo_responsavel_legal: string | null
           cnpj: string | null
+          cpf_responsavel_legal: string | null
           created_at: string
           email: string | null
           empresa_id: string | null
@@ -278,13 +280,16 @@ export type Database = {
           instagram: string | null
           logo_url: string | null
           nome_empresa: string
+          responsavel_legal: string | null
           site: string | null
           telefone: string | null
           texto_rodape: string | null
           updated_at: string
         }
         Insert: {
+          cargo_responsavel_legal?: string | null
           cnpj?: string | null
+          cpf_responsavel_legal?: string | null
           created_at?: string
           email?: string | null
           empresa_id?: string | null
@@ -293,13 +298,16 @@ export type Database = {
           instagram?: string | null
           logo_url?: string | null
           nome_empresa?: string
+          responsavel_legal?: string | null
           site?: string | null
           telefone?: string | null
           texto_rodape?: string | null
           updated_at?: string
         }
         Update: {
+          cargo_responsavel_legal?: string | null
           cnpj?: string | null
+          cpf_responsavel_legal?: string | null
           created_at?: string
           email?: string | null
           empresa_id?: string | null
@@ -308,6 +316,7 @@ export type Database = {
           instagram?: string | null
           logo_url?: string | null
           nome_empresa?: string
+          responsavel_legal?: string | null
           site?: string | null
           telefone?: string | null
           texto_rodape?: string | null
@@ -1198,6 +1207,7 @@ export type Database = {
         Row: {
           anotacoes: string | null
           cliente_id: string | null
+          crea_cau: string | null
           created_at: string
           data_fim_prevista: string | null
           data_inicio: string | null
@@ -1206,13 +1216,14 @@ export type Database = {
           id: string
           nome: string
           prazo_contratual_dias: number | null
-          responsavel: string | null
+          responsavel_tecnico: string | null
           status: string
           updated_at: string
         }
         Insert: {
           anotacoes?: string | null
           cliente_id?: string | null
+          crea_cau?: string | null
           created_at?: string
           data_fim_prevista?: string | null
           data_inicio?: string | null
@@ -1221,13 +1232,14 @@ export type Database = {
           id?: string
           nome: string
           prazo_contratual_dias?: number | null
-          responsavel?: string | null
+          responsavel_tecnico?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
           anotacoes?: string | null
           cliente_id?: string | null
+          crea_cau?: string | null
           created_at?: string
           data_fim_prevista?: string | null
           data_inicio?: string | null
@@ -1236,7 +1248,7 @@ export type Database = {
           id?: string
           nome?: string
           prazo_contratual_dias?: number | null
-          responsavel?: string | null
+          responsavel_tecnico?: string | null
           status?: string
           updated_at?: string
         }

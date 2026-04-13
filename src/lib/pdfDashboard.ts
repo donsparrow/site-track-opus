@@ -260,7 +260,7 @@ export async function gerarDashboardPDF(data: DashboardPDFData) {
   infoRow('Obra', data.obra.nome);
   infoRow('Cliente', data.obra.cliente_nome || '—');
   infoRow('Endereço', data.obra.endereco || '—');
-  infoRow('Responsável', data.obra.responsavel || '—');
+  infoRow('Responsável Técnico', data.obra.responsavel || '—');
   infoRow('Status', statusLabels[data.obra.status] || data.obra.status);
   if (data.obra.data_inicio) infoRow('Início', fmtDate(data.obra.data_inicio));
   if (data.obra.data_fim_prevista) infoRow('Previsão Término', fmtDate(data.obra.data_fim_prevista));

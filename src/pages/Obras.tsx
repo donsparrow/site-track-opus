@@ -90,7 +90,8 @@ export default function Obras() {
     const { error } = await supabase.from('obras').update({
       nome: editObra.nome,
       endereco: editObra.endereco || null,
-      responsavel: editObra.responsavel || null,
+      responsavel_tecnico: editObra.responsavel_tecnico || null,
+      crea_cau: editObra.crea_cau || null,
       cliente_id: editObra.cliente_id || null,
       data_inicio: editObra.data_inicio || null,
       data_fim_prevista: editObra.data_fim_prevista || null,
@@ -190,8 +191,8 @@ export default function Obras() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Responsável *</Label>
-                  <Input value={editObra.responsavel || ''} onChange={e => setEditObra({ ...editObra, responsavel: e.target.value })} />
+                  <Label>Responsável Técnico *</Label>
+                  <Input value={editObra.responsavel_tecnico || ''} onChange={e => setEditObra({ ...editObra, responsavel_tecnico: e.target.value })} />
                 </div>
                 <div>
                   <Label>Status</Label>
@@ -204,6 +205,10 @@ export default function Obras() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+              <div>
+                <Label>CREA/CAU</Label>
+                <Input value={editObra.crea_cau || ''} onChange={e => setEditObra({ ...editObra, crea_cau: e.target.value })} placeholder="Ex: CREA-MG 123456/D" />
               </div>
               <div>
                 <Label>Cliente</Label>
