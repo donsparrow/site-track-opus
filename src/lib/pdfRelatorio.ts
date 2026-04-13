@@ -480,18 +480,26 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   const prazoItems2 = [
     { label: 'Dias Parados', value: `${data.prazos.parados}` },
     { label: 'Dias Trabalhados', value: `${data.prazos.trabalhados}` },
+    { label: 'Tempo Consumido', value: `${data.prazos.percentualTempo}%`, highlight: true },
+    { label: 'Obra Executada', value: `${data.prazos.percentualExecutado}%`, highlight: true },
   ];
-  prazoItems2.forEach((item, i) => {
-    const x = MARGIN + i * (contentW / 2);
+  const col2W = contentW / 4;
+  prazoItems2.forEach((item: any, i: number) => {
+    const x = MARGIN + i * col2W;
     doc.setFillColor(245, 247, 250);
-    doc.roundedRect(x + 1, y, contentW / 2 - 2, 14, 2, 2, 'F');
+    doc.roundedRect(x + 1, y, col2W - 2, 14, 2, 2, 'F');
     doc.setFontSize(7);
     doc.setTextColor(100);
-    doc.text(item.label, x + contentW / 4, y + 5, { align: 'center' });
+    doc.text(item.label, x + col2W / 2, y + 5, { align: 'center' });
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
-    doc.text(item.value, x + contentW / 4, y + 12, { align: 'center' });
+    if (item.highlight) {
+      const clr = i === 3 ? (data.prazos.percentualExecutado >= data.prazos.percentualTempo ? [34, 197, 94] : [239, 68, 68]) : [100, 100, 100];
+      doc.setTextColor(clr[0], clr[1], clr[2]);
+    } else {
+      doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
+    }
+    doc.text(item.value, x + col2W / 2, y + 12, { align: 'center' });
     doc.setFont('helvetica', 'normal');
   });
   y += 20;
