@@ -740,9 +740,14 @@ export default function Relatorios() {
               <CardTitle className="text-sm font-display">Prazo Contratual (dias úteis)</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-wrap">
                 <span className="text-2xl font-bold">{prazos.contratual}</span>
                 <span className="text-sm text-muted-foreground">(definido na aba Obras)</span>
+                {prazos.dataInicioReal ? (
+                  <Badge variant="outline" className="text-xs">Início real: {fmt(prazos.dataInicioReal)}</Badge>
+                ) : (
+                  <Badge variant="destructive" className="text-xs">Obra ainda não iniciada</Badge>
+                )}
               </div>
             </CardContent>
           </Card>
