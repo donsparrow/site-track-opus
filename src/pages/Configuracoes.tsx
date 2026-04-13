@@ -22,6 +22,9 @@ export default function Configuracoes() {
     logo_url: '',
     site: '',
     instagram: '',
+    responsavel_legal: '',
+    cpf_responsavel_legal: '',
+    cargo_responsavel_legal: '',
   });
 
   useEffect(() => {
@@ -47,6 +50,9 @@ export default function Configuracoes() {
         logo_url: data.logo_url || '',
         site: data.site || '',
         instagram: data.instagram || '',
+        responsavel_legal: data.responsavel_legal || '',
+        cpf_responsavel_legal: data.cpf_responsavel_legal || '',
+        cargo_responsavel_legal: data.cargo_responsavel_legal || '',
       });
     }
     setLoading(false);
@@ -103,6 +109,16 @@ export default function Configuracoes() {
             <div className="grid grid-cols-2 gap-4">
               <div><Label>Site</Label><Input value={form.site} onChange={e => setForm({ ...form, site: e.target.value })} placeholder="www.engenhariajf.com.br" /></div>
               <div><Label>Instagram</Label><Input value={form.instagram} onChange={e => setForm({ ...form, instagram: e.target.value })} placeholder="@engenhariajf" /></div>
+            </div>
+            <div className="border-t pt-4 mt-4">
+              <h3 className="text-sm font-semibold text-muted-foreground mb-3">Responsável Legal</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div><Label>Nome do Responsável Legal</Label><Input value={form.responsavel_legal} onChange={e => setForm({ ...form, responsavel_legal: e.target.value })} placeholder="Nome completo" /></div>
+                <div><Label>CPF do Responsável Legal</Label><Input value={form.cpf_responsavel_legal} onChange={e => setForm({ ...form, cpf_responsavel_legal: e.target.value })} placeholder="000.000.000-00" /></div>
+              </div>
+              <div className="mt-3">
+                <Label>Cargo</Label><Input value={form.cargo_responsavel_legal} onChange={e => setForm({ ...form, cargo_responsavel_legal: e.target.value })} placeholder="Ex: Sócio, Diretor" />
+              </div>
             </div>
             <div>
               <Label>Logo</Label>

@@ -302,7 +302,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     { label: 'Obra', value: data.obra.nome },
     { label: 'Cliente', value: data.obra.cliente_nome || '—' },
     { label: 'Endereço', value: data.obra.endereco || '—' },
-    { label: 'Responsável Técnico', value: data.obra.responsavel || '—' },
+    { label: 'Responsável Técnico', value: `${data.obra.responsavel || '—'}${data.obra.crea_cau ? ' — ' + data.obra.crea_cau : ''}` },
     { label: 'Data de Emissão', value: new Date().toLocaleDateString('pt-BR') },
   ];
 
@@ -405,7 +405,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   sectionTitle('2. IDENTIFICAÇÃO');
   infoRow('Obra', data.obra.nome);
   infoRow('Endereço', data.obra.endereco);
-  infoRow('Responsável Técnico', data.obra.responsavel || '—');
+  infoRow('Responsável Técnico', `${data.obra.responsavel || '—'}${data.obra.crea_cau ? ' — ' + data.obra.crea_cau : ''}`);
   y += 3;
 
   // CLIENT DATA
