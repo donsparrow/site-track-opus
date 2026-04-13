@@ -345,7 +345,8 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   doc.setFontSize(9);
 
   const summaryData = [
-    ['Percentual Concluído', `${progressoObra}%`],
+    ['Obra Executada', `${data.prazos.percentualExecutado}%`],
+    ['Tempo Consumido', `${data.prazos.percentualTempo}%`],
     ['Período do Relatório', `${fmt(data.periodo.inicio)} a ${fmt(data.periodo.fim)}`],
     ['Dias Trabalhados', `${data.prazos.trabalhados}`],
     ['Dias Parados', `${data.prazos.parados}`],
