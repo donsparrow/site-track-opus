@@ -36,7 +36,7 @@ interface RelatorioPDFData {
   materiais: any[];
   ocorrencias: any[];
   imagens: any[];
-  cronograma: { nome_atividade: string; data_inicio: string | null; data_fim: string | null; percentual_concluido: number; status: string }[];
+  cronograma: { nome_atividade: string; data_inicio: string | null; data_fim: string | null; percentual_concluido: number; status: string; peso?: number }[];
   assinaturas: any[];
   versao?: number;
   versoes?: { rev: string; data: string; resumo: string }[];
@@ -65,7 +65,6 @@ async function loadImageAsDataUrl(url: string): Promise<string | null> {
           canvas.height = img.naturalHeight;
           const ctx = canvas.getContext('2d');
           if (ctx) {
-            // Use transparent background (PNG) to preserve logo transparency
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0);
             resolve(canvas.toDataURL('image/png'));
@@ -85,7 +84,6 @@ async function loadImageAsDataUrl(url: string): Promise<string | null> {
 }
 
 async function loadImageAsPngDataUrl(url: string): Promise<string | null> {
-  // If it's already a data URL (from canvas signature), return as-is
   if (url.startsWith('data:')) return url;
   try {
     return await new Promise<string | null>((resolve) => {
@@ -126,7 +124,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   const siteTxt = emp.site || 'www.engenhariajf.com.br';
   const instaTxt = emp.instagram || '@engenhariajf';
 
-  // Pre-load logo and cache dimensions
+  // Pre-load logo
   let logoDataUrl: string | null = null;
   let logoNatW = 0;
   let logoNatH = 0;
@@ -135,16 +133,20 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     if (logoDataUrl) {
       await new Promise<void>((resolve) => {
         const tmpImg = new Image();
-        tmpImg.onload = () => {
-          logoNatW = tmpImg.naturalWidth;
-          logoNatH = tmpImg.naturalHeight;
-          resolve();
-        };
+        tmpImg.onload = () => { logoNatW = tmpImg.naturalWidth; logoNatH = tmpImg.naturalHeight; resolve(); };
         tmpImg.onerror = () => resolve();
         tmpImg.src = logoDataUrl!;
       });
     }
   }
+
+  // Calculate weighted progress
+  const totalPeso = data.cronograma.reduce((s, c) => s + (c.peso || 0), 0);
+  const progressoObra = data.cronograma.length > 0
+    ? (totalPeso === 100
+      ? Math.round(data.cronograma.reduce((s, c) => s + ((c.peso || 0) * c.percentual_concluido), 0) / 100)
+      : Math.round(data.cronograma.reduce((s, c) => s + c.percentual_concluido, 0) / data.cronograma.length))
+    : 0;
 
   // =========== HELPER FUNCTIONS ===========
 
@@ -155,17 +157,14 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
       return 20;
     }
     let hx = MARGIN;
-    const logoMaxH = 18; // mm
-    const logoMaxW = 30; // mm
+    const logoMaxH = 18;
+    const logoMaxW = 30;
     if (logoDataUrl && logoNatW > 0 && logoNatH > 0) {
       try {
         const ratio = logoNatW / logoNatH;
         let logoW = logoMaxH * ratio;
         let logoH = logoMaxH;
-        if (logoW > logoMaxW) {
-          logoW = logoMaxW;
-          logoH = logoMaxW / ratio;
-        }
+        if (logoW > logoMaxW) { logoW = logoMaxW; logoH = logoMaxW / ratio; }
         doc.addImage(logoDataUrl, 'PNG', MARGIN, 6, logoW, logoH);
         hx = MARGIN + logoW + 4;
       } catch { /* skip */ }
@@ -183,9 +182,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
       emp.email || '',
     ].filter(Boolean);
     doc.text(infoParts.join('  |  '), hx, 19);
-    if (emp.endereco) {
-      doc.text(emp.endereco, hx, 23);
-    }
+    if (emp.endereco) doc.text(emp.endereco, hx, 23);
     doc.setTextColor(0);
     doc.setDrawColor(BLUE[0], BLUE[1], BLUE[2]);
     doc.setLineWidth(0.5);
@@ -201,9 +198,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     doc.setFontSize(7);
     doc.setTextColor(120);
     doc.text(`${siteTxt} | ${instaTxt}`, MARGIN, footerY);
-    if (pageNum) {
-      doc.text(`Página ${pageNum}`, pageW - MARGIN, footerY, { align: 'right' });
-    }
+    if (pageNum) doc.text(`Página ${pageNum}`, pageW - MARGIN, footerY, { align: 'right' });
     doc.setTextColor(0);
   };
 
@@ -217,9 +212,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   };
 
   const checkPage = (needed: number) => {
-    if (y + needed > pageH - 18) {
-      newPage();
-    }
+    if (y + needed > pageH - 18) newPage();
   };
 
   const sectionTitle = (title: string) => {
@@ -253,22 +246,17 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   // =========== COVER PAGE ===========
   currentPage = 1;
 
-  // Background subtle
   doc.setFillColor(245, 247, 250);
   doc.rect(0, 0, pageW, pageH, 'F');
 
-  // Logo centered
   let coverY = 40;
   if (logoDataUrl) {
     try {
       doc.addImage(logoDataUrl, 'PNG', pageW / 2 - 20, coverY, 40, 40);
       coverY += 48;
-    } catch {
-      coverY += 10;
-    }
+    } catch { coverY += 10; }
   }
 
-  // Company name
   if (hasEmpresa) {
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
@@ -277,21 +265,18 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     coverY += 12;
   }
 
-  // Decorative line
   doc.setDrawColor(BLUE[0], BLUE[1], BLUE[2]);
   doc.setLineWidth(1);
   doc.line(pageW / 2 - 40, coverY, pageW / 2 + 40, coverY);
   doc.setLineWidth(0.2);
   coverY += 15;
 
-  // Title
   doc.setFontSize(24);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
   doc.text('RELATÓRIO DE OBRA', pageW / 2, coverY, { align: 'center' });
   coverY += 12;
 
-  // REV label
   if (data.versao !== undefined) {
     const revLabel = `REV ${String(data.versao).padStart(2, '0')}`;
     doc.setFontSize(14);
@@ -306,7 +291,6 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     coverY += 8;
   }
 
-  // Obra info on cover
   coverY += 10;
   doc.setFontSize(12);
   doc.setFont('helvetica', 'normal');
@@ -329,13 +313,94 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     coverY += 8;
   });
 
-  // Footer added in final pass
-
-  // =========== PAGE 2+: CONTENT ===========
-
-  // IDENTIFICATION
+  // =========== PAGE 2: EXECUTIVE SUMMARY ===========
   newPage();
-  sectionTitle('1. IDENTIFICAÇÃO');
+  sectionTitle('1. RESUMO EXECUTIVO');
+
+  // Status indicator
+  const statusObra = data.prazos.saldo > 0 ? 'Dentro do prazo' : data.prazos.saldo === 0 ? 'Atenção' : 'Atrasado';
+  const statusColor = data.prazos.saldo > 0 ? [34, 197, 94] : data.prazos.saldo === 0 ? [234, 179, 8] : [239, 68, 68];
+  const statusIcon = data.prazos.saldo > 0 ? '●' : data.prazos.saldo === 0 ? '●' : '●';
+
+  // Status box
+  doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
+  doc.roundedRect(MARGIN, y, 8, 8, 2, 2, 'F');
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
+  doc.text(statusObra, MARGIN + 12, y + 6);
+  y += 14;
+
+  // Summary info
+  doc.setTextColor(0);
+  doc.setFontSize(9);
+
+  const summaryData = [
+    ['Percentual Concluído', `${progressoObra}%`],
+    ['Período do Relatório', `${fmt(data.periodo.inicio)} a ${fmt(data.periodo.fim)}`],
+    ['Dias Trabalhados', `${data.prazos.trabalhados}`],
+    ['Dias Parados', `${data.prazos.parados}`],
+    ['Diários Registrados', `${data.diarios.length}`],
+  ];
+
+  autoTable(doc, {
+    startY: y,
+    body: summaryData,
+    margin: { left: MARGIN, right: MARGIN },
+    styles: { fontSize: 10, cellPadding: 4 },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 } },
+    alternateRowStyles: { fillColor: [245, 247, 250] },
+    theme: 'plain',
+  });
+  y = (doc as any).lastAutoTable.finalY + 6;
+
+  // Progress bar
+  checkPage(15);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Progresso da Obra:', MARGIN, y);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`${progressoObra}%`, MARGIN + 40, y);
+  y += 4;
+  const pBarW = contentW;
+  doc.setFillColor(229, 231, 235);
+  doc.roundedRect(MARGIN, y, pBarW, 5, 1.5, 1.5, 'F');
+  if (progressoObra > 0) {
+    doc.setFillColor(BLUE[0], BLUE[1], BLUE[2]);
+    doc.roundedRect(MARGIN, y, pBarW * (progressoObra / 100), 5, 1.5, 1.5, 'F');
+  }
+  y += 10;
+
+  // Main activities summary
+  if (data.atividades.length > 0) {
+    checkPage(15);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
+    doc.text('Principais Atividades do Período', MARGIN, y);
+    doc.setTextColor(0);
+    doc.setFont('helvetica', 'normal');
+    y += 5;
+
+    // Get unique activities with their latest progress
+    const actMap = new Map<string, number>();
+    data.diarios.forEach(d => {
+      data.atividades.filter(a => a.diario_id === d.id).forEach(a => {
+        actMap.set(a.descricao, a.percentual || 0);
+      });
+    });
+
+    Array.from(actMap.entries()).slice(0, 8).forEach(([desc, perc]) => {
+      checkPage(6);
+      doc.setFontSize(9);
+      doc.text(`• ${desc}: ${perc}%`, MARGIN + 2, y);
+      y += 5;
+    });
+    y += 3;
+  }
+
+  // =========== IDENTIFICATION ===========
+  sectionTitle('2. IDENTIFICAÇÃO');
   infoRow('Obra', data.obra.nome);
   infoRow('Endereço', data.obra.endereco);
   infoRow('Responsável Técnico', data.obra.responsavel || '—');
@@ -343,7 +408,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   // CLIENT DATA
   if (data.obra.cliente_nome) {
-    sectionTitle('2. DADOS DO CLIENTE');
+    sectionTitle('3. DADOS DO CLIENTE');
     infoRow('Nome', data.obra.cliente_nome);
     infoRow('CNPJ/CPF', data.obra.cliente_cpf_cnpj || '—');
     infoRow('E-mail', data.obra.cliente_email || '—');
@@ -352,85 +417,116 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   }
 
   // PERIOD
-  sectionTitle('3. PERÍODO DO RELATÓRIO');
+  sectionTitle('4. PERÍODO DO RELATÓRIO');
   infoRow('Data Inicial', fmt(data.periodo.inicio));
   infoRow('Data Final', fmt(data.periodo.fim));
   y += 3;
 
-  // DEADLINE CONTROL
-  sectionTitle('4. CONTROLE DE PRAZO');
-  const prazoData = [
-    ['Prazo Contratual (dias úteis)', String(data.prazos.contratual)],
-    ['Dias Parados', String(data.prazos.parados)],
-    ['Prazo Ajustado', String(data.prazos.ajustado)],
-    ['Dias Trabalhados', String(data.prazos.trabalhados)],
-    ['Saldo de Prazo', String(data.prazos.saldo)],
+  // =========== DEADLINE CONTROL (VISUAL) ===========
+  sectionTitle('5. CONTROLE DE PRAZO');
+
+  // Visual status indicator
+  checkPage(25);
+  const prazoStatusLabel = data.prazos.saldo > 0 ? 'DENTRO DO PRAZO' : data.prazos.saldo === 0 ? 'ATENÇÃO' : 'ATRASADO';
+  const prazoStatusClr = data.prazos.saldo > 0 ? [34, 197, 94] : data.prazos.saldo === 0 ? [234, 179, 8] : [239, 68, 68];
+
+  doc.setFillColor(prazoStatusClr[0], prazoStatusClr[1], prazoStatusClr[2]);
+  doc.roundedRect(MARGIN, y, contentW, 10, 2, 2, 'F');
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(255, 255, 255);
+  doc.text(prazoStatusLabel, pageW / 2, y + 7, { align: 'center' });
+  y += 14;
+
+  doc.setTextColor(0);
+  doc.setFont('helvetica', 'normal');
+
+  // Prazo grid (3 columns)
+  const colW = contentW / 3;
+  const prazoItems = [
+    { label: 'Prazo Contratual', value: `${data.prazos.contratual} dias` },
+    { label: 'Prazo Ajustado', value: `${data.prazos.ajustado} dias` },
+    { label: 'Saldo de Prazo', value: `${data.prazos.saldo} dias` },
   ];
-  autoTable(doc, {
-    startY: y,
-    head: [['Indicador', 'Valor']],
-    body: prazoData,
-    margin: { left: MARGIN, right: MARGIN },
-    styles: { fontSize: 9, cellPadding: 3 },
-    headStyles: { fillColor: [BLUE[0], BLUE[1], BLUE[2]], textColor: 255 },
-    alternateRowStyles: { fillColor: [245, 247, 250] },
-    theme: 'striped',
+
+  prazoItems.forEach((item, i) => {
+    const x = MARGIN + i * colW;
+    doc.setFillColor(245, 247, 250);
+    doc.roundedRect(x + 1, y, colW - 2, 16, 2, 2, 'F');
+    doc.setFontSize(7);
+    doc.setTextColor(100);
+    doc.text(item.label, x + colW / 2, y + 5, { align: 'center' });
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(i === 2 ? prazoStatusClr[0] : BLUE[0], i === 2 ? prazoStatusClr[1] : BLUE[1], i === 2 ? prazoStatusClr[2] : BLUE[2]);
+    doc.text(item.value, x + colW / 2, y + 13, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
   });
-  y = (doc as any).lastAutoTable.finalY + 8;
+  y += 22;
 
-  // ACTIVITIES - Daily Evolution
+  // Second row
+  const prazoItems2 = [
+    { label: 'Dias Parados', value: `${data.prazos.parados}` },
+    { label: 'Dias Trabalhados', value: `${data.prazos.trabalhados}` },
+  ];
+  prazoItems2.forEach((item, i) => {
+    const x = MARGIN + i * (contentW / 2);
+    doc.setFillColor(245, 247, 250);
+    doc.roundedRect(x + 1, y, contentW / 2 - 2, 14, 2, 2, 'F');
+    doc.setFontSize(7);
+    doc.setTextColor(100);
+    doc.text(item.label, x + contentW / 4, y + 5, { align: 'center' });
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
+    doc.text(item.value, x + contentW / 4, y + 12, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+  });
+  y += 20;
+
+  // =========== SERVICES (SIMPLIFIED) ===========
   if (data.atividades.length > 0) {
-    sectionTitle('5. DESCRIÇÃO DOS SERVIÇOS — EVOLUÇÃO DIÁRIA');
+    sectionTitle('6. DESCRIÇÃO DOS SERVIÇOS');
 
-    // Group activities by description, showing daily evolution
-    const atividadesByDesc = new Map<string, { diarioData: string; percentual: number; descricao: string }[]>();
-    data.diarios.forEach(diario => {
-      const diaAtividades = data.atividades.filter(a => a.diario_id === diario.id);
-      diaAtividades.forEach(a => {
-        const key = a.descricao;
-        if (!atividadesByDesc.has(key)) atividadesByDesc.set(key, []);
-        atividadesByDesc.get(key)!.push({ diarioData: diario.data, percentual: a.percentual || 0, descricao: a.descricao });
-      });
-    });
+    // Group by day, simplified format
+    const daysWithActivities = data.diarios
+      .map(d => ({
+        data: d.data,
+        atividades: data.atividades.filter(a => a.diario_id === d.id),
+      }))
+      .filter(d => d.atividades.length > 0);
 
-    atividadesByDesc.forEach((entries, desc) => {
-      checkPage(12);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.text(`• ${desc}`, MARGIN, y);
-      y += 5;
-      doc.setFont('helvetica', 'normal');
-
-      const sorted = entries.sort((a, b) => a.diarioData.localeCompare(b.diarioData));
-      const rows = sorted.map((entry, idx) => {
-        const prevPerc = idx > 0 ? sorted[idx - 1].percentual : 0;
-        const evolucao = entry.percentual - prevPerc;
-        return [
-          fmt(entry.diarioData),
-          `${prevPerc}%`,
-          `${entry.percentual}%`,
-          `${evolucao > 0 ? '+' : ''}${evolucao}%`,
-        ];
+    if (daysWithActivities.length > 0) {
+      const rows: string[][] = [];
+      daysWithActivities.forEach(dia => {
+        dia.atividades.forEach((a: any, idx: number) => {
+          rows.push([
+            idx === 0 ? fmt(dia.data) : '',
+            a.descricao,
+            `${a.percentual || 0}%`,
+            a.status === 'concluido' ? 'Concluído' : a.status === 'andamento' ? 'Em andamento' : a.status || '—',
+          ]);
+        });
       });
 
       autoTable(doc, {
         startY: y,
-        head: [['Data', '% Anterior', '% Atual', 'Evolução']],
+        head: [['Data', 'Atividade', 'Progresso', 'Status']],
         body: rows,
-        margin: { left: MARGIN + 5, right: MARGIN },
-        styles: { fontSize: 8, cellPadding: 2 },
+        margin: { left: MARGIN, right: MARGIN },
+        styles: { fontSize: 8, cellPadding: 2.5 },
         headStyles: { fillColor: [BLUE[0], BLUE[1], BLUE[2]], textColor: 255 },
         alternateRowStyles: { fillColor: [245, 247, 250] },
         theme: 'striped',
+        columnStyles: { 0: { cellWidth: 25 }, 2: { cellWidth: 22, halign: 'center' }, 3: { cellWidth: 25 } },
       });
-      y = (doc as any).lastAutoTable.finalY + 5;
-    });
-    y += 3;
+      y = (doc as any).lastAutoTable.finalY + 8;
+    }
   }
 
-  // TEAM - Daily
+  // =========== TEAM (IMPROVED) ===========
   if (data.equipe.length > 0) {
-    sectionTitle('6. EQUIPE POR DIA');
+    sectionTitle('7. EQUIPE');
 
     const diasComEquipe = data.diarios.map(d => ({
       data: d.data,
@@ -438,35 +534,61 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     })).filter(d => d.equipe.length > 0);
 
     if (diasComEquipe.length > 0) {
-      const rows: string[][] = [];
-      diasComEquipe.forEach(dia => {
-        const byFuncao = new Map<string, number>();
-        dia.equipe.forEach(e => {
-          const key = e.funcao || 'Sem função';
-          byFuncao.set(key, (byFuncao.get(key) || 0) + 1);
-        });
-        const resumo = Array.from(byFuncao.entries()).map(([f, c]) => `${c} ${f}`).join(', ');
-        rows.push([fmt(dia.data), String(dia.equipe.length), resumo]);
-      });
+      const counts = diasComEquipe.map(d => d.equipe.length);
+      const media = Math.round(counts.reduce((s, c) => s + c, 0) / counts.length);
+      const maximo = Math.max(...counts);
+      const minimo = Math.min(...counts);
 
-      checkPage(20);
-      autoTable(doc, {
-        startY: y,
-        head: [['Data', 'Total', 'Composição']],
-        body: rows,
-        margin: { left: MARGIN, right: MARGIN },
-        styles: { fontSize: 9, cellPadding: 3 },
-        headStyles: { fillColor: [BLUE[0], BLUE[1], BLUE[2]], textColor: 255 },
-        alternateRowStyles: { fillColor: [245, 247, 250] },
-        theme: 'striped',
+      checkPage(25);
+
+      // Summary boxes
+      const teamColW = contentW / 3;
+      const teamItems = [
+        { label: 'Equipe Média', value: `${media} pessoas` },
+        { label: 'Máximo', value: `${maximo} pessoas` },
+        { label: 'Mínimo', value: `${minimo} pessoas` },
+      ];
+      teamItems.forEach((item, i) => {
+        const x = MARGIN + i * teamColW;
+        doc.setFillColor(245, 247, 250);
+        doc.roundedRect(x + 1, y, teamColW - 2, 14, 2, 2, 'F');
+        doc.setFontSize(7);
+        doc.setTextColor(100);
+        doc.text(item.label, x + teamColW / 2, y + 5, { align: 'center' });
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
+        doc.text(item.value, x + teamColW / 2, y + 12, { align: 'center' });
+        doc.setFont('helvetica', 'normal');
       });
-      y = (doc as any).lastAutoTable.finalY + 8;
+      y += 20;
+
+      // Composition summary by function
+      const funcMap = new Map<string, number>();
+      data.equipe.forEach(e => {
+        const key = e.funcao || 'Sem função';
+        funcMap.set(key, (funcMap.get(key) || 0) + 1);
+      });
+      if (funcMap.size > 0) {
+        checkPage(10);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Composição:', MARGIN, y);
+        doc.setFont('helvetica', 'normal');
+        y += 5;
+        Array.from(funcMap.entries()).forEach(([funcao, count]) => {
+          checkPage(5);
+          doc.text(`• ${funcao}: ${count} registro(s)`, MARGIN + 2, y);
+          y += 4;
+        });
+        y += 4;
+      }
     }
   }
 
   // MATERIALS
   if (data.materiais.length > 0) {
-    sectionTitle('7. MATERIAIS UTILIZADOS');
+    sectionTitle('8. MATERIAIS UTILIZADOS');
     checkPage(20);
     autoTable(doc, {
       startY: y,
@@ -483,7 +605,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   // OCCURRENCES
   if (data.ocorrencias.length > 0) {
-    sectionTitle('8. OCORRÊNCIAS');
+    sectionTitle('9. OCORRÊNCIAS');
     checkPage(20);
     autoTable(doc, {
       startY: y,
@@ -501,16 +623,31 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   // =========== CRONOGRAMA ===========
   if (data.cronograma.length > 0) {
     newPage();
-    sectionTitle('9. CRONOGRAMA DA OBRA');
-    checkPage(20);
+    sectionTitle('10. CRONOGRAMA DA OBRA');
+
+    // Overall progress
+    checkPage(12);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Progresso Geral: ${progressoObra}%`, MARGIN, y);
+    doc.setFont('helvetica', 'normal');
+    y += 4;
+    doc.setFillColor(229, 231, 235);
+    doc.roundedRect(MARGIN, y, contentW, 4, 1, 1, 'F');
+    if (progressoObra > 0) {
+      doc.setFillColor(BLUE[0], BLUE[1], BLUE[2]);
+      doc.roundedRect(MARGIN, y, contentW * (progressoObra / 100), 4, 1, 1, 'F');
+    }
+    y += 10;
 
     const statusMap: Record<string, string> = { nao_iniciado: 'Não Iniciado', em_andamento: 'Em Andamento', concluido: 'Concluído' };
 
     autoTable(doc, {
       startY: y,
-      head: [['Atividade', 'Início', 'Fim', 'Progresso', 'Status']],
+      head: [['Atividade', 'Peso', 'Início', 'Fim', 'Progresso', 'Status']],
       body: data.cronograma.map(c => [
         c.nome_atividade,
+        `${c.peso || 0}%`,
         c.data_inicio ? fmt(c.data_inicio) : '—',
         c.data_fim ? fmt(c.data_fim) : '—',
         `${c.percentual_concluido}%`,
@@ -524,7 +661,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     });
     y = (doc as any).lastAutoTable.finalY + 8;
 
-    // Simple Gantt bars
+    // Gantt bars
     const validCron = data.cronograma.filter(c => c.data_inicio && c.data_fim);
     if (validCron.length > 0) {
       checkPage(validCron.length * 10 + 15);
@@ -554,22 +691,16 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
         const barStart = chartX + (startOff / totalDays) * chartW;
         const barWidth = Math.max((dur / totalDays) * chartW, 4);
 
-        // Label
         doc.setFontSize(7);
         doc.text(c.nome_atividade, MARGIN, y + 4.5, { maxWidth: 48 });
 
-        // Background bar
         doc.setFillColor(219, 234, 254);
         doc.roundedRect(barStart, y, barWidth, rowH, 1, 1, 'F');
-
-        // Progress fill
         const fillW = barWidth * (c.percentual_concluido / 100);
         if (fillW > 0) {
           doc.setFillColor(BLUE[0], BLUE[1], BLUE[2]);
           doc.roundedRect(barStart, y, fillW, rowH, 1, 1, 'F');
         }
-
-        // Percentage text
         doc.setFontSize(6);
         doc.setTextColor(0);
         doc.text(`${c.percentual_concluido}%`, barStart + barWidth + 2, y + 4.5);
@@ -582,14 +713,13 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   // =========== PHOTO SECTION ===========
   if (data.imagens.length > 0) {
     newPage();
-    sectionTitle('10. REGISTRO FOTOGRÁFICO');
+    sectionTitle('11. REGISTRO FOTOGRÁFICO');
 
-    const imgW = (contentW - 8) / 2; // 2 per row with 8mm gap
+    const imgW = (contentW - 8) / 2;
     const imgH = imgW * 0.75;
     let figNum = 1;
 
     for (let i = 0; i < data.imagens.length; i += 2) {
-      // Check if we need a new page (image + caption)
       checkPage(imgH + 14);
 
       for (let col = 0; col < 2; col++) {
@@ -601,13 +731,11 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
         try {
           const imgDataUrl = await loadImageAsDataUrl(img.url);
           if (imgDataUrl) {
-            // Draw border
             doc.setDrawColor(200);
             doc.rect(xPos, y, imgW, imgH);
             doc.addImage(imgDataUrl, 'PNG', xPos + 0.5, y + 0.5, imgW - 1, imgH - 1);
           }
         } catch {
-          // Draw placeholder
           doc.setDrawColor(200);
           doc.rect(xPos, y, imgW, imgH);
           doc.setFontSize(8);
@@ -616,7 +744,6 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
           doc.setTextColor(0);
         }
 
-        // Caption
         doc.setFontSize(8);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(60);
@@ -631,30 +758,33 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     }
   }
 
-  // =========== REVISION HISTORY ===========
+  // =========== REVISION HISTORY (SIMPLIFIED) ===========
   if (data.versoes && data.versoes.length > 0) {
-    newPage();
-    sectionTitle('11. HISTÓRICO DE REVISÕES');
-    autoTable(doc, {
-      startY: y,
-      head: [['Revisão', 'Data', 'Resumo das Alterações']],
-      body: data.versoes.map(v => [v.rev, v.data, v.resumo]),
-      margin: { left: MARGIN, right: MARGIN },
-      styles: { fontSize: 9, cellPadding: 3 },
-      headStyles: { fillColor: [BLUE[0], BLUE[1], BLUE[2]], textColor: 255 },
-      alternateRowStyles: { fillColor: [245, 247, 250] },
-      theme: 'striped',
+    checkPage(30);
+    sectionTitle('12. HISTÓRICO DE REVISÕES');
+
+    // Simplified format
+    data.versoes.forEach(v => {
+      checkPage(8);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${v.rev}`, MARGIN, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(` — ${v.resumo}`, MARGIN + 18, y);
+      doc.setTextColor(120);
+      doc.text(v.data, pageW - MARGIN, y, { align: 'right' });
+      doc.setTextColor(0);
+      y += 6;
     });
-    y = (doc as any).lastAutoTable.finalY + 8;
+    y += 4;
   }
 
   // =========== SIGNATURES ===========
   newPage();
-  sectionTitle('12. ASSINATURAS');
+  sectionTitle('13. ASSINATURAS');
   y += 5;
 
   if (data.assinaturas.length > 0) {
-    // Arrange signatures side by side if 2
     const sigWidth = contentW / 2 - 10;
     const techSigs = data.assinaturas.filter(a => a.tipo === 'responsavel_tecnico');
     const clientSigs = data.assinaturas.filter(a => a.tipo === 'cliente');
@@ -691,7 +821,6 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
       doc.setTextColor(0);
     };
 
-    // Tech sigs on left, client on right
     const leftX = MARGIN;
     const rightX = MARGIN + sigWidth + 20;
 
@@ -708,16 +837,9 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     }
 
     if (clientSigs.length > 0) {
-      // Reset y for client side or continue below
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
       doc.text('CLIENTE', techSigs.length > 0 ? rightX : leftX, y - (techSigs.length > 0 ? 40 * techSigs.length + 6 : 0));
-      
-      let clientY = y;
-      if (techSigs.length === 0) {
-        clientY = y;
-        y += 6;
-      }
 
       for (const sig of clientSigs) {
         checkPage(45);
@@ -726,10 +848,8 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
       }
     }
   } else {
-    // Empty signature blocks
     const blockW = contentW / 2 - 10;
 
-    // Technical
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
@@ -746,7 +866,6 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     doc.text('Cargo:', MARGIN, y); y += 4;
     doc.text('Data:', MARGIN, y);
 
-    // Client
     const rightX = MARGIN + blockW + 20;
     let cy = y - 32;
     doc.setFontSize(10);
@@ -766,11 +885,10 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     y += 10;
   }
 
-  // Add footers to all pages (single pass, no duplicates)
+  // Add footers
   const totalPages = doc.getNumberOfPages();
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    // Cover page (page 1) gets no page number, content pages get numbered
     addFooter(i === 1 ? undefined : i - 1);
   }
 
