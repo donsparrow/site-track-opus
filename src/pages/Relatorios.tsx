@@ -53,7 +53,7 @@ export default function Relatorios() {
   // Prazo contratual comes from obra (read-only)
 
   // Computed data
-  const [prazos, setPrazos] = useState({ contratual: 0, parados: 0, ajustado: 0, trabalhados: 0, saldo: 0 });
+  const [prazos, setPrazos] = useState({ contratual: 0, parados: 0, ajustado: 0, trabalhados: 0, saldo: 0, dataInicioReal: '' });
   const [diarios, setDiarios] = useState<any[]>([]);
   const [allEquipe, setAllEquipe] = useState<any[]>([]);
   const [allAtividades, setAllAtividades] = useState<any[]>([]);
