@@ -820,14 +820,30 @@ export default function Relatorios() {
           </Card>
 
           {/* Indicators */}
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            {[
+              { label: 'Tempo Consumido', value: `${prazos.percentualTempo}%`, icon: Clock, color: '' },
+              { label: 'Obra Executada', value: `${prazos.percentualExecutado}%`, icon: BarChart3, color: smartStatus.color },
+              { label: 'Prazo Contratual', value: `${prazos.contratual} dias`, icon: Calendar, color: '' },
+              { label: 'Saldo de Prazo', value: `${prazos.saldo} dias`, icon: Clock, color: saldoColor },
+            ].map(item => (
+              <Card key={item.label}>
+                <CardContent className="pt-4 pb-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <item.icon className="h-4 w-4 text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground">{item.label}</p>
+                  </div>
+                  <p className={`text-lg font-display font-bold ${item.color || ''}`}>{item.value}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             {[
               { label: 'Início Real', value: prazos.dataInicioReal ? fmt(prazos.dataInicioReal) : 'Não iniciada', icon: Calendar, color: prazos.dataInicioReal ? '' : 'text-destructive' },
-              { label: 'Prazo Contratual', value: `${prazos.contratual} dias`, icon: Calendar },
+              { label: 'Dias Trabalhados', value: `${prazos.trabalhados} dias`, icon: BarChart3, color: '' },
               { label: 'Dias Parados', value: `${prazos.parados} dias`, icon: Clock, color: prazos.parados > 0 ? 'text-destructive' : '' },
-              { label: 'Prazo Ajustado', value: `${prazos.ajustado} dias`, icon: Calendar },
-              { label: 'Dias Trabalhados', value: `${prazos.trabalhados} dias`, icon: BarChart3 },
-              { label: 'Saldo de Prazo', value: `${prazos.saldo} dias`, icon: Clock, color: saldoColor },
+              { label: 'Prazo Ajustado', value: `${prazos.ajustado} dias`, icon: Calendar, color: '' },
             ].map(item => (
               <Card key={item.label}>
                 <CardContent className="pt-4 pb-4">
