@@ -499,6 +499,32 @@ export default function Relatorios() {
     consolidar();
   };
 
+  const podeExcluir = isAdmin || isSuperAdmin;
+
+  const handleExcluirRelatorio = async (relatorio: any) => {
+    const { error } = await supabase
+      .from('relatorios')
+      .update({ status: 'excluido' })
+      .eq('id', relatorio.id);
+
+    if (error) {
+      toast.error('Erro ao excluir relatório');
+      return;
+    }
+
+    // Log the deletion
+    if (user) {
+      await supabase.from('relatorio_logs').insert({
+        relatorio_id: relatorio.id,
+        usuario_id: user.id,
+        acao: 'excluiu',
+      });
+    }
+
+    toast.success('Relatório excluído com sucesso');
+    loadRelatoriosList();
+  };
+
   const filteredRelatorios = relatoriosList.filter(r => {
     if (filtroObra && r.obra_id !== filtroObra) return false;
     if (filtroStatus && r.status !== filtroStatus) return false;
