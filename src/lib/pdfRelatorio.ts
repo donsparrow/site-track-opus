@@ -29,6 +29,7 @@ interface RelatorioPDFData {
     ajustado: number;
     trabalhados: number;
     saldo: number;
+    dataInicioReal: string;
   };
   diarios: any[];
   equipe: any[];
