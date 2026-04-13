@@ -211,6 +211,25 @@ export default function Relatorios() {
     const prazoAjustado = prazoContratual + diasParados;
     const saldoPrazo = prazoAjustado - diasTrabalhados;
 
+    // Smart status: percentual de tempo vs percentual executado
+    const percentualTempo = prazoContratual > 0 ? Math.round((diasTrabalhados / prazoContratual) * 100) : 0;
+
+    // Calculate weighted progress from cronograma
+    let percentualExecutado = 0;
+    if (cronData) {
+      const { data: cronAtivs } = await supabase
+        .from('cronograma_atividades')
+        .select('percentual_concluido, peso')
+        .eq('cronograma_id', cronData.id);
+      const ativs = cronAtivs || [];
+      if (ativs.length > 0) {
+        const totalPesoCalc = ativs.reduce((s: number, c: any) => s + (c.peso || 0), 0);
+        percentualExecutado = totalPesoCalc === 100
+          ? Math.round(ativs.reduce((s: number, c: any) => s + ((c.peso || 0) * c.percentual_concluido), 0) / 100)
+          : Math.round(ativs.reduce((s: number, c: any) => s + c.percentual_concluido, 0) / ativs.length);
+      }
+    }
+
     setPrazos({
       contratual: prazoContratual,
       parados: diasParados,
@@ -218,6 +237,8 @@ export default function Relatorios() {
       trabalhados: diasTrabalhados,
       saldo: saldoPrazo,
       dataInicioReal,
+      percentualTempo,
+      percentualExecutado,
     });
 
     // Find or create relatorio
