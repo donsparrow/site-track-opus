@@ -321,10 +321,15 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   newPage();
   sectionTitle('1. RESUMO EXECUTIVO');
 
-  // Status indicator
-  const statusObra = data.prazos.saldo > 0 ? 'Dentro do prazo' : data.prazos.saldo === 0 ? 'Atenção' : 'Atrasado';
-  const statusColor = data.prazos.saldo > 0 ? [34, 197, 94] : data.prazos.saldo === 0 ? [234, 179, 8] : [239, 68, 68];
-  const statusIcon = data.prazos.saldo > 0 ? '●' : data.prazos.saldo === 0 ? '●' : '●';
+  // Smart status: compare time% vs progress%
+  const pExec = data.prazos.percentualExecutado;
+  const pTime = data.prazos.percentualTempo;
+  const statusObra = (!data.prazos.dataInicioReal) ? 'Não iniciada'
+    : (pExec >= pTime) ? 'Dentro do prazo'
+    : (pExec >= pTime - 10) ? 'Atenção'
+    : 'Atrasado';
+  const statusColor = statusObra === 'Dentro do prazo' ? [34, 197, 94] : statusObra === 'Atenção' ? [234, 179, 8] : statusObra === 'Atrasado' ? [239, 68, 68] : [150, 150, 150];
+  const statusIcon = '●';
 
   // Status box
   doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
