@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Download } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Download, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, differenceInDays, addDays, parseISO, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -32,6 +32,7 @@ interface Atividade {
   data_fim: string | null;
   percentual_concluido: number;
   status: string;
+  peso: number;
 }
 
 interface Cronograma {
@@ -53,7 +54,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function Cronograma() {
-  const { canEdit, empresaId } = useAuth();
+  const { canEdit, empresaId, isAdmin, isSuperAdmin } = useAuth();
   const { filterObras, loading: obrasFilterLoading } = useObrasFiltered();
   const [searchParams, setSearchParams] = useSearchParams();
   const obraIdParam = searchParams.get('obra');
@@ -67,7 +68,7 @@ export default function Cronograma() {
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAtividade, setEditingAtividade] = useState<Atividade | null>(null);
-  const [formData, setFormData] = useState({ nome_atividade: '', data_inicio: '', data_fim: '', percentual_concluido: 0, status: 'nao_iniciado' });
+  const [formData, setFormData] = useState({ nome_atividade: '', data_inicio: '', data_fim: '', percentual_concluido: 0, status: 'nao_iniciado', peso: 0 });
 
   // Delete
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -75,6 +76,8 @@ export default function Cronograma() {
   const ganttRef = useRef<HTMLDivElement>(null);
 
   const obraNome = obras.find(o => o.id === obraId)?.nome || '';
+
+  const canEditPeso = isAdmin || isSuperAdmin;
 
   // Fetch obras
   useEffect(() => {
@@ -92,7 +95,6 @@ export default function Cronograma() {
   const loadCronograma = useCallback(async () => {
     if (!obraId) return;
     setLoading(true);
-    // Get or create cronograma
     let { data: cron } = await supabase.from('cronograma').select('*').eq('obra_id', obraId).maybeSingle();
     if (!cron && canEdit) {
       const { data: newCron } = await supabase.from('cronograma').insert({ obra_id: obraId } as any).select().single();
@@ -108,14 +110,28 @@ export default function Cronograma() {
 
   useEffect(() => { loadCronograma(); }, [loadCronograma]);
 
+  // Weighted progress calculation
+  const totalPeso = atividades.reduce((sum, a) => sum + (a.peso || 0), 0);
+  const pesoValido = totalPeso === 100;
+
   const progressoGeral = atividades.length > 0
-    ? Math.round(atividades.reduce((sum, a) => sum + a.percentual_concluido, 0) / atividades.length)
+    ? (totalPeso > 0
+      ? Math.round(atividades.reduce((sum, a) => sum + ((a.peso || 0) * a.percentual_concluido), 0) / 100)
+      : Math.round(atividades.reduce((sum, a) => sum + a.percentual_concluido, 0) / atividades.length))
     : 0;
+
+  // Auto-suggest peso when creating
+  const suggestPeso = () => {
+    const otherCount = editingAtividade ? atividades.length : atividades.length + 1;
+    if (otherCount === 0) return 100;
+    return Math.floor(100 / otherCount);
+  };
 
   // CRUD
   const openNew = () => {
     setEditingAtividade(null);
-    setFormData({ nome_atividade: '', data_inicio: '', data_fim: '', percentual_concluido: 0, status: 'nao_iniciado' });
+    const sugPeso = atividades.length === 0 ? 100 : Math.floor(100 / (atividades.length + 1));
+    setFormData({ nome_atividade: '', data_inicio: '', data_fim: '', percentual_concluido: 0, status: 'nao_iniciado', peso: sugPeso });
     setDialogOpen(true);
   };
   const openEdit = (a: Atividade) => {
@@ -126,6 +142,7 @@ export default function Cronograma() {
       data_fim: a.data_fim || '',
       percentual_concluido: a.percentual_concluido,
       status: a.status,
+      peso: a.peso || 0,
     });
     setDialogOpen(true);
   };
@@ -138,6 +155,7 @@ export default function Cronograma() {
         data_fim: formData.data_fim || null,
         percentual_concluido: formData.percentual_concluido,
         status: formData.status,
+        peso: formData.peso,
       } as any).eq('id', editingAtividade.id);
       toast.success('Atividade atualizada');
     } else {
@@ -150,6 +168,7 @@ export default function Cronograma() {
         percentual_concluido: formData.percentual_concluido,
         status: formData.status,
         ordem: maxOrdem + 1,
+        peso: formData.peso,
       } as any);
       toast.success('Atividade criada');
     }
@@ -189,7 +208,6 @@ export default function Cronograma() {
 
   // PDF Export
   const exportPDF = async () => {
-    // Load empresa config for header/footer
     const { data: empresaConfig } = await supabase.from('configuracoes_empresa').select('*').limit(1).single();
 
     const doc = new jsPDF('landscape', 'mm', 'a4');
@@ -199,7 +217,6 @@ export default function Cronograma() {
 
     const helpers = await setupPDFHelpers(doc, empresaConfig as any);
 
-    // First page header
     let y = helpers.addHeader();
     y += 4;
 
@@ -216,7 +233,6 @@ export default function Cronograma() {
     doc.text(`Progresso Geral: ${progressoGeral}%`, MARGIN + 80, y);
     y += 6;
 
-    // Progress bar visual
     const barW = contentW, barH = 6;
     doc.setFillColor(229, 231, 235);
     doc.roundedRect(MARGIN, y, barW, barH, 2, 2, 'F');
@@ -226,13 +242,13 @@ export default function Cronograma() {
 
     doc.setTextColor(0);
 
-    // Activities table
     autoTable(doc, {
       startY: y,
-      head: [['#', 'Atividade', 'Início', 'Fim', 'Progresso', 'Status']],
+      head: [['#', 'Atividade', 'Peso', 'Início', 'Fim', 'Progresso', 'Status']],
       body: atividades.map((a, i) => [
         i + 1,
         a.nome_atividade,
+        `${a.peso}%`,
         a.data_inicio ? format(parseISO(a.data_inicio), 'dd/MM/yyyy') : '-',
         a.data_fim ? format(parseISO(a.data_fim), 'dd/MM/yyyy') : '-',
         `${a.percentual_concluido}%`,
@@ -247,7 +263,6 @@ export default function Cronograma() {
 
     const finalY = (doc as any).lastAutoTable?.finalY || 100;
 
-    // Simple Gantt in PDF
     if (ganttData) {
       let gY = finalY + 10;
       if (gY > pageHeight - 40) {
@@ -289,7 +304,6 @@ export default function Cronograma() {
       });
     }
 
-    // Add footers to all pages
     helpers.addAllFooters();
 
     const nome = obraNome.toLowerCase().replace(/[^a-z0-9]/gi, '_');
@@ -340,10 +354,28 @@ export default function Cronograma() {
       <Card>
         <CardContent className="pt-6">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-foreground">Progresso da Obra</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-foreground">Progresso da Obra</span>
+              {atividades.length > 0 && !pesoValido && (
+                <Badge variant="destructive" className="text-[10px] gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  Pesos: {totalPeso}% (devem somar 100%)
+                </Badge>
+              )}
+              {atividades.length > 0 && pesoValido && (
+                <Badge variant="outline" className="text-[10px] bg-success/10 text-success border-success/30">
+                  Pesos: 100% ✓
+                </Badge>
+              )}
+            </div>
             <span className="text-sm font-bold text-primary">{progressoGeral}%</span>
           </div>
           <Progress value={progressoGeral} className="h-4" />
+          <p className="text-xs text-muted-foreground mt-2">
+            Obra concluída: {progressoGeral}%
+            {totalPeso > 0 && totalPeso !== 100 && ' (cálculo baseado em média simples — ajuste os pesos para 100%)'}
+            {pesoValido && ' (cálculo ponderado por peso)'}
+          </p>
         </CardContent>
       </Card>
 
@@ -360,6 +392,7 @@ export default function Cronograma() {
                   <TableRow>
                     <TableHead className="w-12">#</TableHead>
                     <TableHead>Atividade</TableHead>
+                    <TableHead className="w-20">Peso</TableHead>
                     <TableHead>Início</TableHead>
                     <TableHead>Fim</TableHead>
                     <TableHead>Progresso</TableHead>
@@ -372,6 +405,9 @@ export default function Cronograma() {
                     <TableRow key={a.id}>
                       <TableCell className="font-mono text-xs">{i + 1}</TableCell>
                       <TableCell className="font-medium">{a.nome_atividade}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">{a.peso}%</Badge>
+                      </TableCell>
                       <TableCell className="text-sm">{a.data_inicio ? format(parseISO(a.data_inicio), 'dd/MM/yyyy') : '-'}</TableCell>
                       <TableCell className="text-sm">{a.data_fim ? format(parseISO(a.data_fim), 'dd/MM/yyyy') : '-'}</TableCell>
                       <TableCell>
@@ -393,6 +429,18 @@ export default function Cronograma() {
                       )}
                     </TableRow>
                   ))}
+                  {/* Total row */}
+                  <TableRow className="border-t-2">
+                    <TableCell></TableCell>
+                    <TableCell className="font-bold text-sm">TOTAL</TableCell>
+                    <TableCell>
+                      <Badge variant={pesoValido ? 'default' : 'destructive'} className="text-xs">
+                        {totalPeso}%
+                      </Badge>
+                    </TableCell>
+                    <TableCell colSpan={4}></TableCell>
+                    {canEdit && <TableCell></TableCell>}
+                  </TableRow>
                 </TableBody>
               </Table>
             </div>
@@ -424,7 +472,10 @@ export default function Cronograma() {
                   const widthPct = Math.max((duration / ganttData.totalDays) * 100, 2);
                   return (
                     <div key={a.id} className="flex items-center mb-1.5">
-                      <div className="w-48 shrink-0 text-xs truncate pr-2 text-foreground">{a.nome_atividade}</div>
+                      <div className="w-48 shrink-0 text-xs truncate pr-2 text-foreground">
+                        {a.nome_atividade}
+                        <span className="text-muted-foreground ml-1">({a.peso}%)</span>
+                      </div>
                       <div className="flex-1 relative h-7 bg-muted/30 rounded">
                         <div
                           className="absolute top-0 h-full bg-blue-100 dark:bg-blue-900/40 rounded"
@@ -469,9 +520,32 @@ export default function Cronograma() {
                 <Input type="date" value={formData.data_fim} onChange={e => setFormData(f => ({ ...f, data_fim: e.target.value }))} />
               </div>
             </div>
-            <div>
-              <Label>Progresso (%)</Label>
-              <Input type="number" min={0} max={100} value={formData.percentual_concluido} onChange={e => setFormData(f => ({ ...f, percentual_concluido: Math.min(100, Math.max(0, Number(e.target.value))) }))} />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Progresso (%)</Label>
+                <Input type="number" min={0} max={100} value={formData.percentual_concluido} onChange={e => setFormData(f => ({ ...f, percentual_concluido: Math.min(100, Math.max(0, Number(e.target.value))) }))} />
+              </div>
+              <div>
+                <Label>Peso (%) {!canEditPeso && <span className="text-muted-foreground text-xs">— somente admin</span>}</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={formData.peso}
+                  onChange={e => setFormData(f => ({ ...f, peso: Math.min(100, Math.max(0, Number(e.target.value))) }))}
+                  disabled={!canEditPeso}
+                />
+                {(() => {
+                  const otherPeso = atividades
+                    .filter(a => !editingAtividade || a.id !== editingAtividade.id)
+                    .reduce((s, a) => s + (a.peso || 0), 0);
+                  const newTotal = otherPeso + formData.peso;
+                  if (newTotal !== 100) {
+                    return <p className="text-xs text-destructive mt-1">Total dos pesos: {newTotal}% (deve ser 100%)</p>;
+                  }
+                  return <p className="text-xs text-success mt-1">Total dos pesos: 100% ✓</p>;
+                })()}
+              </div>
             </div>
             <div>
               <Label>Status</Label>

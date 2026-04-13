@@ -378,6 +378,7 @@ export type Database = {
           nome_atividade: string
           ordem: number
           percentual_concluido: number
+          peso: number
           status: string
           updated_at: string
         }
@@ -390,6 +391,7 @@ export type Database = {
           nome_atividade: string
           ordem?: number
           percentual_concluido?: number
+          peso?: number
           status?: string
           updated_at?: string
         }
@@ -402,6 +404,7 @@ export type Database = {
           nome_atividade?: string
           ordem?: number
           percentual_concluido?: number
+          peso?: number
           status?: string
           updated_at?: string
         }
