@@ -753,10 +753,11 @@ export default function Relatorios() {
           </Card>
 
           {/* Indicators */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
             {[
+              { label: 'Início Real', value: prazos.dataInicioReal ? fmt(prazos.dataInicioReal) : 'Não iniciada', icon: Calendar, color: prazos.dataInicioReal ? '' : 'text-destructive' },
               { label: 'Prazo Contratual', value: `${prazos.contratual} dias`, icon: Calendar },
-              { label: 'Dias Parados', value: `${prazos.parados} dias`, icon: Clock, color: 'text-destructive' },
+              { label: 'Dias Parados', value: `${prazos.parados} dias`, icon: Clock, color: prazos.parados > 0 ? 'text-destructive' : '' },
               { label: 'Prazo Ajustado', value: `${prazos.ajustado} dias`, icon: Calendar },
               { label: 'Dias Trabalhados', value: `${prazos.trabalhados} dias`, icon: BarChart3 },
               { label: 'Saldo de Prazo', value: `${prazos.saldo} dias`, icon: Clock, color: saldoColor },
