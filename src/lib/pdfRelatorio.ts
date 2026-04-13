@@ -437,8 +437,8 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   // Visual status indicator
   checkPage(25);
-  const prazoStatusLabel = data.prazos.saldo > 0 ? 'DENTRO DO PRAZO' : data.prazos.saldo === 0 ? 'ATENÇÃO' : 'ATRASADO';
-  const prazoStatusClr = data.prazos.saldo > 0 ? [34, 197, 94] : data.prazos.saldo === 0 ? [234, 179, 8] : [239, 68, 68];
+  const prazoStatusLabel = statusObra.toUpperCase();
+  const prazoStatusClr = statusColor;
 
   doc.setFillColor(prazoStatusClr[0], prazoStatusClr[1], prazoStatusClr[2]);
   doc.roundedRect(MARGIN, y, contentW, 10, 2, 2, 'F');
