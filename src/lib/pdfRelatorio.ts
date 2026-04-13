@@ -31,6 +31,8 @@ interface RelatorioPDFData {
     trabalhados: number;
     saldo: number;
     dataInicioReal: string;
+    percentualTempo: number;
+    percentualExecutado: number;
   };
   diarios: any[];
   equipe: any[];
@@ -319,10 +321,15 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   newPage();
   sectionTitle('1. RESUMO EXECUTIVO');
 
-  // Status indicator
-  const statusObra = data.prazos.saldo > 0 ? 'Dentro do prazo' : data.prazos.saldo === 0 ? 'Atenção' : 'Atrasado';
-  const statusColor = data.prazos.saldo > 0 ? [34, 197, 94] : data.prazos.saldo === 0 ? [234, 179, 8] : [239, 68, 68];
-  const statusIcon = data.prazos.saldo > 0 ? '●' : data.prazos.saldo === 0 ? '●' : '●';
+  // Smart status: compare time% vs progress%
+  const pExec = data.prazos.percentualExecutado;
+  const pTime = data.prazos.percentualTempo;
+  const statusObra = (!data.prazos.dataInicioReal) ? 'Não iniciada'
+    : (pExec >= pTime) ? 'Dentro do prazo'
+    : (pExec >= pTime - 10) ? 'Atenção'
+    : 'Atrasado';
+  const statusColor = statusObra === 'Dentro do prazo' ? [34, 197, 94] : statusObra === 'Atenção' ? [234, 179, 8] : statusObra === 'Atrasado' ? [239, 68, 68] : [150, 150, 150];
+  const statusIcon = '●';
 
   // Status box
   doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
@@ -338,7 +345,8 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   doc.setFontSize(9);
 
   const summaryData = [
-    ['Percentual Concluído', `${progressoObra}%`],
+    ['Obra Executada', `${data.prazos.percentualExecutado}%`],
+    ['Tempo Consumido', `${data.prazos.percentualTempo}%`],
     ['Período do Relatório', `${fmt(data.periodo.inicio)} a ${fmt(data.periodo.fim)}`],
     ['Dias Trabalhados', `${data.prazos.trabalhados}`],
     ['Dias Parados', `${data.prazos.parados}`],
@@ -429,8 +437,8 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   // Visual status indicator
   checkPage(25);
-  const prazoStatusLabel = data.prazos.saldo > 0 ? 'DENTRO DO PRAZO' : data.prazos.saldo === 0 ? 'ATENÇÃO' : 'ATRASADO';
-  const prazoStatusClr = data.prazos.saldo > 0 ? [34, 197, 94] : data.prazos.saldo === 0 ? [234, 179, 8] : [239, 68, 68];
+  const prazoStatusLabel = statusObra.toUpperCase();
+  const prazoStatusClr = statusColor;
 
   doc.setFillColor(prazoStatusClr[0], prazoStatusClr[1], prazoStatusClr[2]);
   doc.roundedRect(MARGIN, y, contentW, 10, 2, 2, 'F');
@@ -472,18 +480,26 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   const prazoItems2 = [
     { label: 'Dias Parados', value: `${data.prazos.parados}` },
     { label: 'Dias Trabalhados', value: `${data.prazos.trabalhados}` },
+    { label: 'Tempo Consumido', value: `${data.prazos.percentualTempo}%`, highlight: true },
+    { label: 'Obra Executada', value: `${data.prazos.percentualExecutado}%`, highlight: true },
   ];
-  prazoItems2.forEach((item, i) => {
-    const x = MARGIN + i * (contentW / 2);
+  const col2W = contentW / 4;
+  prazoItems2.forEach((item: any, i: number) => {
+    const x = MARGIN + i * col2W;
     doc.setFillColor(245, 247, 250);
-    doc.roundedRect(x + 1, y, contentW / 2 - 2, 14, 2, 2, 'F');
+    doc.roundedRect(x + 1, y, col2W - 2, 14, 2, 2, 'F');
     doc.setFontSize(7);
     doc.setTextColor(100);
-    doc.text(item.label, x + contentW / 4, y + 5, { align: 'center' });
+    doc.text(item.label, x + col2W / 2, y + 5, { align: 'center' });
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
-    doc.text(item.value, x + contentW / 4, y + 12, { align: 'center' });
+    if (item.highlight) {
+      const clr = i === 3 ? (data.prazos.percentualExecutado >= data.prazos.percentualTempo ? [34, 197, 94] : [239, 68, 68]) : [100, 100, 100];
+      doc.setTextColor(clr[0], clr[1], clr[2]);
+    } else {
+      doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
+    }
+    doc.text(item.value, x + col2W / 2, y + 12, { align: 'center' });
     doc.setFont('helvetica', 'normal');
   });
   y += 20;
