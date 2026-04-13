@@ -159,6 +159,17 @@ export default function Relatorios() {
       setCronogramaAtividades([]);
     }
 
+    // Fetch the FIRST diary entry for this obra (not just the period)
+    const { data: primeiroDiario } = await supabase
+      .from('diario_obra')
+      .select('data')
+      .eq('obra_id', selectedObra)
+      .order('data', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    const dataInicioReal = primeiroDiario?.data || '';
+
     const obra = obras.find(o => o.id === selectedObra);
     const prazoContratual = (obra?.prazo_contratual_dias && obra.prazo_contratual_dias > 0)
       ? obra.prazo_contratual_dias
@@ -175,7 +186,8 @@ export default function Relatorios() {
       diasParados = (parData || []).reduce((s, p) => s + (p.total_dias || 0), 0);
     }
 
-    const diasTrabalhados = (periodoInicio && periodoFim) ? calcBusinessDays(periodoInicio, periodoFim) : 0;
+    // Dias trabalhados = business days from real start to report end
+    const diasTrabalhados = (dataInicioReal && periodoFim) ? calcBusinessDays(dataInicioReal, periodoFim) : 0;
     const prazoAjustado = prazoContratual + diasParados;
     const saldoPrazo = prazoAjustado - diasTrabalhados;
 
@@ -185,6 +197,7 @@ export default function Relatorios() {
       ajustado: prazoAjustado,
       trabalhados: diasTrabalhados,
       saldo: saldoPrazo,
+      dataInicioReal,
     });
 
     // Find or create relatorio
