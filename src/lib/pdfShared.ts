@@ -112,26 +112,49 @@ export async function setupPDFHelpers(doc: jsPDF, empresa: EmpresaPDFData | null
       doc.line(MARGIN, 15, pageW - MARGIN, 15);
       return 20;
     }
-    let hx = MARGIN;
-    const logoMaxH = 18;
-    const logoMaxW = 30;
+
+    // Fixed logo area: identical box on every page / every PDF.
+    // The image is drawn with "contain" fit — proportional, never stretched.
+    const boxX = LOGO_BOX_X;
+    const boxY = LOGO_BOX_Y;
+    const boxW = LOGO_BOX_W;
+    const boxH = LOGO_BOX_H;
+
+    let drewLogo = false;
     if (logoDataUrl && logoNatW > 0 && logoNatH > 0) {
       try {
         const ratio = logoNatW / logoNatH;
-        let logoW = logoMaxH * ratio;
-        let logoH = logoMaxH;
-        if (logoW > logoMaxW) {
-          logoW = logoMaxW;
-          logoH = logoMaxW / ratio;
+        let drawW = boxW;
+        let drawH = boxW / ratio;
+        if (drawH > boxH) {
+          drawH = boxH;
+          drawW = boxH * ratio;
         }
-        doc.addImage(logoDataUrl, 'PNG', MARGIN, 6, logoW, logoH);
-        hx = MARGIN + logoW + 4;
-      } catch { /* skip */ }
+        // Center within the reserved box so the logo never appears misaligned.
+        const drawX = boxX + (boxW - drawW) / 2;
+        const drawY = boxY + (boxH - drawH) / 2;
+        doc.addImage(logoDataUrl, 'PNG', drawX, drawY, drawW, drawH, undefined, 'FAST');
+        drewLogo = true;
+      } catch { /* fall through to fallback */ }
     }
+
+    if (!drewLogo) {
+      // Fallback placeholder — keeps the layout fixed even if the logo fails to load.
+      doc.setDrawColor(210);
+      doc.setFillColor(245, 247, 250);
+      doc.roundedRect(boxX, boxY, boxW, boxH, 1.5, 1.5, 'FD');
+      doc.setFontSize(7);
+      doc.setTextColor(140);
+      doc.setFont('helvetica', 'normal');
+      doc.text('LOGO', boxX + boxW / 2, boxY + boxH / 2 + 1, { align: 'center' });
+      doc.setTextColor(0);
+    }
+
+    const hx = boxX + boxW + 4;
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
-    doc.text(emp.nome_empresa || '', hx, 14);
+    doc.text(emp.nome_empresa || '', hx, 12);
     doc.setFontSize(7);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(80);
@@ -140,9 +163,9 @@ export async function setupPDFHelpers(doc: jsPDF, empresa: EmpresaPDFData | null
       emp.telefone ? `Tel: ${emp.telefone}` : '',
       emp.email || '',
     ].filter(Boolean);
-    doc.text(infoParts.join('  |  '), hx, 19);
+    doc.text(infoParts.join('  |  '), hx, 17);
     if (emp.endereco) {
-      doc.text(emp.endereco, hx, 23);
+      doc.text(emp.endereco, hx, 21);
     }
     doc.setTextColor(0);
     doc.setDrawColor(BLUE[0], BLUE[1], BLUE[2]);
@@ -151,6 +174,7 @@ export async function setupPDFHelpers(doc: jsPDF, empresa: EmpresaPDFData | null
     doc.setLineWidth(0.2);
     return 32;
   };
+
 
   const addFooter = (pageNum?: number) => {
     const footerY = pageH - 10;
