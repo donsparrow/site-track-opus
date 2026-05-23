@@ -462,6 +462,8 @@ export default function Relatorios() {
         ocorrencias: allOcorrencias,
         imagens: allImagens,
         cronograma: cronogramaAtividades,
+        aditivos,
+        planejamentoConfigurado,
         assinaturas,
         versao: pdfRevisao,
         versoes: versoes.map(v => ({
