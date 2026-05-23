@@ -74,6 +74,8 @@ export default function DiarioObra() {
   const [imagens, setImagens] = useState<any[]>([]);
   const [paralisacoes, setParalisacoes] = useState<any[]>([]);
   const [prazoContratual, setPrazoContratual] = useState<number>(0);
+  const [cronogramaAtividades, setCronogramaAtividades] = useState<any[]>([]);
+  const [editAtivCronId, setEditAtivCronId] = useState<string | null>(null);
 
   // Inline add forms
   const [addingEquipe, setAddingEquipe] = useState(false);
