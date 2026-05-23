@@ -19,14 +19,6 @@ export const googleCalendar = {
   updateEvent: (eventId: string, event: GoogleEventInput) => call<{ event: GoogleEvent }>("update-event", { eventId, event }),
   deleteEvent: (eventId: string) => call<{ ok: boolean }>("delete-event", { eventId }),
 };
-  status: () => call<{ connected: boolean; email: string | null }>("status"),
-  exchange: (code: string, redirect_uri: string) => call<{ ok: boolean; email: string }>("exchange", { code, redirect_uri }),
-  disconnect: () => call<{ ok: boolean }>("disconnect"),
-  listEvents: (timeMin: string, timeMax: string) => call<{ items: GoogleEvent[] }>("list-events", { timeMin, timeMax }),
-  createEvent: (event: GoogleEventInput) => call<{ event: GoogleEvent }>("create-event", { event }),
-  updateEvent: (eventId: string, event: GoogleEventInput) => call<{ event: GoogleEvent }>("update-event", { eventId, event }),
-  deleteEvent: (eventId: string) => call<{ ok: boolean }>("delete-event", { eventId }),
-};
 
 export interface GoogleEvent {
   id: string;
