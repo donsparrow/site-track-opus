@@ -74,6 +74,8 @@ export default function DiarioObra() {
   const [imagens, setImagens] = useState<any[]>([]);
   const [paralisacoes, setParalisacoes] = useState<any[]>([]);
   const [prazoContratual, setPrazoContratual] = useState<number>(0);
+  const [cronogramaAtividades, setCronogramaAtividades] = useState<any[]>([]);
+  const [editAtivCronId, setEditAtivCronId] = useState<string | null>(null);
 
   // Inline add forms
   const [addingEquipe, setAddingEquipe] = useState(false);
@@ -142,6 +144,16 @@ export default function DiarioObra() {
       fetchDiarios(selectedObra);
       const obra = obras.find(o => o.id === selectedObra);
       setPrazoContratual((obra as any)?.prazo_contratual_dias || 0);
+      // Fetch cronograma atividades for linkage dropdown
+      (async () => {
+        const { data: cron } = await supabase.from('cronograma').select('id').eq('obra_id', selectedObra).maybeSingle();
+        if (cron) {
+          const { data: ativs } = await supabase.from('cronograma_atividades').select('id, nome_atividade, percentual_concluido, peso').eq('cronograma_id', cron.id).order('ordem');
+          setCronogramaAtividades(ativs || []);
+        } else {
+          setCronogramaAtividades([]);
+        }
+      })();
     }
   }, [selectedObra]);
 
@@ -386,24 +398,41 @@ export default function DiarioObra() {
     setAddingEquipe(false);
   };
 
-  const addAtividadeItem = async (descricao: string, status: string, percentual: number) => {
+  const syncCronogramaProgresso = async (cronAtivId: string, percentual: number) => {
+    const status = percentual >= 100 ? 'concluido' : percentual > 0 ? 'em_andamento' : 'nao_iniciado';
+    await supabase.from('cronograma_atividades')
+      .update({ percentual_concluido: Math.round(percentual), status } as any)
+      .eq('id', cronAtivId);
+  };
+
+  const addAtividadeItem = async (descricao: string, status: string, percentual: number, cronAtivId: string | null) => {
     if (!selectedDiario) return;
     const finalStatus = percentualToStatus(percentual);
     const { error } = await supabase.from('diario_atividades').insert({
-      diario_id: selectedDiario.id, descricao, status: finalStatus, percentual
-    });
+      diario_id: selectedDiario.id, descricao, status: finalStatus, percentual,
+      cronograma_atividade_id: cronAtivId || null,
+    } as any);
     if (error) toast.error(error.message);
-    else { toast.success('Adicionado!'); fetchDiarioDetails(selectedDiario); }
+    else {
+      if (cronAtivId) await syncCronogramaProgresso(cronAtivId, percentual);
+      toast.success('Adicionado!');
+      fetchDiarioDetails(selectedDiario);
+    }
     setAddingAtividade(false);
   };
 
   const updateAtividadeItem = async (id: string) => {
     const finalStatus = percentualToStatus(editAtivPercentual);
     const { error } = await supabase.from('diario_atividades')
-      .update({ descricao: editAtivDesc, status: finalStatus, percentual: editAtivPercentual })
+      .update({ descricao: editAtivDesc, status: finalStatus, percentual: editAtivPercentual, cronograma_atividade_id: editAtivCronId || null } as any)
       .eq('id', id);
     if (error) toast.error(error.message);
-    else { toast.success('Atividade atualizada!'); setEditingAtividadeId(null); fetchDiarioDetails(selectedDiario); }
+    else {
+      if (editAtivCronId) await syncCronogramaProgresso(editAtivCronId, editAtivPercentual);
+      toast.success('Atividade atualizada!');
+      setEditingAtividadeId(null);
+      fetchDiarioDetails(selectedDiario);
+    }
   };
 
   const deleteAtividadeItem = async (id: string) => {
@@ -716,7 +745,7 @@ export default function DiarioObra() {
                         {canEdit && <Button size="sm" variant="outline" onClick={() => setAddingAtividade(true)}><Plus className="h-3 w-3 mr-1" />Adicionar</Button>}
                       </CardHeader>
                       <CardContent>
-                        {addingAtividade && <InlineAtividadeForm onSave={addAtividadeItem} onCancel={() => setAddingAtividade(false)} />}
+                        {addingAtividade && <InlineAtividadeForm onSave={addAtividadeItem} onCancel={() => setAddingAtividade(false)} cronogramaAtividades={cronogramaAtividades} />}
                         {atividades.length === 0 && !addingAtividade ? <p className="text-sm text-muted-foreground text-center py-4">Nenhum registro</p> : (
                           <div className="space-y-2">
                             {atividades.map(a => {
@@ -727,6 +756,16 @@ export default function DiarioObra() {
                                 const editAutoStatus = percentualToStatus(editAtivPercentual);
                                 return (
                                   <div key={a.id} className="flex flex-col gap-2 p-3 rounded border border-accent bg-accent/5">
+                                    {cronogramaAtividades.length > 0 && (
+                                      <Select value={editAtivCronId || ''} onValueChange={v => setEditAtivCronId(v || null)}>
+                                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Vincular ao Cronograma (opcional)" /></SelectTrigger>
+                                        <SelectContent>
+                                          {cronogramaAtividades.map(ca => (
+                                            <SelectItem key={ca.id} value={ca.id}>{ca.nome_atividade} — {ca.percentual_concluido || 0}%</SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    )}
                                     <div className="flex items-center gap-2">
                                       <Input
                                         value={editAtivDesc}
@@ -778,6 +817,7 @@ export default function DiarioObra() {
                                           setEditAtivDesc(a.descricao);
                                           setEditAtivStatus(normalizedStatus);
                                           setEditAtivPercentual(a.percentual || 0);
+                                          setEditAtivCronId(a.cronograma_atividade_id || null);
                                         }}>
                                           <Pencil className="h-3 w-3" />
                                         </Button>
@@ -1074,11 +1114,28 @@ function InlineEquipeForm({ onSave, onCancel }: { onSave: (n: string, f: string,
   );
 }
 
-function InlineAtividadeForm({ onSave, onCancel }: { onSave: (d: string, s: string, p: number) => void; onCancel: () => void }) {
-  const [d, setD] = useState(''); const [p, setP] = useState(0);
+function InlineAtividadeForm({ onSave, onCancel, cronogramaAtividades }: { onSave: (d: string, s: string, p: number, cronId: string | null) => void; onCancel: () => void; cronogramaAtividades: any[] }) {
+  const [d, setD] = useState(''); const [p, setP] = useState(0); const [cronId, setCronId] = useState<string>('');
   const autoStatus = percentualToStatus(p);
+  const handleSelectCron = (id: string) => {
+    setCronId(id);
+    const a = cronogramaAtividades.find(c => c.id === id);
+    if (a && !d) setD(a.nome_atividade);
+  };
   return (
     <div className="flex flex-col gap-2 mb-3 p-3 bg-muted rounded">
+      {cronogramaAtividades.length > 0 && (
+        <Select value={cronId} onValueChange={handleSelectCron}>
+          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Vincular a atividade do Cronograma (opcional)" /></SelectTrigger>
+          <SelectContent>
+            {cronogramaAtividades.map(a => (
+              <SelectItem key={a.id} value={a.id}>
+                {a.nome_atividade} — {a.percentual_concluido || 0}% (peso {a.peso || 0}%)
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
       <div className="flex gap-2">
         <Input placeholder="Descrição" value={d} onChange={e => setD(e.target.value)} className="flex-1" />
         <Badge variant={autoStatus === 'concluido' ? 'default' : autoStatus === 'andamento' ? 'secondary' : 'outline'}>
@@ -1101,8 +1158,9 @@ function InlineAtividadeForm({ onSave, onCancel }: { onSave: (d: string, s: stri
         <span className="text-xs text-muted-foreground">%</span>
         <Slider value={[p]} onValueChange={v => setP(v[0])} min={0} max={100} step={1} className="flex-1" />
       </div>
+      {cronId && <p className="text-[10px] text-muted-foreground">✓ O progresso atualizará automaticamente a atividade vinculada no Cronograma</p>}
       <div className="flex gap-2 justify-end">
-        <Button size="sm" onClick={() => d && onSave(d, autoStatus, p)}>OK</Button>
+        <Button size="sm" onClick={() => d && onSave(d, autoStatus, p, cronId || null)}>OK</Button>
         <Button size="sm" variant="ghost" onClick={onCancel}>✕</Button>
       </div>
     </div>

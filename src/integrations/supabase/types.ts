@@ -383,6 +383,7 @@ export type Database = {
           cronograma_id: string
           data_fim: string | null
           data_inicio: string | null
+          descricao: string | null
           id: string
           nome_atividade: string
           ordem: number
@@ -396,6 +397,7 @@ export type Database = {
           cronograma_id: string
           data_fim?: string | null
           data_inicio?: string | null
+          descricao?: string | null
           id?: string
           nome_atividade: string
           ordem?: number
@@ -409,6 +411,7 @@ export type Database = {
           cronograma_id?: string
           data_fim?: string | null
           data_inicio?: string | null
+          descricao?: string | null
           id?: string
           nome_atividade?: string
           ordem?: number
@@ -503,6 +506,7 @@ export type Database = {
       diario_atividades: {
         Row: {
           created_at: string
+          cronograma_atividade_id: string | null
           descricao: string
           diario_id: string
           id: string
@@ -511,6 +515,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          cronograma_atividade_id?: string | null
           descricao: string
           diario_id: string
           id?: string
@@ -519,6 +524,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          cronograma_atividade_id?: string | null
           descricao?: string
           diario_id?: string
           id?: string
@@ -526,6 +532,13 @@ export type Database = {
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "diario_atividades_cronograma_atividade_id_fkey"
+            columns: ["cronograma_atividade_id"]
+            isOneToOne: false
+            referencedRelation: "cronograma_atividades"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "diario_atividades_diario_id_fkey"
             columns: ["diario_id"]

@@ -6,6 +6,7 @@ import { useObrasFiltered } from '@/hooks/useObrasFiltered';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -28,6 +29,7 @@ interface Atividade {
   cronograma_id: string;
   ordem: number;
   nome_atividade: string;
+  descricao: string | null;
   data_inicio: string | null;
   data_fim: string | null;
   percentual_concluido: number;
@@ -63,12 +65,14 @@ export default function Cronograma() {
   const [obras, setObras] = useState<{ id: string; nome: string }[]>([]);
   const [cronograma, setCronograma] = useState<Cronograma | null>(null);
   const [atividades, setAtividades] = useState<Atividade[]>([]);
+  const [prazoContratual, setPrazoContratual] = useState(0);
+  const [primeiroDiario, setPrimeiroDiario] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAtividade, setEditingAtividade] = useState<Atividade | null>(null);
-  const [formData, setFormData] = useState({ nome_atividade: '', data_inicio: '', data_fim: '', percentual_concluido: 0, status: 'nao_iniciado', peso: 0 });
+  const [formData, setFormData] = useState({ nome_atividade: '', descricao: '', data_inicio: '', data_fim: '', percentual_concluido: 0, status: 'nao_iniciado', peso: 0 });
 
   // Delete
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -105,6 +109,13 @@ export default function Cronograma() {
       const { data: ativs } = await supabase.from('cronograma_atividades').select('*').eq('cronograma_id', cron.id).order('ordem', { ascending: true });
       setAtividades((ativs as any[]) || []);
     }
+    // Fetch obra prazo + first diary
+    const [obraRes, diarioRes] = await Promise.all([
+      supabase.from('obras').select('prazo_contratual_dias').eq('id', obraId).maybeSingle(),
+      supabase.from('diario_obra').select('data').eq('obra_id', obraId).order('data', { ascending: true }).limit(1),
+    ]);
+    setPrazoContratual((obraRes.data as any)?.prazo_contratual_dias || 0);
+    setPrimeiroDiario(diarioRes.data?.[0]?.data || null);
     setLoading(false);
   }, [obraId, canEdit]);
 
@@ -120,6 +131,29 @@ export default function Cronograma() {
       : Math.round(atividades.reduce((sum, a) => sum + a.percentual_concluido, 0) / atividades.length))
     : 0;
 
+  // Business days calculation
+  const businessDaysBetween = (from: Date, to: Date) => {
+    let count = 0;
+    const cur = new Date(from);
+    cur.setHours(0,0,0,0);
+    const end = new Date(to);
+    end.setHours(0,0,0,0);
+    while (cur <= end) {
+      const dow = cur.getDay();
+      if (dow !== 0 && dow !== 6) count++;
+      cur.setDate(cur.getDate() + 1);
+    }
+    return count;
+  };
+  const diasDecorridos = primeiroDiario ? businessDaysBetween(parseISO(primeiroDiario), new Date()) : 0;
+  const prazoConsumido = prazoContratual > 0 ? Math.round((diasDecorridos / prazoContratual) * 100) : 0;
+  const desvio = progressoGeral - prazoConsumido;
+  const statusObra = !primeiroDiario ? { label: 'Não iniciada', color: 'text-muted-foreground', dot: '●', cls: 'border-muted/30 bg-muted/10' }
+    : desvio > 5 ? { label: 'Adiantada', color: 'text-success', dot: '🟢', cls: 'border-success/30 bg-success/10' }
+    : desvio >= -5 ? { label: 'Em Dia', color: 'text-warning', dot: '🟡', cls: 'border-warning/30 bg-warning/10' }
+    : { label: 'Atrasada', color: 'text-destructive', dot: '🔴', cls: 'border-destructive/30 bg-destructive/10' };
+
+
   // Auto-suggest peso when creating
   const suggestPeso = () => {
     const otherCount = editingAtividade ? atividades.length : atividades.length + 1;
@@ -130,14 +164,15 @@ export default function Cronograma() {
   // CRUD
   const openNew = () => {
     setEditingAtividade(null);
-    const sugPeso = atividades.length === 0 ? 100 : Math.floor(100 / (atividades.length + 1));
-    setFormData({ nome_atividade: '', data_inicio: '', data_fim: '', percentual_concluido: 0, status: 'nao_iniciado', peso: sugPeso });
+    const sugPeso = atividades.length === 0 ? 100 : Math.max(0, 100 - atividades.reduce((s, a) => s + (a.peso || 0), 0));
+    setFormData({ nome_atividade: '', descricao: '', data_inicio: '', data_fim: '', percentual_concluido: 0, status: 'nao_iniciado', peso: sugPeso });
     setDialogOpen(true);
   };
   const openEdit = (a: Atividade) => {
     setEditingAtividade(a);
     setFormData({
       nome_atividade: a.nome_atividade,
+      descricao: a.descricao || '',
       data_inicio: a.data_inicio || '',
       data_fim: a.data_fim || '',
       percentual_concluido: a.percentual_concluido,
@@ -148,9 +183,17 @@ export default function Cronograma() {
   };
   const handleSave = async () => {
     if (!formData.nome_atividade || !cronograma) return;
+    const otherPeso = atividades
+      .filter(a => !editingAtividade || a.id !== editingAtividade.id)
+      .reduce((s, a) => s + (a.peso || 0), 0);
+    if (otherPeso + formData.peso > 100) {
+      toast.error(`Soma dos pesos excede 100% (${otherPeso + formData.peso}%). Ajuste o peso antes de salvar.`);
+      return;
+    }
     if (editingAtividade) {
       await supabase.from('cronograma_atividades').update({
         nome_atividade: formData.nome_atividade,
+        descricao: formData.descricao || null,
         data_inicio: formData.data_inicio || null,
         data_fim: formData.data_fim || null,
         percentual_concluido: formData.percentual_concluido,
@@ -163,6 +206,7 @@ export default function Cronograma() {
       await supabase.from('cronograma_atividades').insert({
         cronograma_id: cronograma.id,
         nome_atividade: formData.nome_atividade,
+        descricao: formData.descricao || null,
         data_inicio: formData.data_inicio || null,
         data_fim: formData.data_fim || null,
         percentual_concluido: formData.percentual_concluido,
@@ -379,6 +423,57 @@ export default function Cronograma() {
         </CardContent>
       </Card>
 
+      {/* Indicadores: Planejado x Executado */}
+      <Card className={`border ${statusObra.cls}`}>
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">{statusObra.dot}</span>
+              <div>
+                <p className={`font-bold text-lg ${statusObra.color}`}>{statusObra.label}</p>
+                <p className="text-xs text-muted-foreground">
+                  Executado: {progressoGeral}% • Prazo Consumido: {prazoConsumido}% • Desvio: {desvio > 0 ? '+' : ''}{desvio}%
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-4 gap-3 md:gap-4 text-center">
+              <div>
+                <p className="text-[10px] text-muted-foreground">Executado</p>
+                <p className="text-sm font-bold">{progressoGeral}%</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground">Prazo</p>
+                <p className="text-sm font-bold">{prazoConsumido}%</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground">Desvio</p>
+                <p className={`text-sm font-bold ${statusObra.color}`}>{desvio > 0 ? '+' : ''}{desvio}%</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-muted-foreground">Prazo (dias úteis)</p>
+                <p className="text-sm font-bold">{diasDecorridos}/{prazoContratual || '—'}</p>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 text-xs">
+              <span className="w-20 text-muted-foreground">Planejado</span>
+              <div className="flex-1 h-3 bg-muted rounded overflow-hidden">
+                <div className="h-full bg-slate-400 dark:bg-slate-500" style={{ width: `${Math.min(prazoConsumido, 100)}%` }} />
+              </div>
+              <span className="w-10 text-right font-medium">{prazoConsumido}%</span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="w-20 text-muted-foreground">Executado</span>
+              <div className="flex-1 h-3 bg-muted rounded overflow-hidden">
+                <div className={`h-full ${desvio > 5 ? 'bg-success' : desvio >= -5 ? 'bg-warning' : 'bg-destructive'}`} style={{ width: `${Math.min(progressoGeral, 100)}%` }} />
+              </div>
+              <span className="w-10 text-right font-medium">{progressoGeral}%</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Activities Table */}
       <Card>
         <CardHeader><CardTitle>Atividades</CardTitle></CardHeader>
@@ -509,6 +604,10 @@ export default function Cronograma() {
             <div>
               <Label>Nome da Atividade</Label>
               <Input value={formData.nome_atividade} onChange={e => setFormData(f => ({ ...f, nome_atividade: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Descrição (opcional)</Label>
+              <Textarea rows={2} value={formData.descricao} onChange={e => setFormData(f => ({ ...f, descricao: e.target.value }))} />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
