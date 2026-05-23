@@ -619,7 +619,14 @@ export default function Cronograma() {
                   {atividades.map((a, i) => (
                     <TableRow key={a.id}>
                       <TableCell className="font-mono text-xs">{i + 1}</TableCell>
-                      <TableCell className="font-medium">{a.nome_atividade}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <span>{a.nome_atividade}</span>
+                          {(a.tipo_atividade || 'original') === 'aditivo' && (
+                            <Badge variant="outline" className="text-[9px] bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-300">ADITIVO</Badge>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-xs">{a.peso}%</Badge>
                       </TableCell>
