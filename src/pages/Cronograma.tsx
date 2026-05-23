@@ -168,13 +168,18 @@ export default function Cronograma() {
     }
     return count;
   };
+  const diasAditivos = aditivos.reduce((s, a) => s + (a.dias_adicionais || 0), 0);
+  const prazoEfetivo = prazoContratual + diasAditivos;
   const diasDecorridos = primeiroDiario ? businessDaysBetween(parseISO(primeiroDiario), new Date()) : 0;
-  const prazoConsumido = prazoContratual > 0 ? Math.round((diasDecorridos / prazoContratual) * 100) : 0;
+  const prazoConsumido = prazoEfetivo > 0 ? Math.round((diasDecorridos / prazoEfetivo) * 100) : 0;
   const desvio = progressoGeral - prazoConsumido;
-  const statusObra = !primeiroDiario ? { label: 'Não iniciada', color: 'text-muted-foreground', dot: '●', cls: 'border-muted/30 bg-muted/10' }
+  const planejamentoConfigurado = atividades.length > 0;
+  const statusObra = !planejamentoConfigurado ? { label: 'Planejamento pendente', color: 'text-muted-foreground', dot: '⚪', cls: 'border-muted/30 bg-muted/10' }
+    : !primeiroDiario ? { label: 'Não iniciada', color: 'text-muted-foreground', dot: '●', cls: 'border-muted/30 bg-muted/10' }
     : desvio > 5 ? { label: 'Adiantada', color: 'text-success', dot: '🟢', cls: 'border-success/30 bg-success/10' }
     : desvio >= -5 ? { label: 'Em Dia', color: 'text-warning', dot: '🟡', cls: 'border-warning/30 bg-warning/10' }
     : { label: 'Atrasada', color: 'text-destructive', dot: '🔴', cls: 'border-destructive/30 bg-destructive/10' };
+
 
 
   // Auto-suggest peso when creating
