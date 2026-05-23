@@ -131,6 +131,29 @@ export default function Cronograma() {
       : Math.round(atividades.reduce((sum, a) => sum + a.percentual_concluido, 0) / atividades.length))
     : 0;
 
+  // Business days calculation
+  const businessDaysBetween = (from: Date, to: Date) => {
+    let count = 0;
+    const cur = new Date(from);
+    cur.setHours(0,0,0,0);
+    const end = new Date(to);
+    end.setHours(0,0,0,0);
+    while (cur <= end) {
+      const dow = cur.getDay();
+      if (dow !== 0 && dow !== 6) count++;
+      cur.setDate(cur.getDate() + 1);
+    }
+    return count;
+  };
+  const diasDecorridos = primeiroDiario ? businessDaysBetween(parseISO(primeiroDiario), new Date()) : 0;
+  const prazoConsumido = prazoContratual > 0 ? Math.round((diasDecorridos / prazoContratual) * 100) : 0;
+  const desvio = progressoGeral - prazoConsumido;
+  const statusObra = !primeiroDiario ? { label: 'Não iniciada', color: 'text-muted-foreground', dot: '●', cls: 'border-muted/30 bg-muted/10' }
+    : desvio > 5 ? { label: 'Adiantada', color: 'text-success', dot: '🟢', cls: 'border-success/30 bg-success/10' }
+    : desvio >= -5 ? { label: 'Em Dia', color: 'text-warning', dot: '🟡', cls: 'border-warning/30 bg-warning/10' }
+    : { label: 'Atrasada', color: 'text-destructive', dot: '🔴', cls: 'border-destructive/30 bg-destructive/10' };
+
+
   // Auto-suggest peso when creating
   const suggestPeso = () => {
     const otherCount = editingAtividade ? atividades.length : atividades.length + 1;
