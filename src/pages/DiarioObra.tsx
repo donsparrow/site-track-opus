@@ -745,7 +745,7 @@ export default function DiarioObra() {
                         {canEdit && <Button size="sm" variant="outline" onClick={() => setAddingAtividade(true)}><Plus className="h-3 w-3 mr-1" />Adicionar</Button>}
                       </CardHeader>
                       <CardContent>
-                        {addingAtividade && <InlineAtividadeForm onSave={addAtividadeItem} onCancel={() => setAddingAtividade(false)} />}
+                        {addingAtividade && <InlineAtividadeForm onSave={addAtividadeItem} onCancel={() => setAddingAtividade(false)} cronogramaAtividades={cronogramaAtividades} />}
                         {atividades.length === 0 && !addingAtividade ? <p className="text-sm text-muted-foreground text-center py-4">Nenhum registro</p> : (
                           <div className="space-y-2">
                             {atividades.map(a => {
