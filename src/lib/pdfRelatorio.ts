@@ -40,7 +40,9 @@ interface RelatorioPDFData {
   materiais: any[];
   ocorrencias: any[];
   imagens: any[];
-  cronograma: { nome_atividade: string; data_inicio: string | null; data_fim: string | null; percentual_concluido: number; status: string; peso?: number }[];
+  cronograma: { nome_atividade: string; data_inicio: string | null; data_fim: string | null; percentual_concluido: number; status: string; peso?: number; tipo_atividade?: string }[];
+  aditivos?: { descricao: string; dias_adicionais: number; data_aprovacao?: string | null; justificativa?: string | null; responsavel_aprovacao?: string | null }[];
+  planejamentoConfigurado?: boolean;
   assinaturas: any[];
   versao?: number;
   versoes?: { rev: string; data: string; resumo: string }[];
@@ -760,7 +762,48 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
       });
       y += 4;
     }
+  } else if (data.planejamentoConfigurado === false) {
+    newPage();
+    sectionTitle('10. CRONOGRAMA DA OBRA');
+    checkPage(20);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'italic');
+    doc.setTextColor(120);
+    doc.text('Planejamento ainda não configurado no Cronograma da obra.', MARGIN, y);
+    doc.setTextColor(0);
+    doc.setFont('helvetica', 'normal');
+    y += 10;
   }
+
+  // =========== ADITIVOS ===========
+  if (data.aditivos && data.aditivos.length > 0) {
+    checkPage(30);
+    y += 4;
+    sectionTitle('10.1 ADITIVOS DA OBRA');
+    autoTable(doc, {
+      startY: y,
+      head: [['Descrição', 'Dias Adicionais', 'Aprovação', 'Responsável']],
+      body: data.aditivos.map(a => [
+        a.descricao || '—',
+        `${a.dias_adicionais || 0} dias`,
+        a.data_aprovacao ? fmt(a.data_aprovacao) : '—',
+        a.responsavel_aprovacao || '—',
+      ]),
+      margin: { left: MARGIN, right: MARGIN },
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [BLUE[0], BLUE[1], BLUE[2]], textColor: 255 },
+      alternateRowStyles: { fillColor: [245, 247, 250] },
+      theme: 'striped',
+    });
+    y = (doc as any).lastAutoTable.finalY + 8;
+    const totalDias = data.aditivos.reduce((s, a) => s + (a.dias_adicionais || 0), 0);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Total de dias adicionados ao prazo: ${totalDias} dias`, MARGIN, y);
+    doc.setFont('helvetica', 'normal');
+    y += 8;
+  }
+
 
   // =========== PHOTO SECTION ===========
   if (data.imagens.length > 0) {
