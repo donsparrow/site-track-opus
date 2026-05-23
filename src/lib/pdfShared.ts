@@ -10,13 +10,32 @@ export async function loadImageAsDataUrl(url: string): Promise<string | null> {
       img.crossOrigin = 'Anonymous';
       img.onload = () => {
         try {
+          // SVGs may report 0 for naturalWidth/Height. Use a sane fallback so
+          // they get rasterized at a high-enough resolution to stay crisp.
+          let w = img.naturalWidth || img.width || 0;
+          let h = img.naturalHeight || img.height || 0;
+          if (!w || !h) {
+            w = 512;
+            h = 512;
+          }
+          // Upscale very small logos to keep them sharp when placed in the PDF.
+          const MIN_SIDE = 512;
+          const minSide = Math.min(w, h);
+          if (minSide < MIN_SIDE) {
+            const scale = MIN_SIDE / minSide;
+            w = Math.round(w * scale);
+            h = Math.round(h * scale);
+          }
           const canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth;
-          canvas.height = img.naturalHeight;
+          canvas.width = w;
+          canvas.height = h;
           const ctx = canvas.getContext('2d');
           if (ctx) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.drawImage(img, 0, 0);
+            ctx.imageSmoothingEnabled = true;
+            (ctx as any).imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, w, h);
+            // PNG preserves transparency for logos with transparent background.
             resolve(canvas.toDataURL('image/png'));
           } else {
             resolve(null);
@@ -32,6 +51,12 @@ export async function loadImageAsDataUrl(url: string): Promise<string | null> {
     return null;
   }
 }
+
+// Fixed logo box in millimetres — consistent across every generated PDF.
+export const LOGO_BOX_W = 32;
+export const LOGO_BOX_H = 20;
+export const LOGO_BOX_X = MARGIN;
+export const LOGO_BOX_Y = 5;
 
 export interface EmpresaPDFData {
   nome_empresa?: string;
