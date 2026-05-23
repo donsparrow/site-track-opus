@@ -35,6 +35,8 @@ interface Atividade {
   percentual_concluido: number;
   status: string;
   peso: number;
+  tipo_atividade?: string;
+  observacoes?: string | null;
 }
 
 interface Cronograma {
@@ -43,6 +45,19 @@ interface Cronograma {
   data_inicio: string | null;
   data_fim_prevista: string | null;
 }
+
+interface Aditivo {
+  id: string;
+  obra_id: string;
+  descricao: string;
+  dias_adicionais: number;
+  data_aprovacao: string | null;
+  justificativa: string | null;
+  documento_url: string | null;
+  responsavel_aprovacao: string | null;
+  created_at: string;
+}
+
 
 const statusLabels: Record<string, string> = {
   nao_iniciado: 'Não Iniciado',
