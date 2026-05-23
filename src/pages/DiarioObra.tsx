@@ -1115,29 +1115,37 @@ function InlineEquipeForm({ onSave, onCancel }: { onSave: (n: string, f: string,
 }
 
 function InlineAtividadeForm({ onSave, onCancel, cronogramaAtividades }: { onSave: (d: string, s: string, p: number, cronId: string | null) => void; onCancel: () => void; cronogramaAtividades: any[] }) {
-  const [d, setD] = useState(''); const [p, setP] = useState(0); const [cronId, setCronId] = useState<string>('');
+  const [p, setP] = useState(0); const [cronId, setCronId] = useState<string>('');
   const autoStatus = percentualToStatus(p);
-  const handleSelectCron = (id: string) => {
-    setCronId(id);
-    const a = cronogramaAtividades.find(c => c.id === id);
-    if (a && !d) setD(a.nome_atividade);
-  };
+  const selected = cronogramaAtividades.find(c => c.id === cronId);
+  const descricao = selected?.nome_atividade || '';
+  if (cronogramaAtividades.length === 0) {
+    return (
+      <div className="flex flex-col gap-2 mb-3 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded">
+        <p className="text-sm text-amber-800 dark:text-amber-200">
+          ⚠ Nenhuma atividade cadastrada no Cronograma desta obra. Cadastre as atividades no <strong>Cronograma</strong> antes de registrar execução no diário.
+        </p>
+        <div className="flex justify-end">
+          <Button size="sm" variant="ghost" onClick={onCancel}>Fechar</Button>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col gap-2 mb-3 p-3 bg-muted rounded">
-      {cronogramaAtividades.length > 0 && (
-        <Select value={cronId} onValueChange={handleSelectCron}>
-          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Vincular a atividade do Cronograma (opcional)" /></SelectTrigger>
-          <SelectContent>
-            {cronogramaAtividades.map(a => (
-              <SelectItem key={a.id} value={a.id}>
-                {a.nome_atividade} — {a.percentual_concluido || 0}% (peso {a.peso || 0}%)
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
-      <div className="flex gap-2">
-        <Input placeholder="Descrição" value={d} onChange={e => setD(e.target.value)} className="flex-1" />
+      <Label className="text-xs">Selecionar atividade do Cronograma *</Label>
+      <Select value={cronId} onValueChange={setCronId}>
+        <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="▼ Escolha uma atividade" /></SelectTrigger>
+        <SelectContent>
+          {cronogramaAtividades.map(a => (
+            <SelectItem key={a.id} value={a.id}>
+              {a.nome_atividade} — atual {a.percentual_concluido || 0}% (peso {a.peso || 0}%)
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <div className="flex items-center gap-2">
+        <span className="flex-1 text-sm font-medium">{descricao || <span className="text-muted-foreground italic">Selecione uma atividade</span>}</span>
         <Badge variant={autoStatus === 'concluido' ? 'default' : autoStatus === 'andamento' ? 'secondary' : 'outline'}>
           {statusLabels[autoStatus]}
         </Badge>
@@ -1158,9 +1166,12 @@ function InlineAtividadeForm({ onSave, onCancel, cronogramaAtividades }: { onSav
         <span className="text-xs text-muted-foreground">%</span>
         <Slider value={[p]} onValueChange={v => setP(v[0])} min={0} max={100} step={1} className="flex-1" />
       </div>
-      {cronId && <p className="text-[10px] text-muted-foreground">✓ O progresso atualizará automaticamente a atividade vinculada no Cronograma</p>}
+      <p className="text-[10px] text-muted-foreground">✓ O progresso atualizará automaticamente a atividade vinculada no Cronograma.</p>
       <div className="flex gap-2 justify-end">
-        <Button size="sm" onClick={() => d && onSave(d, autoStatus, p, cronId || null)}>OK</Button>
+        <Button size="sm" onClick={() => {
+          if (!cronId) { toast.error('Selecione uma atividade do Cronograma'); return; }
+          onSave(descricao, autoStatus, p, cronId);
+        }}>OK</Button>
         <Button size="sm" variant="ghost" onClick={onCancel}>✕</Button>
       </div>
     </div>
