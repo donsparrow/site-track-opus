@@ -512,8 +512,8 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   const prazoItems2 = [
     { label: 'Dias Parados', value: `${data.prazos.parados}` },
     { label: 'Dias Trabalhados', value: `${data.prazos.trabalhados}` },
-    { label: 'Tempo Consumido', value: `${data.prazos.percentualTempo}%`, highlight: true },
-    { label: 'Obra Executada', value: `${data.prazos.percentualExecutado}%`, highlight: true },
+    { label: 'Prazo Consumido', value: `${data.prazos.percentualTempo}%`, highlight: true },
+    { label: 'Progresso Físico', value: `${data.prazos.percentualExecutado}%`, highlight: true },
   ];
   const col2W = contentW / 4;
   prazoItems2.forEach((item: any, i: number) => {
