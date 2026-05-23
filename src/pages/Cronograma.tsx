@@ -69,7 +69,7 @@ export default function Cronograma() {
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAtividade, setEditingAtividade] = useState<Atividade | null>(null);
-  const [formData, setFormData] = useState({ nome_atividade: '', data_inicio: '', data_fim: '', percentual_concluido: 0, status: 'nao_iniciado', peso: 0 });
+  const [formData, setFormData] = useState({ nome_atividade: '', descricao: '', data_inicio: '', data_fim: '', percentual_concluido: 0, status: 'nao_iniciado', peso: 0 });
 
   // Delete
   const [deleteId, setDeleteId] = useState<string | null>(null);
