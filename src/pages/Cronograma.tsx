@@ -109,6 +109,13 @@ export default function Cronograma() {
       const { data: ativs } = await supabase.from('cronograma_atividades').select('*').eq('cronograma_id', cron.id).order('ordem', { ascending: true });
       setAtividades((ativs as any[]) || []);
     }
+    // Fetch obra prazo + first diary
+    const [obraRes, diarioRes] = await Promise.all([
+      supabase.from('obras').select('prazo_contratual_dias').eq('id', obraId).maybeSingle(),
+      supabase.from('diario_obra').select('data').eq('obra_id', obraId).order('data', { ascending: true }).limit(1),
+    ]);
+    setPrazoContratual((obraRes.data as any)?.prazo_contratual_dias || 0);
+    setPrimeiroDiario(diarioRes.data?.[0]?.data || null);
     setLoading(false);
   }, [obraId, canEdit]);
 
