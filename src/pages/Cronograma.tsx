@@ -35,6 +35,8 @@ interface Atividade {
   percentual_concluido: number;
   status: string;
   peso: number;
+  tipo_atividade?: string;
+  observacoes?: string | null;
 }
 
 interface Cronograma {
@@ -43,6 +45,19 @@ interface Cronograma {
   data_inicio: string | null;
   data_fim_prevista: string | null;
 }
+
+interface Aditivo {
+  id: string;
+  obra_id: string;
+  descricao: string;
+  dias_adicionais: number;
+  data_aprovacao: string | null;
+  justificativa: string | null;
+  documento_url: string | null;
+  responsavel_aprovacao: string | null;
+  created_at: string;
+}
+
 
 const statusLabels: Record<string, string> = {
   nao_iniciado: 'Não Iniciado',
@@ -65,6 +80,7 @@ export default function Cronograma() {
   const [obras, setObras] = useState<{ id: string; nome: string }[]>([]);
   const [cronograma, setCronograma] = useState<Cronograma | null>(null);
   const [atividades, setAtividades] = useState<Atividade[]>([]);
+  const [aditivos, setAditivos] = useState<Aditivo[]>([]);
   const [prazoContratual, setPrazoContratual] = useState(0);
   const [primeiroDiario, setPrimeiroDiario] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -72,7 +88,12 @@ export default function Cronograma() {
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAtividade, setEditingAtividade] = useState<Atividade | null>(null);
-  const [formData, setFormData] = useState({ nome_atividade: '', descricao: '', data_inicio: '', data_fim: '', percentual_concluido: 0, status: 'nao_iniciado', peso: 0 });
+  const [formData, setFormData] = useState({ nome_atividade: '', descricao: '', data_inicio: '', data_fim: '', percentual_concluido: 0, status: 'nao_iniciado', peso: 0, tipo_atividade: 'original', observacoes: '' });
+
+  // Aditivo dialog
+  const [aditivoDialogOpen, setAditivoDialogOpen] = useState(false);
+  const [aditivoForm, setAditivoForm] = useState({ descricao: '', dias_adicionais: 0, data_aprovacao: '', justificativa: '', responsavel_aprovacao: '', documento_url: '' });
+  const [deleteAditivoId, setDeleteAditivoId] = useState<string | null>(null);
 
   // Delete
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -109,13 +130,15 @@ export default function Cronograma() {
       const { data: ativs } = await supabase.from('cronograma_atividades').select('*').eq('cronograma_id', cron.id).order('ordem', { ascending: true });
       setAtividades((ativs as any[]) || []);
     }
-    // Fetch obra prazo + first diary
-    const [obraRes, diarioRes] = await Promise.all([
+    // Fetch obra prazo + first diary + aditivos
+    const [obraRes, diarioRes, aditivosRes] = await Promise.all([
       supabase.from('obras').select('prazo_contratual_dias').eq('id', obraId).maybeSingle(),
       supabase.from('diario_obra').select('data').eq('obra_id', obraId).order('data', { ascending: true }).limit(1),
+      supabase.from('obra_aditivos' as any).select('*').eq('obra_id', obraId).order('created_at', { ascending: false }),
     ]);
     setPrazoContratual((obraRes.data as any)?.prazo_contratual_dias || 0);
     setPrimeiroDiario(diarioRes.data?.[0]?.data || null);
+    setAditivos(((aditivosRes as any).data as Aditivo[]) || []);
     setLoading(false);
   }, [obraId, canEdit]);
 
@@ -145,13 +168,18 @@ export default function Cronograma() {
     }
     return count;
   };
+  const diasAditivos = aditivos.reduce((s, a) => s + (a.dias_adicionais || 0), 0);
+  const prazoEfetivo = prazoContratual + diasAditivos;
   const diasDecorridos = primeiroDiario ? businessDaysBetween(parseISO(primeiroDiario), new Date()) : 0;
-  const prazoConsumido = prazoContratual > 0 ? Math.round((diasDecorridos / prazoContratual) * 100) : 0;
+  const prazoConsumido = prazoEfetivo > 0 ? Math.round((diasDecorridos / prazoEfetivo) * 100) : 0;
   const desvio = progressoGeral - prazoConsumido;
-  const statusObra = !primeiroDiario ? { label: 'Não iniciada', color: 'text-muted-foreground', dot: '●', cls: 'border-muted/30 bg-muted/10' }
+  const planejamentoConfigurado = atividades.length > 0;
+  const statusObra = !planejamentoConfigurado ? { label: 'Planejamento pendente', color: 'text-muted-foreground', dot: '⚪', cls: 'border-muted/30 bg-muted/10' }
+    : !primeiroDiario ? { label: 'Não iniciada', color: 'text-muted-foreground', dot: '●', cls: 'border-muted/30 bg-muted/10' }
     : desvio > 5 ? { label: 'Adiantada', color: 'text-success', dot: '🟢', cls: 'border-success/30 bg-success/10' }
     : desvio >= -5 ? { label: 'Em Dia', color: 'text-warning', dot: '🟡', cls: 'border-warning/30 bg-warning/10' }
     : { label: 'Atrasada', color: 'text-destructive', dot: '🔴', cls: 'border-destructive/30 bg-destructive/10' };
+
 
 
   // Auto-suggest peso when creating
@@ -162,10 +190,10 @@ export default function Cronograma() {
   };
 
   // CRUD
-  const openNew = () => {
+  const openNew = (tipo: 'original' | 'aditivo' = 'original') => {
     setEditingAtividade(null);
-    const sugPeso = atividades.length === 0 ? 100 : Math.max(0, 100 - atividades.reduce((s, a) => s + (a.peso || 0), 0));
-    setFormData({ nome_atividade: '', descricao: '', data_inicio: '', data_fim: '', percentual_concluido: 0, status: 'nao_iniciado', peso: sugPeso });
+    const sugPeso = tipo === 'aditivo' ? 0 : (atividades.length === 0 ? 100 : Math.max(0, 100 - atividades.reduce((s, a) => s + (a.peso || 0), 0)));
+    setFormData({ nome_atividade: '', descricao: '', data_inicio: '', data_fim: '', percentual_concluido: 0, status: 'nao_iniciado', peso: sugPeso, tipo_atividade: tipo, observacoes: '' });
     setDialogOpen(true);
   };
   const openEdit = (a: Atividade) => {
@@ -178,16 +206,20 @@ export default function Cronograma() {
       percentual_concluido: a.percentual_concluido,
       status: a.status,
       peso: a.peso || 0,
+      tipo_atividade: a.tipo_atividade || 'original',
+      observacoes: a.observacoes || '',
     });
     setDialogOpen(true);
   };
   const handleSave = async () => {
     if (!formData.nome_atividade || !cronograma) return;
-    const otherPeso = atividades
+    // Validação peso: somente atividades originais (aditivos somam fora do 100%)
+    const otherOriginalPeso = atividades
+      .filter(a => (a.tipo_atividade || 'original') === 'original')
       .filter(a => !editingAtividade || a.id !== editingAtividade.id)
       .reduce((s, a) => s + (a.peso || 0), 0);
-    if (otherPeso + formData.peso > 100) {
-      toast.error(`Soma dos pesos excede 100% (${otherPeso + formData.peso}%). Ajuste o peso antes de salvar.`);
+    if (formData.tipo_atividade === 'original' && otherOriginalPeso + formData.peso > 100) {
+      toast.error(`Soma dos pesos do escopo original excede 100% (${otherOriginalPeso + formData.peso}%). Ajuste o peso.`);
       return;
     }
     if (editingAtividade) {
@@ -199,6 +231,8 @@ export default function Cronograma() {
         percentual_concluido: formData.percentual_concluido,
         status: formData.status,
         peso: formData.peso,
+        tipo_atividade: formData.tipo_atividade,
+        observacoes: formData.observacoes || null,
       } as any).eq('id', editingAtividade.id);
       toast.success('Atividade atualizada');
     } else {
@@ -213,6 +247,8 @@ export default function Cronograma() {
         status: formData.status,
         ordem: maxOrdem + 1,
         peso: formData.peso,
+        tipo_atividade: formData.tipo_atividade,
+        observacoes: formData.observacoes || null,
       } as any);
       toast.success('Atividade criada');
     }
@@ -224,6 +260,35 @@ export default function Cronograma() {
     await supabase.from('cronograma_atividades').delete().eq('id', deleteId);
     toast.success('Atividade excluída');
     setDeleteId(null);
+    loadCronograma();
+  };
+
+  // Aditivo CRUD
+  const openNewAditivo = () => {
+    setAditivoForm({ descricao: '', dias_adicionais: 0, data_aprovacao: '', justificativa: '', responsavel_aprovacao: '', documento_url: '' });
+    setAditivoDialogOpen(true);
+  };
+  const handleSaveAditivo = async () => {
+    if (!aditivoForm.descricao || !obraId) { toast.error('Informe a descrição do aditivo'); return; }
+    const { error } = await supabase.from('obra_aditivos' as any).insert({
+      obra_id: obraId,
+      descricao: aditivoForm.descricao,
+      dias_adicionais: aditivoForm.dias_adicionais || 0,
+      data_aprovacao: aditivoForm.data_aprovacao || null,
+      justificativa: aditivoForm.justificativa || null,
+      responsavel_aprovacao: aditivoForm.responsavel_aprovacao || null,
+      documento_url: aditivoForm.documento_url || null,
+    } as any);
+    if (error) { toast.error('Erro: ' + error.message); return; }
+    toast.success('Aditivo registrado');
+    setAditivoDialogOpen(false);
+    loadCronograma();
+  };
+  const handleDeleteAditivo = async () => {
+    if (!deleteAditivoId) return;
+    await supabase.from('obra_aditivos' as any).delete().eq('id', deleteAditivoId);
+    toast.success('Aditivo excluído');
+    setDeleteAditivoId(null);
     loadCronograma();
   };
   const moveAtividade = async (id: string, direction: 'up' | 'down') => {
@@ -390,7 +455,8 @@ export default function Cronograma() {
             </SelectContent>
           </Select>
           <Button variant="outline" onClick={exportPDF}><Download className="h-4 w-4 mr-1" />PDF</Button>
-          {canEdit && <Button onClick={openNew}><Plus className="h-4 w-4 mr-1" />Atividade</Button>}
+          {canEdit && <Button variant="outline" onClick={openNewAditivo}><Plus className="h-4 w-4 mr-1" />Aditivo</Button>}
+          {canEdit && <Button onClick={() => openNew('original')}><Plus className="h-4 w-4 mr-1" />Atividade</Button>}
         </div>
       </div>
 
@@ -426,53 +492,107 @@ export default function Cronograma() {
       {/* Indicadores: Planejado x Executado */}
       <Card className={`border ${statusObra.cls}`}>
         <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">{statusObra.dot}</span>
-              <div>
-                <p className={`font-bold text-lg ${statusObra.color}`}>{statusObra.label}</p>
-                <p className="text-xs text-muted-foreground">
-                  Executado: {progressoGeral}% • Prazo Consumido: {prazoConsumido}% • Desvio: {desvio > 0 ? '+' : ''}{desvio}%
-                </p>
-              </div>
+          {!planejamentoConfigurado ? (
+            <div className="text-center py-4">
+              <p className="text-2xl mb-2">⚪</p>
+              <p className="font-bold text-base text-muted-foreground">Planejamento não configurado</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Cadastre atividades no Cronograma para habilitar o cálculo de progresso, prazo consumido, desvio e status.
+              </p>
             </div>
-            <div className="grid grid-cols-4 gap-3 md:gap-4 text-center">
-              <div>
-                <p className="text-[10px] text-muted-foreground">Executado</p>
-                <p className="text-sm font-bold">{progressoGeral}%</p>
+          ) : (
+            <>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{statusObra.dot}</span>
+                  <div>
+                    <p className={`font-bold text-lg ${statusObra.color}`}>{statusObra.label}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Executado: {progressoGeral}% • Prazo Consumido: {prazoConsumido}% • Desvio: {desvio > 0 ? '+' : ''}{desvio}%
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 gap-3 md:gap-4 text-center">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Executado</p>
+                    <p className="text-sm font-bold">{progressoGeral}%</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Prazo</p>
+                    <p className="text-sm font-bold">{prazoConsumido}%</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Desvio</p>
+                    <p className={`text-sm font-bold ${statusObra.color}`}>{desvio > 0 ? '+' : ''}{desvio}%</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Prazo {diasAditivos > 0 ? `(+${diasAditivos} aditivo)` : '(dias úteis)'}</p>
+                    <p className="text-sm font-bold">{diasDecorridos}/{prazoEfetivo || '—'}</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Prazo</p>
-                <p className="text-sm font-bold">{prazoConsumido}%</p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="w-20 text-muted-foreground">Planejado</span>
+                  <div className="flex-1 h-3 bg-muted rounded overflow-hidden">
+                    <div className="h-full bg-slate-400 dark:bg-slate-500" style={{ width: `${Math.min(prazoConsumido, 100)}%` }} />
+                  </div>
+                  <span className="w-10 text-right font-medium">{prazoConsumido}%</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="w-20 text-muted-foreground">Executado</span>
+                  <div className="flex-1 h-3 bg-muted rounded overflow-hidden">
+                    <div className={`h-full ${desvio > 5 ? 'bg-success' : desvio >= -5 ? 'bg-warning' : 'bg-destructive'}`} style={{ width: `${Math.min(progressoGeral, 100)}%` }} />
+                  </div>
+                  <span className="w-10 text-right font-medium">{progressoGeral}%</span>
+                </div>
               </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Desvio</p>
-                <p className={`text-sm font-bold ${statusObra.color}`}>{desvio > 0 ? '+' : ''}{desvio}%</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Prazo (dias úteis)</p>
-                <p className="text-sm font-bold">{diasDecorridos}/{prazoContratual || '—'}</p>
-              </div>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs">
-              <span className="w-20 text-muted-foreground">Planejado</span>
-              <div className="flex-1 h-3 bg-muted rounded overflow-hidden">
-                <div className="h-full bg-slate-400 dark:bg-slate-500" style={{ width: `${Math.min(prazoConsumido, 100)}%` }} />
-              </div>
-              <span className="w-10 text-right font-medium">{prazoConsumido}%</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs">
-              <span className="w-20 text-muted-foreground">Executado</span>
-              <div className="flex-1 h-3 bg-muted rounded overflow-hidden">
-                <div className={`h-full ${desvio > 5 ? 'bg-success' : desvio >= -5 ? 'bg-warning' : 'bg-destructive'}`} style={{ width: `${Math.min(progressoGeral, 100)}%` }} />
-              </div>
-              <span className="w-10 text-right font-medium">{progressoGeral}%</span>
-            </div>
-          </div>
+            </>
+          )}
         </CardContent>
       </Card>
+
+      {/* Aditivos */}
+      {aditivos.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Aditivos da Obra ({aditivos.length})</CardTitle></CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead className="w-28">Dias Adicionais</TableHead>
+                    <TableHead className="w-32">Data Aprovação</TableHead>
+                    <TableHead>Responsável</TableHead>
+                    {canEdit && <TableHead className="w-20"></TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {aditivos.map(ad => (
+                    <TableRow key={ad.id}>
+                      <TableCell>
+                        <div className="font-medium text-sm">{ad.descricao}</div>
+                        {ad.justificativa && <div className="text-xs text-muted-foreground mt-0.5">{ad.justificativa}</div>}
+                      </TableCell>
+                      <TableCell><Badge variant="outline">+{ad.dias_adicionais} dias</Badge></TableCell>
+                      <TableCell className="text-xs">{ad.data_aprovacao ? format(parseISO(ad.data_aprovacao), 'dd/MM/yyyy') : '—'}</TableCell>
+                      <TableCell className="text-xs">{ad.responsavel_aprovacao || '—'}</TableCell>
+                      {canEdit && (
+                        <TableCell>
+                          <Button variant="ghost" size="icon" onClick={() => setDeleteAditivoId(ad.id)}>
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                          </Button>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Activities Table */}
       <Card>
@@ -499,7 +619,14 @@ export default function Cronograma() {
                   {atividades.map((a, i) => (
                     <TableRow key={a.id}>
                       <TableCell className="font-mono text-xs">{i + 1}</TableCell>
-                      <TableCell className="font-medium">{a.nome_atividade}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <span>{a.nome_atividade}</span>
+                          {(a.tipo_atividade || 'original') === 'aditivo' && (
+                            <Badge variant="outline" className="text-[9px] bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-300">ADITIVO</Badge>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-xs">{a.peso}%</Badge>
                       </TableCell>
@@ -601,9 +728,21 @@ export default function Cronograma() {
             <DialogTitle>{editingAtividade ? 'Editar Atividade' : 'Nova Atividade'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <Label>Nome da Atividade</Label>
-              <Input value={formData.nome_atividade} onChange={e => setFormData(f => ({ ...f, nome_atividade: e.target.value }))} />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Nome da Atividade</Label>
+                <Input value={formData.nome_atividade} onChange={e => setFormData(f => ({ ...f, nome_atividade: e.target.value }))} />
+              </div>
+              <div>
+                <Label>Tipo</Label>
+                <Select value={formData.tipo_atividade} onValueChange={v => setFormData(f => ({ ...f, tipo_atividade: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="original">Contrato Original</SelectItem>
+                    <SelectItem value="aditivo">Aditivo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div>
               <Label>Descrição (opcional)</Label>
@@ -635,12 +774,16 @@ export default function Cronograma() {
                   disabled={!canEditPeso}
                 />
                 {(() => {
+                  if (formData.tipo_atividade === 'aditivo') {
+                    return <p className="text-xs text-amber-600 mt-1">Aditivos somam fora dos 100% do escopo original</p>;
+                  }
                   const otherPeso = atividades
+                    .filter(a => (a.tipo_atividade || 'original') === 'original')
                     .filter(a => !editingAtividade || a.id !== editingAtividade.id)
                     .reduce((s, a) => s + (a.peso || 0), 0);
                   const newTotal = otherPeso + formData.peso;
                   if (newTotal !== 100) {
-                    return <p className="text-xs text-destructive mt-1">Total dos pesos: {newTotal}% (deve ser 100%)</p>;
+                    return <p className="text-xs text-destructive mt-1">Total dos pesos originais: {newTotal}% (deve ser 100%)</p>;
                   }
                   return <p className="text-xs text-success mt-1">Total dos pesos: 100% ✓</p>;
                 })()}
@@ -657,6 +800,10 @@ export default function Cronograma() {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label>Observações (opcional)</Label>
+              <Textarea rows={2} value={formData.observacoes} onChange={e => setFormData(f => ({ ...f, observacoes: e.target.value }))} />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
@@ -664,6 +811,64 @@ export default function Cronograma() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Aditivo Dialog */}
+      <Dialog open={aditivoDialogOpen} onOpenChange={setAditivoDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Registrar Aditivo de Prazo / Escopo</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Descrição *</Label>
+              <Input value={aditivoForm.descricao} onChange={e => setAditivoForm(f => ({ ...f, descricao: e.target.value }))} placeholder="Ex: Recuperação estrutural adicional" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Dias Adicionais (úteis)</Label>
+                <Input type="number" min={0} value={aditivoForm.dias_adicionais} onChange={e => setAditivoForm(f => ({ ...f, dias_adicionais: Math.max(0, Number(e.target.value)) }))} />
+              </div>
+              <div>
+                <Label>Data de Aprovação</Label>
+                <Input type="date" value={aditivoForm.data_aprovacao} onChange={e => setAditivoForm(f => ({ ...f, data_aprovacao: e.target.value }))} />
+              </div>
+            </div>
+            <div>
+              <Label>Responsável pela Aprovação</Label>
+              <Input value={aditivoForm.responsavel_aprovacao} onChange={e => setAditivoForm(f => ({ ...f, responsavel_aprovacao: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Justificativa</Label>
+              <Textarea rows={3} value={aditivoForm.justificativa} onChange={e => setAditivoForm(f => ({ ...f, justificativa: e.target.value }))} />
+            </div>
+            <div>
+              <Label>URL do Documento de Aprovação (opcional)</Label>
+              <Input value={aditivoForm.documento_url} onChange={e => setAditivoForm(f => ({ ...f, documento_url: e.target.value }))} placeholder="https://..." />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Após registrar o aditivo, crie as atividades correspondentes marcando-as como tipo <strong>Aditivo</strong>.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAditivoDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSaveAditivo}>Salvar Aditivo</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Aditivo */}
+      <AlertDialog open={!!deleteAditivoId} onOpenChange={() => setDeleteAditivoId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Aditivo</AlertDialogTitle>
+            <AlertDialogDescription>Esta ação não pode ser desfeita. O prazo da obra será recalculado.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteAditivo}>Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
