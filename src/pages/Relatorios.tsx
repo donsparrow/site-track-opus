@@ -823,9 +823,9 @@ export default function Relatorios() {
           {/* Indicators */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             {[
-              { label: 'Tempo Consumido', value: `${prazos.percentualTempo}%`, icon: Clock, color: '' },
-              { label: 'Obra Executada', value: `${prazos.percentualExecutado}%`, icon: BarChart3, color: smartStatus.color },
-              { label: 'Prazo Contratual', value: `${prazos.contratual} dias`, icon: Calendar, color: '' },
+              { label: 'Progresso Físico Executado', value: `${prazos.percentualExecutado}%`, icon: BarChart3, color: smartStatus.color },
+              { label: 'Prazo Consumido', value: `${prazos.percentualTempo}%`, icon: Clock, color: '' },
+              { label: 'Desvio', value: `${desvioPct > 0 ? '+' : ''}${desvioPct}%`, icon: BarChart3, color: smartStatus.color },
               { label: 'Saldo de Prazo', value: `${prazos.saldo} dias`, icon: Clock, color: saldoColor },
             ].map(item => (
               <Card key={item.label}>
