@@ -817,6 +817,7 @@ export default function DiarioObra() {
                                           setEditAtivDesc(a.descricao);
                                           setEditAtivStatus(normalizedStatus);
                                           setEditAtivPercentual(a.percentual || 0);
+                                          setEditAtivCronId(a.cronograma_atividade_id || null);
                                         }}>
                                           <Pencil className="h-3 w-3" />
                                         </Button>
