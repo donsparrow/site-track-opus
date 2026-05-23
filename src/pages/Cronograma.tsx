@@ -28,6 +28,7 @@ interface Atividade {
   cronograma_id: string;
   ordem: number;
   nome_atividade: string;
+  descricao: string | null;
   data_inicio: string | null;
   data_fim: string | null;
   percentual_concluido: number;
