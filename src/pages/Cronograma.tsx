@@ -65,6 +65,8 @@ export default function Cronograma() {
   const [obras, setObras] = useState<{ id: string; nome: string }[]>([]);
   const [cronograma, setCronograma] = useState<Cronograma | null>(null);
   const [atividades, setAtividades] = useState<Atividade[]>([]);
+  const [prazoContratual, setPrazoContratual] = useState(0);
+  const [primeiroDiario, setPrimeiroDiario] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Dialog state
