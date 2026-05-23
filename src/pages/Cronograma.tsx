@@ -522,6 +522,10 @@ export default function Cronograma() {
               <Label>Nome da Atividade</Label>
               <Input value={formData.nome_atividade} onChange={e => setFormData(f => ({ ...f, nome_atividade: e.target.value }))} />
             </div>
+            <div>
+              <Label>Descrição (opcional)</Label>
+              <Textarea rows={2} value={formData.descricao} onChange={e => setFormData(f => ({ ...f, descricao: e.target.value }))} />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Data Início</Label>
