@@ -756,6 +756,16 @@ export default function DiarioObra() {
                                 const editAutoStatus = percentualToStatus(editAtivPercentual);
                                 return (
                                   <div key={a.id} className="flex flex-col gap-2 p-3 rounded border border-accent bg-accent/5">
+                                    {cronogramaAtividades.length > 0 && (
+                                      <Select value={editAtivCronId || ''} onValueChange={v => setEditAtivCronId(v || null)}>
+                                        <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Vincular ao Cronograma (opcional)" /></SelectTrigger>
+                                        <SelectContent>
+                                          {cronogramaAtividades.map(ca => (
+                                            <SelectItem key={ca.id} value={ca.id}>{ca.nome_atividade} — {ca.percentual_concluido || 0}%</SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    )}
                                     <div className="flex items-center gap-2">
                                       <Input
                                         value={editAtivDesc}
