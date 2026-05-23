@@ -602,13 +602,14 @@ export default function Relatorios() {
     return true;
   });
 
-  // Smart status based on time% vs progress%
+  // Smart status: compare progresso físico vs prazo consumido (tolerância ±5%)
+  const desvioPct = prazos.percentualExecutado - prazos.percentualTempo;
   const getSmartStatus = () => {
     if (!prazos.dataInicioReal) return { label: 'Não iniciada', color: 'text-muted-foreground', bg: 'bg-muted/10 border-muted/30' };
     if (prazos.percentualExecutado <= 0 && prazos.percentualTempo <= 0) return { label: 'Sem dados suficientes', color: 'text-muted-foreground', bg: 'bg-muted/10 border-muted/30' };
-    if (prazos.percentualExecutado >= prazos.percentualTempo) return { label: 'Dentro do prazo', color: 'text-success', bg: 'bg-success/10 border-success/30' };
-    if (prazos.percentualExecutado >= prazos.percentualTempo - 10) return { label: 'Atenção', color: 'text-warning', bg: 'bg-warning/10 border-warning/30' };
-    return { label: 'Atrasado', color: 'text-destructive', bg: 'bg-destructive/10 border-destructive/30' };
+    if (desvioPct > 5) return { label: 'Adiantada', color: 'text-success', bg: 'bg-success/10 border-success/30' };
+    if (desvioPct >= -5) return { label: 'Em Dia', color: 'text-warning', bg: 'bg-warning/10 border-warning/30' };
+    return { label: 'Atrasada', color: 'text-destructive', bg: 'bg-destructive/10 border-destructive/30' };
   };
   const smartStatus = getSmartStatus();
   const saldoColor = prazos.saldo > 0 ? 'text-success' : prazos.saldo < 0 ? 'text-destructive' : 'text-foreground';
