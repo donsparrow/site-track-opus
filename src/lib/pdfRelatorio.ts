@@ -321,15 +321,15 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   newPage();
   sectionTitle('1. RESUMO EXECUTIVO');
 
-  // Smart status: compare time% vs progress%
+  // Smart status: progresso físico vs prazo consumido (tolerância ±5%)
   const pExec = data.prazos.percentualExecutado;
   const pTime = data.prazos.percentualTempo;
+  const desvio = pExec - pTime;
   const statusObra = (!data.prazos.dataInicioReal) ? 'Não iniciada'
-    : (pExec >= pTime) ? 'Dentro do prazo'
-    : (pExec >= pTime - 10) ? 'Atenção'
-    : 'Atrasado';
-  const statusColor = statusObra === 'Dentro do prazo' ? [34, 197, 94] : statusObra === 'Atenção' ? [234, 179, 8] : statusObra === 'Atrasado' ? [239, 68, 68] : [150, 150, 150];
-  const statusIcon = '●';
+    : (desvio > 5) ? 'Adiantada'
+    : (desvio >= -5) ? 'Em Dia'
+    : 'Atrasada';
+  const statusColor = statusObra === 'Adiantada' ? [34, 197, 94] : statusObra === 'Em Dia' ? [234, 179, 8] : statusObra === 'Atrasada' ? [239, 68, 68] : [150, 150, 150];
 
   // Status box
   doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
@@ -344,9 +344,12 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   doc.setTextColor(0);
   doc.setFontSize(9);
 
+  const desvioStr = `${desvio > 0 ? '+' : ''}${desvio}%`;
   const summaryData = [
-    ['Obra Executada', `${data.prazos.percentualExecutado}%`],
-    ['Tempo Consumido', `${data.prazos.percentualTempo}%`],
+    ['Progresso Físico Executado', `${pExec}%`],
+    ['Prazo Consumido', `${pTime}%`],
+    ['Desvio', desvioStr],
+    ['Status da Obra', statusObra],
     ['Período do Relatório', `${fmt(data.periodo.inicio)} a ${fmt(data.periodo.fim)}`],
     ['Dias Trabalhados', `${data.prazos.trabalhados}`],
     ['Dias Parados', `${data.prazos.parados}`],
@@ -358,11 +361,40 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     body: summaryData,
     margin: { left: MARGIN, right: MARGIN },
     styles: { fontSize: 10, cellPadding: 4 },
-    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 60 } },
+    columnStyles: { 0: { fontStyle: 'bold', cellWidth: 70 } },
     alternateRowStyles: { fillColor: [245, 247, 250] },
     theme: 'plain',
   });
   y = (doc as any).lastAutoTable.finalY + 6;
+
+  // Comparative bars: Planejado x Executado
+  checkPage(28);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Planejado x Executado:', MARGIN, y);
+  y += 5;
+  const cmpBarW = contentW;
+  // Planejado (prazo consumido)
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text(`Planejado (Prazo Consumido): ${pTime}%`, MARGIN, y);
+  y += 3;
+  doc.setFillColor(229, 231, 235);
+  doc.roundedRect(MARGIN, y, cmpBarW, 5, 1.5, 1.5, 'F');
+  if (pTime > 0) {
+    doc.setFillColor(148, 163, 184);
+    doc.roundedRect(MARGIN, y, cmpBarW * Math.min(pTime, 100) / 100, 5, 1.5, 1.5, 'F');
+  }
+  y += 8;
+  doc.text(`Executado (Progresso Físico): ${pExec}%`, MARGIN, y);
+  y += 3;
+  doc.setFillColor(229, 231, 235);
+  doc.roundedRect(MARGIN, y, cmpBarW, 5, 1.5, 1.5, 'F');
+  if (pExec > 0) {
+    doc.setFillColor(statusColor[0], statusColor[1], statusColor[2]);
+    doc.roundedRect(MARGIN, y, cmpBarW * Math.min(pExec, 100) / 100, 5, 1.5, 1.5, 'F');
+  }
+  y += 8;
 
   // Progress bar
   checkPage(15);
