@@ -190,10 +190,10 @@ export default function Cronograma() {
   };
 
   // CRUD
-  const openNew = () => {
+  const openNew = (tipo: 'original' | 'aditivo' = 'original') => {
     setEditingAtividade(null);
-    const sugPeso = atividades.length === 0 ? 100 : Math.max(0, 100 - atividades.reduce((s, a) => s + (a.peso || 0), 0));
-    setFormData({ nome_atividade: '', descricao: '', data_inicio: '', data_fim: '', percentual_concluido: 0, status: 'nao_iniciado', peso: sugPeso });
+    const sugPeso = tipo === 'aditivo' ? 0 : (atividades.length === 0 ? 100 : Math.max(0, 100 - atividades.reduce((s, a) => s + (a.peso || 0), 0)));
+    setFormData({ nome_atividade: '', descricao: '', data_inicio: '', data_fim: '', percentual_concluido: 0, status: 'nao_iniciado', peso: sugPeso, tipo_atividade: tipo, observacoes: '' });
     setDialogOpen(true);
   };
   const openEdit = (a: Atividade) => {
@@ -206,16 +206,20 @@ export default function Cronograma() {
       percentual_concluido: a.percentual_concluido,
       status: a.status,
       peso: a.peso || 0,
+      tipo_atividade: a.tipo_atividade || 'original',
+      observacoes: a.observacoes || '',
     });
     setDialogOpen(true);
   };
   const handleSave = async () => {
     if (!formData.nome_atividade || !cronograma) return;
-    const otherPeso = atividades
+    // Validação peso: somente atividades originais (aditivos somam fora do 100%)
+    const otherOriginalPeso = atividades
+      .filter(a => (a.tipo_atividade || 'original') === 'original')
       .filter(a => !editingAtividade || a.id !== editingAtividade.id)
       .reduce((s, a) => s + (a.peso || 0), 0);
-    if (otherPeso + formData.peso > 100) {
-      toast.error(`Soma dos pesos excede 100% (${otherPeso + formData.peso}%). Ajuste o peso antes de salvar.`);
+    if (formData.tipo_atividade === 'original' && otherOriginalPeso + formData.peso > 100) {
+      toast.error(`Soma dos pesos do escopo original excede 100% (${otherOriginalPeso + formData.peso}%). Ajuste o peso.`);
       return;
     }
     if (editingAtividade) {
@@ -227,6 +231,8 @@ export default function Cronograma() {
         percentual_concluido: formData.percentual_concluido,
         status: formData.status,
         peso: formData.peso,
+        tipo_atividade: formData.tipo_atividade,
+        observacoes: formData.observacoes || null,
       } as any).eq('id', editingAtividade.id);
       toast.success('Atividade atualizada');
     } else {
@@ -241,6 +247,8 @@ export default function Cronograma() {
         status: formData.status,
         ordem: maxOrdem + 1,
         peso: formData.peso,
+        tipo_atividade: formData.tipo_atividade,
+        observacoes: formData.observacoes || null,
       } as any);
       toast.success('Atividade criada');
     }
@@ -252,6 +260,35 @@ export default function Cronograma() {
     await supabase.from('cronograma_atividades').delete().eq('id', deleteId);
     toast.success('Atividade excluída');
     setDeleteId(null);
+    loadCronograma();
+  };
+
+  // Aditivo CRUD
+  const openNewAditivo = () => {
+    setAditivoForm({ descricao: '', dias_adicionais: 0, data_aprovacao: '', justificativa: '', responsavel_aprovacao: '', documento_url: '' });
+    setAditivoDialogOpen(true);
+  };
+  const handleSaveAditivo = async () => {
+    if (!aditivoForm.descricao || !obraId) { toast.error('Informe a descrição do aditivo'); return; }
+    const { error } = await supabase.from('obra_aditivos' as any).insert({
+      obra_id: obraId,
+      descricao: aditivoForm.descricao,
+      dias_adicionais: aditivoForm.dias_adicionais || 0,
+      data_aprovacao: aditivoForm.data_aprovacao || null,
+      justificativa: aditivoForm.justificativa || null,
+      responsavel_aprovacao: aditivoForm.responsavel_aprovacao || null,
+      documento_url: aditivoForm.documento_url || null,
+    } as any);
+    if (error) { toast.error('Erro: ' + error.message); return; }
+    toast.success('Aditivo registrado');
+    setAditivoDialogOpen(false);
+    loadCronograma();
+  };
+  const handleDeleteAditivo = async () => {
+    if (!deleteAditivoId) return;
+    await supabase.from('obra_aditivos' as any).delete().eq('id', deleteAditivoId);
+    toast.success('Aditivo excluído');
+    setDeleteAditivoId(null);
     loadCronograma();
   };
   const moveAtividade = async (id: string, direction: 'up' | 'down') => {
