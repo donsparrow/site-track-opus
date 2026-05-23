@@ -492,53 +492,107 @@ export default function Cronograma() {
       {/* Indicadores: Planejado x Executado */}
       <Card className={`border ${statusObra.cls}`}>
         <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">{statusObra.dot}</span>
-              <div>
-                <p className={`font-bold text-lg ${statusObra.color}`}>{statusObra.label}</p>
-                <p className="text-xs text-muted-foreground">
-                  Executado: {progressoGeral}% • Prazo Consumido: {prazoConsumido}% • Desvio: {desvio > 0 ? '+' : ''}{desvio}%
-                </p>
-              </div>
+          {!planejamentoConfigurado ? (
+            <div className="text-center py-4">
+              <p className="text-2xl mb-2">⚪</p>
+              <p className="font-bold text-base text-muted-foreground">Planejamento não configurado</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Cadastre atividades no Cronograma para habilitar o cálculo de progresso, prazo consumido, desvio e status.
+              </p>
             </div>
-            <div className="grid grid-cols-4 gap-3 md:gap-4 text-center">
-              <div>
-                <p className="text-[10px] text-muted-foreground">Executado</p>
-                <p className="text-sm font-bold">{progressoGeral}%</p>
+          ) : (
+            <>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{statusObra.dot}</span>
+                  <div>
+                    <p className={`font-bold text-lg ${statusObra.color}`}>{statusObra.label}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Executado: {progressoGeral}% • Prazo Consumido: {prazoConsumido}% • Desvio: {desvio > 0 ? '+' : ''}{desvio}%
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 gap-3 md:gap-4 text-center">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Executado</p>
+                    <p className="text-sm font-bold">{progressoGeral}%</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Prazo</p>
+                    <p className="text-sm font-bold">{prazoConsumido}%</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Desvio</p>
+                    <p className={`text-sm font-bold ${statusObra.color}`}>{desvio > 0 ? '+' : ''}{desvio}%</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">Prazo {diasAditivos > 0 ? `(+${diasAditivos} aditivo)` : '(dias úteis)'}</p>
+                    <p className="text-sm font-bold">{diasDecorridos}/{prazoEfetivo || '—'}</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Prazo</p>
-                <p className="text-sm font-bold">{prazoConsumido}%</p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="w-20 text-muted-foreground">Planejado</span>
+                  <div className="flex-1 h-3 bg-muted rounded overflow-hidden">
+                    <div className="h-full bg-slate-400 dark:bg-slate-500" style={{ width: `${Math.min(prazoConsumido, 100)}%` }} />
+                  </div>
+                  <span className="w-10 text-right font-medium">{prazoConsumido}%</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="w-20 text-muted-foreground">Executado</span>
+                  <div className="flex-1 h-3 bg-muted rounded overflow-hidden">
+                    <div className={`h-full ${desvio > 5 ? 'bg-success' : desvio >= -5 ? 'bg-warning' : 'bg-destructive'}`} style={{ width: `${Math.min(progressoGeral, 100)}%` }} />
+                  </div>
+                  <span className="w-10 text-right font-medium">{progressoGeral}%</span>
+                </div>
               </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Desvio</p>
-                <p className={`text-sm font-bold ${statusObra.color}`}>{desvio > 0 ? '+' : ''}{desvio}%</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground">Prazo (dias úteis)</p>
-                <p className="text-sm font-bold">{diasDecorridos}/{prazoContratual || '—'}</p>
-              </div>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs">
-              <span className="w-20 text-muted-foreground">Planejado</span>
-              <div className="flex-1 h-3 bg-muted rounded overflow-hidden">
-                <div className="h-full bg-slate-400 dark:bg-slate-500" style={{ width: `${Math.min(prazoConsumido, 100)}%` }} />
-              </div>
-              <span className="w-10 text-right font-medium">{prazoConsumido}%</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs">
-              <span className="w-20 text-muted-foreground">Executado</span>
-              <div className="flex-1 h-3 bg-muted rounded overflow-hidden">
-                <div className={`h-full ${desvio > 5 ? 'bg-success' : desvio >= -5 ? 'bg-warning' : 'bg-destructive'}`} style={{ width: `${Math.min(progressoGeral, 100)}%` }} />
-              </div>
-              <span className="w-10 text-right font-medium">{progressoGeral}%</span>
-            </div>
-          </div>
+            </>
+          )}
         </CardContent>
       </Card>
+
+      {/* Aditivos */}
+      {aditivos.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Aditivos da Obra ({aditivos.length})</CardTitle></CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Descrição</TableHead>
+                    <TableHead className="w-28">Dias Adicionais</TableHead>
+                    <TableHead className="w-32">Data Aprovação</TableHead>
+                    <TableHead>Responsável</TableHead>
+                    {canEdit && <TableHead className="w-20"></TableHead>}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {aditivos.map(ad => (
+                    <TableRow key={ad.id}>
+                      <TableCell>
+                        <div className="font-medium text-sm">{ad.descricao}</div>
+                        {ad.justificativa && <div className="text-xs text-muted-foreground mt-0.5">{ad.justificativa}</div>}
+                      </TableCell>
+                      <TableCell><Badge variant="outline">+{ad.dias_adicionais} dias</Badge></TableCell>
+                      <TableCell className="text-xs">{ad.data_aprovacao ? format(parseISO(ad.data_aprovacao), 'dd/MM/yyyy') : '—'}</TableCell>
+                      <TableCell className="text-xs">{ad.responsavel_aprovacao || '—'}</TableCell>
+                      {canEdit && (
+                        <TableCell>
+                          <Button variant="ghost" size="icon" onClick={() => setDeleteAditivoId(ad.id)}>
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                          </Button>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Activities Table */}
       <Card>
