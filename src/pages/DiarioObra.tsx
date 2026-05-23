@@ -398,24 +398,41 @@ export default function DiarioObra() {
     setAddingEquipe(false);
   };
 
-  const addAtividadeItem = async (descricao: string, status: string, percentual: number) => {
+  const syncCronogramaProgresso = async (cronAtivId: string, percentual: number) => {
+    const status = percentual >= 100 ? 'concluido' : percentual > 0 ? 'em_andamento' : 'nao_iniciado';
+    await supabase.from('cronograma_atividades')
+      .update({ percentual_concluido: Math.round(percentual), status } as any)
+      .eq('id', cronAtivId);
+  };
+
+  const addAtividadeItem = async (descricao: string, status: string, percentual: number, cronAtivId: string | null) => {
     if (!selectedDiario) return;
     const finalStatus = percentualToStatus(percentual);
     const { error } = await supabase.from('diario_atividades').insert({
-      diario_id: selectedDiario.id, descricao, status: finalStatus, percentual
-    });
+      diario_id: selectedDiario.id, descricao, status: finalStatus, percentual,
+      cronograma_atividade_id: cronAtivId || null,
+    } as any);
     if (error) toast.error(error.message);
-    else { toast.success('Adicionado!'); fetchDiarioDetails(selectedDiario); }
+    else {
+      if (cronAtivId) await syncCronogramaProgresso(cronAtivId, percentual);
+      toast.success('Adicionado!');
+      fetchDiarioDetails(selectedDiario);
+    }
     setAddingAtividade(false);
   };
 
   const updateAtividadeItem = async (id: string) => {
     const finalStatus = percentualToStatus(editAtivPercentual);
     const { error } = await supabase.from('diario_atividades')
-      .update({ descricao: editAtivDesc, status: finalStatus, percentual: editAtivPercentual })
+      .update({ descricao: editAtivDesc, status: finalStatus, percentual: editAtivPercentual, cronograma_atividade_id: editAtivCronId || null } as any)
       .eq('id', id);
     if (error) toast.error(error.message);
-    else { toast.success('Atividade atualizada!'); setEditingAtividadeId(null); fetchDiarioDetails(selectedDiario); }
+    else {
+      if (editAtivCronId) await syncCronogramaProgresso(editAtivCronId, editAtivPercentual);
+      toast.success('Atividade atualizada!');
+      setEditingAtividadeId(null);
+      fetchDiarioDetails(selectedDiario);
+    }
   };
 
   const deleteAtividadeItem = async (id: string) => {
