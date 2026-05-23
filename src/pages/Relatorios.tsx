@@ -191,11 +191,18 @@ export default function Relatorios() {
     const dataInicioReal = primeiroDiario?.data || '';
 
     const obra = obras.find(o => o.id === selectedObra);
-    const prazoContratual = (obra?.prazo_contratual_dias && obra.prazo_contratual_dias > 0)
+    const prazoContratualBase = (obra?.prazo_contratual_dias && obra.prazo_contratual_dias > 0)
       ? obra.prazo_contratual_dias
       : (obra?.data_inicio && obra?.data_fim_prevista
         ? calcBusinessDays(obra.data_inicio, obra.data_fim_prevista)
         : 0);
+
+    // Load aditivos and apply to prazo efetivo
+    const { data: aditivosRows } = await supabase.from('obra_aditivos' as any).select('*').eq('obra_id', selectedObra);
+    const aditivosList = (aditivosRows as any[]) || [];
+    const diasAditivos = aditivosList.reduce((s, a) => s + (a.dias_adicionais || 0), 0);
+    const prazoContratual = prazoContratualBase + diasAditivos;
+    setAditivos(aditivosList);
 
     let diasParados = 0;
     if (diarioIds.length > 0) {
@@ -214,21 +221,24 @@ export default function Relatorios() {
     // Smart status: percentual de tempo vs percentual executado
     const percentualTempo = prazoContratual > 0 ? Math.round((diasTrabalhados / prazoContratual) * 100) : 0;
 
-    // Calculate weighted progress from cronograma
+    // Calculate weighted progress from cronograma — only if cronograma exists
     let percentualExecutado = 0;
+    let cronogramaHasAtividades = false;
     if (cronData) {
       const { data: cronAtivs } = await supabase
         .from('cronograma_atividades')
         .select('percentual_concluido, peso')
         .eq('cronograma_id', cronData.id);
       const ativs = cronAtivs || [];
+      cronogramaHasAtividades = ativs.length > 0;
       if (ativs.length > 0) {
         const totalPesoCalc = ativs.reduce((s: number, c: any) => s + (c.peso || 0), 0);
-        percentualExecutado = totalPesoCalc === 100
-          ? Math.round(ativs.reduce((s: number, c: any) => s + ((c.peso || 0) * c.percentual_concluido), 0) / 100)
+        percentualExecutado = totalPesoCalc > 0
+          ? Math.round(ativs.reduce((s: number, c: any) => s + ((c.peso || 0) * c.percentual_concluido), 0) / Math.max(totalPesoCalc, 1))
           : Math.round(ativs.reduce((s: number, c: any) => s + c.percentual_concluido, 0) / ativs.length);
       }
     }
+    setPlanejamentoConfigurado(cronogramaHasAtividades);
 
     setPrazos({
       contratual: prazoContratual,
