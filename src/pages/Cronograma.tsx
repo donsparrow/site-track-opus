@@ -728,9 +728,21 @@ export default function Cronograma() {
             <DialogTitle>{editingAtividade ? 'Editar Atividade' : 'Nova Atividade'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <Label>Nome da Atividade</Label>
-              <Input value={formData.nome_atividade} onChange={e => setFormData(f => ({ ...f, nome_atividade: e.target.value }))} />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Nome da Atividade</Label>
+                <Input value={formData.nome_atividade} onChange={e => setFormData(f => ({ ...f, nome_atividade: e.target.value }))} />
+              </div>
+              <div>
+                <Label>Tipo</Label>
+                <Select value={formData.tipo_atividade} onValueChange={v => setFormData(f => ({ ...f, tipo_atividade: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="original">Contrato Original</SelectItem>
+                    <SelectItem value="aditivo">Aditivo</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div>
               <Label>Descrição (opcional)</Label>
@@ -762,12 +774,16 @@ export default function Cronograma() {
                   disabled={!canEditPeso}
                 />
                 {(() => {
+                  if (formData.tipo_atividade === 'aditivo') {
+                    return <p className="text-xs text-amber-600 mt-1">Aditivos somam fora dos 100% do escopo original</p>;
+                  }
                   const otherPeso = atividades
+                    .filter(a => (a.tipo_atividade || 'original') === 'original')
                     .filter(a => !editingAtividade || a.id !== editingAtividade.id)
                     .reduce((s, a) => s + (a.peso || 0), 0);
                   const newTotal = otherPeso + formData.peso;
                   if (newTotal !== 100) {
-                    return <p className="text-xs text-destructive mt-1">Total dos pesos: {newTotal}% (deve ser 100%)</p>;
+                    return <p className="text-xs text-destructive mt-1">Total dos pesos originais: {newTotal}% (deve ser 100%)</p>;
                   }
                   return <p className="text-xs text-success mt-1">Total dos pesos: 100% ✓</p>;
                 })()}
@@ -784,6 +800,10 @@ export default function Cronograma() {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label>Observações (opcional)</Label>
+              <Textarea rows={2} value={formData.observacoes} onChange={e => setFormData(f => ({ ...f, observacoes: e.target.value }))} />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
@@ -791,6 +811,64 @@ export default function Cronograma() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Aditivo Dialog */}
+      <Dialog open={aditivoDialogOpen} onOpenChange={setAditivoDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Registrar Aditivo de Prazo / Escopo</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Descrição *</Label>
+              <Input value={aditivoForm.descricao} onChange={e => setAditivoForm(f => ({ ...f, descricao: e.target.value }))} placeholder="Ex: Recuperação estrutural adicional" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Dias Adicionais (úteis)</Label>
+                <Input type="number" min={0} value={aditivoForm.dias_adicionais} onChange={e => setAditivoForm(f => ({ ...f, dias_adicionais: Math.max(0, Number(e.target.value)) }))} />
+              </div>
+              <div>
+                <Label>Data de Aprovação</Label>
+                <Input type="date" value={aditivoForm.data_aprovacao} onChange={e => setAditivoForm(f => ({ ...f, data_aprovacao: e.target.value }))} />
+              </div>
+            </div>
+            <div>
+              <Label>Responsável pela Aprovação</Label>
+              <Input value={aditivoForm.responsavel_aprovacao} onChange={e => setAditivoForm(f => ({ ...f, responsavel_aprovacao: e.target.value }))} />
+            </div>
+            <div>
+              <Label>Justificativa</Label>
+              <Textarea rows={3} value={aditivoForm.justificativa} onChange={e => setAditivoForm(f => ({ ...f, justificativa: e.target.value }))} />
+            </div>
+            <div>
+              <Label>URL do Documento de Aprovação (opcional)</Label>
+              <Input value={aditivoForm.documento_url} onChange={e => setAditivoForm(f => ({ ...f, documento_url: e.target.value }))} placeholder="https://..." />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Após registrar o aditivo, crie as atividades correspondentes marcando-as como tipo <strong>Aditivo</strong>.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAditivoDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSaveAditivo}>Salvar Aditivo</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Aditivo */}
+      <AlertDialog open={!!deleteAditivoId} onOpenChange={() => setDeleteAditivoId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Aditivo</AlertDialogTitle>
+            <AlertDialogDescription>Esta ação não pode ser desfeita. O prazo da obra será recalculado.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteAditivo}>Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
