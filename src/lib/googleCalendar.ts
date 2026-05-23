@@ -9,26 +9,16 @@ async function call<T = any>(action: string, body: Record<string, unknown> = {})
   return data as T;
 }
 
-export const GOOGLE_SCOPES = [
-  "https://www.googleapis.com/auth/calendar.events",
-  "https://www.googleapis.com/auth/calendar.readonly",
-  "https://www.googleapis.com/auth/userinfo.email",
-].join(" ");
-
-export function buildGoogleAuthUrl(clientId: string, redirectUri: string) {
-  const params = new URLSearchParams({
-    client_id: clientId,
-    redirect_uri: redirectUri,
-    response_type: "code",
-    scope: GOOGLE_SCOPES,
-    access_type: "offline",
-    prompt: "consent",
-    include_granted_scopes: "true",
-  });
-  return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-}
-
 export const googleCalendar = {
+  authUrl: (redirect_uri: string) => call<{ url: string }>("auth-url", { redirect_uri }),
+  status: () => call<{ connected: boolean; email: string | null }>("status"),
+  exchange: (code: string, redirect_uri: string) => call<{ ok: boolean; email: string }>("exchange", { code, redirect_uri }),
+  disconnect: () => call<{ ok: boolean }>("disconnect"),
+  listEvents: (timeMin: string, timeMax: string) => call<{ items: GoogleEvent[] }>("list-events", { timeMin, timeMax }),
+  createEvent: (event: GoogleEventInput) => call<{ event: GoogleEvent }>("create-event", { event }),
+  updateEvent: (eventId: string, event: GoogleEventInput) => call<{ event: GoogleEvent }>("update-event", { eventId, event }),
+  deleteEvent: (eventId: string) => call<{ ok: boolean }>("delete-event", { eventId }),
+};
   status: () => call<{ connected: boolean; email: string | null }>("status"),
   exchange: (code: string, redirect_uri: string) => call<{ ok: boolean; email: string }>("exchange", { code, redirect_uri }),
   disconnect: () => call<{ ok: boolean }>("disconnect"),
