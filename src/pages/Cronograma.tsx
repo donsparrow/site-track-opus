@@ -131,14 +131,15 @@ export default function Cronograma() {
   // CRUD
   const openNew = () => {
     setEditingAtividade(null);
-    const sugPeso = atividades.length === 0 ? 100 : Math.floor(100 / (atividades.length + 1));
-    setFormData({ nome_atividade: '', data_inicio: '', data_fim: '', percentual_concluido: 0, status: 'nao_iniciado', peso: sugPeso });
+    const sugPeso = atividades.length === 0 ? 100 : Math.max(0, 100 - atividades.reduce((s, a) => s + (a.peso || 0), 0));
+    setFormData({ nome_atividade: '', descricao: '', data_inicio: '', data_fim: '', percentual_concluido: 0, status: 'nao_iniciado', peso: sugPeso });
     setDialogOpen(true);
   };
   const openEdit = (a: Atividade) => {
     setEditingAtividade(a);
     setFormData({
       nome_atividade: a.nome_atividade,
+      descricao: a.descricao || '',
       data_inicio: a.data_inicio || '',
       data_fim: a.data_fim || '',
       percentual_concluido: a.percentual_concluido,
@@ -149,9 +150,17 @@ export default function Cronograma() {
   };
   const handleSave = async () => {
     if (!formData.nome_atividade || !cronograma) return;
+    const otherPeso = atividades
+      .filter(a => !editingAtividade || a.id !== editingAtividade.id)
+      .reduce((s, a) => s + (a.peso || 0), 0);
+    if (otherPeso + formData.peso > 100) {
+      toast.error(`Soma dos pesos excede 100% (${otherPeso + formData.peso}%). Ajuste o peso antes de salvar.`);
+      return;
+    }
     if (editingAtividade) {
       await supabase.from('cronograma_atividades').update({
         nome_atividade: formData.nome_atividade,
+        descricao: formData.descricao || null,
         data_inicio: formData.data_inicio || null,
         data_fim: formData.data_fim || null,
         percentual_concluido: formData.percentual_concluido,
@@ -164,6 +173,7 @@ export default function Cronograma() {
       await supabase.from('cronograma_atividades').insert({
         cronograma_id: cronograma.id,
         nome_atividade: formData.nome_atividade,
+        descricao: formData.descricao || null,
         data_inicio: formData.data_inicio || null,
         data_fim: formData.data_fim || null,
         percentual_concluido: formData.percentual_concluido,
