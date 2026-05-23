@@ -80,6 +80,7 @@ export default function Cronograma() {
   const [obras, setObras] = useState<{ id: string; nome: string }[]>([]);
   const [cronograma, setCronograma] = useState<Cronograma | null>(null);
   const [atividades, setAtividades] = useState<Atividade[]>([]);
+  const [aditivos, setAditivos] = useState<Aditivo[]>([]);
   const [prazoContratual, setPrazoContratual] = useState(0);
   const [primeiroDiario, setPrimeiroDiario] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -87,7 +88,12 @@ export default function Cronograma() {
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAtividade, setEditingAtividade] = useState<Atividade | null>(null);
-  const [formData, setFormData] = useState({ nome_atividade: '', descricao: '', data_inicio: '', data_fim: '', percentual_concluido: 0, status: 'nao_iniciado', peso: 0 });
+  const [formData, setFormData] = useState({ nome_atividade: '', descricao: '', data_inicio: '', data_fim: '', percentual_concluido: 0, status: 'nao_iniciado', peso: 0, tipo_atividade: 'original', observacoes: '' });
+
+  // Aditivo dialog
+  const [aditivoDialogOpen, setAditivoDialogOpen] = useState(false);
+  const [aditivoForm, setAditivoForm] = useState({ descricao: '', dias_adicionais: 0, data_aprovacao: '', justificativa: '', responsavel_aprovacao: '', documento_url: '' });
+  const [deleteAditivoId, setDeleteAditivoId] = useState<string | null>(null);
 
   // Delete
   const [deleteId, setDeleteId] = useState<string | null>(null);
