@@ -86,6 +86,28 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const { action } = body;
 
+    // ============================== AUTH URL ==============================
+    if (action === "auth-url") {
+      const { redirect_uri } = body;
+      if (!redirect_uri) return json({ error: "missing redirect_uri" }, 400);
+      const scope = [
+        "https://www.googleapis.com/auth/calendar.events",
+        "https://www.googleapis.com/auth/calendar.readonly",
+        "https://www.googleapis.com/auth/userinfo.email",
+      ].join(" ");
+      const params = new URLSearchParams({
+        client_id: clientId,
+        redirect_uri,
+        response_type: "code",
+        scope,
+        access_type: "offline",
+        prompt: "consent",
+        include_granted_scopes: "true",
+        state: user.id,
+      });
+      return json({ url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}` });
+    }
+
     // ============================== EXCHANGE ==============================
     if (action === "exchange") {
       const { code, redirect_uri } = body;
