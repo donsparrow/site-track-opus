@@ -386,10 +386,12 @@ export type Database = {
           descricao: string | null
           id: string
           nome_atividade: string
+          observacoes: string | null
           ordem: number
           percentual_concluido: number
           peso: number
           status: string
+          tipo_atividade: string
           updated_at: string
         }
         Insert: {
@@ -400,10 +402,12 @@ export type Database = {
           descricao?: string | null
           id?: string
           nome_atividade: string
+          observacoes?: string | null
           ordem?: number
           percentual_concluido?: number
           peso?: number
           status?: string
+          tipo_atividade?: string
           updated_at?: string
         }
         Update: {
@@ -414,10 +418,12 @@ export type Database = {
           descricao?: string | null
           id?: string
           nome_atividade?: string
+          observacoes?: string | null
           ordem?: number
           percentual_concluido?: number
           peso?: number
           status?: string
+          tipo_atividade?: string
           updated_at?: string
         }
         Relationships: [
@@ -1215,6 +1221,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      obra_aditivos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data_aprovacao: string | null
+          descricao: string
+          dias_adicionais: number
+          documento_url: string | null
+          empresa_id: string | null
+          id: string
+          justificativa: string | null
+          obra_id: string
+          responsavel_aprovacao: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data_aprovacao?: string | null
+          descricao: string
+          dias_adicionais?: number
+          documento_url?: string | null
+          empresa_id?: string | null
+          id?: string
+          justificativa?: string | null
+          obra_id: string
+          responsavel_aprovacao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data_aprovacao?: string | null
+          descricao?: string
+          dias_adicionais?: number
+          documento_url?: string | null
+          empresa_id?: string | null
+          id?: string
+          justificativa?: string | null
+          obra_id?: string
+          responsavel_aprovacao?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       obras: {
         Row: {
