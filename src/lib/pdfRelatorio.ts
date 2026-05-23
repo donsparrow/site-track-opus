@@ -40,7 +40,9 @@ interface RelatorioPDFData {
   materiais: any[];
   ocorrencias: any[];
   imagens: any[];
-  cronograma: { nome_atividade: string; data_inicio: string | null; data_fim: string | null; percentual_concluido: number; status: string; peso?: number }[];
+  cronograma: { nome_atividade: string; data_inicio: string | null; data_fim: string | null; percentual_concluido: number; status: string; peso?: number; tipo_atividade?: string }[];
+  aditivos?: { descricao: string; dias_adicionais: number; data_aprovacao?: string | null; justificativa?: string | null; responsavel_aprovacao?: string | null }[];
+  planejamentoConfigurado?: boolean;
   assinaturas: any[];
   versao?: number;
   versoes?: { rev: string; data: string; resumo: string }[];
