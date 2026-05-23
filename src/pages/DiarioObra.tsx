@@ -144,6 +144,16 @@ export default function DiarioObra() {
       fetchDiarios(selectedObra);
       const obra = obras.find(o => o.id === selectedObra);
       setPrazoContratual((obra as any)?.prazo_contratual_dias || 0);
+      // Fetch cronograma atividades for linkage dropdown
+      (async () => {
+        const { data: cron } = await supabase.from('cronograma').select('id').eq('obra_id', selectedObra).maybeSingle();
+        if (cron) {
+          const { data: ativs } = await supabase.from('cronograma_atividades').select('id, nome_atividade, percentual_concluido, peso').eq('cronograma_id', cron.id).order('ordem');
+          setCronogramaAtividades(ativs || []);
+        } else {
+          setCronogramaAtividades([]);
+        }
+      })();
     }
   }, [selectedObra]);
 
