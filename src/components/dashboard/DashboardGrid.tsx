@@ -1,18 +1,21 @@
 import { useMemo } from 'react';
-import { Responsive, WidthProvider, Layout, Layouts } from 'react-grid-layout';
+// @ts-expect-error - v1 API not present in installed @types
+import { Responsive, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import WidgetFrame from './WidgetFrame';
 import { WIDGET_REGISTRY } from './widgetRegistry';
 import { SIZE_PRESETS, WidgetInstance, GridLayoutItem } from '@/types/dashboard';
 
+type RglItem = GridLayoutItem;
+type RglLayouts = Record<string, RglItem[]>;
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
 interface Props {
   widgets: WidgetInstance[];
   gridConfig: { lg?: GridLayoutItem[]; md?: GridLayoutItem[]; sm?: GridLayoutItem[] };
   editMode: boolean;
-  onLayoutChange: (lg: Layout[], all: Layouts) => void;
+  onLayoutChange: (lg: RglItem[], all: RglLayouts) => void;
   onConfigWidget: (w: WidgetInstance) => void;
   onToggleHidden: (id: string) => void;
 }
