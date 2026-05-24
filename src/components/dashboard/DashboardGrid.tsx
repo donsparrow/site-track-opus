@@ -32,6 +32,25 @@ function packDefault(widgets: WidgetInstance[]): GridLayoutItem[] {
 }
 
 export default function DashboardGrid({ widgets, gridConfig, editMode, onLayoutChange, onConfigWidget, onToggleHidden }: Props) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [width, setWidth] = useState<number>(1200);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const w = entry.contentRect.width;
+        if (w && w > 0) setWidth(w);
+      }
+    });
+    ro.observe(el);
+    // initial measurement
+    const initial = el.getBoundingClientRect().width;
+    if (initial > 0) setWidth(initial);
+    return () => ro.disconnect();
+  }, []);
+
   // Drop widgets whose type is no longer registered, so a stale layout never breaks the page
   const safeWidgets = useMemo(() => widgets.filter(w => !!WIDGET_REGISTRY[w.type]), [widgets]);
   const visible = useMemo(() => safeWidgets.filter(w => editMode || !w.hidden), [safeWidgets, editMode]);
