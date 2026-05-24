@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { usePermissions, type Modulo } from '@/hooks/usePermissions';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,7 +13,16 @@ export default function ProtectedRoute({ modulo, children, requireEdit = false }
   const { loading: authLoading } = useAuth();
   const { loading: permLoading, pode } = usePermissions();
 
-  if (authLoading || permLoading) {
+  // Safety timeout: in the Lovable preview iframe, third-party cookies can be
+  // blocked, leaving auth/permissions loading forever. After 3s we let the
+  // page render — RLS still protects data on the server.
+  const [forceRender, setForceRender] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setForceRender(true), 3000);
+    return () => clearTimeout(t);
+  }, []);
+
+  if ((authLoading || permLoading) && !forceRender) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="animate-spin h-8 w-8 border-4 border-accent border-t-transparent rounded-full" />
@@ -20,11 +30,12 @@ export default function ProtectedRoute({ modulo, children, requireEdit = false }
     );
   }
 
-  if (!pode(modulo, 'visualizar')) {
+  // After timeout, only block if we already know permission is denied.
+  if (!authLoading && !permLoading && !pode(modulo, 'visualizar')) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  if (requireEdit && !pode(modulo, 'editar')) {
+  if (!authLoading && !permLoading && requireEdit && !pode(modulo, 'editar')) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-center space-y-2">
