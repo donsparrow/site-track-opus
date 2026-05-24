@@ -11,6 +11,7 @@ import NovaObraDialog from '@/components/NovaObraDialog';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useDashboardLayout } from '@/hooks/useDashboardLayout';
 import DashboardGrid from '@/components/dashboard/DashboardGrid';
+import DashboardErrorBoundary from '@/components/dashboard/DashboardErrorBoundary';
 import WidgetLibrary from '@/components/dashboard/WidgetLibrary';
 import WidgetConfigDialog from '@/components/dashboard/WidgetConfigDialog';
 import { WIDGET_REGISTRY } from '@/components/dashboard/widgetRegistry';
@@ -19,7 +20,7 @@ import { toast } from '@/hooks/use-toast';
 type RglItem = GridLayoutItem;
 type RglLayouts = Record<string, RglItem[]>;
 
-export default function Dashboard() {
+function DashboardInner() {
   const { canEdit } = useAuth();
   const navigate = useNavigate();
   const { pode } = usePermissions();
@@ -135,7 +136,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {!layoutLoading && (
+      <DashboardErrorBoundary fallbackTitle="Não foi possível carregar o painel. Tente novamente.">
         <DashboardGrid
           widgets={widgets}
           gridConfig={gridConfig}
@@ -144,7 +145,8 @@ export default function Dashboard() {
           onConfigWidget={setConfigWidget}
           onToggleHidden={handleToggleHidden}
         />
-      )}
+      </DashboardErrorBoundary>
+
 
       <WidgetLibrary open={libraryOpen} onClose={() => setLibraryOpen(false)} onAdd={(t) => { handleAdd(t); setLibraryOpen(false); }} />
 
