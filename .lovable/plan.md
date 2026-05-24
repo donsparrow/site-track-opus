@@ -1,71 +1,115 @@
-## Plano: Cronograma como Fonte Oficial + Gestão de Aditivos
+# Dashboard Personalizável — Plano de Implementação
 
-Reestruturação em 2 fases para tornar o Cronograma a fonte oficial do planejamento e o Diário a fonte oficial da execução, com suporte a aditivos.
+## Escopo
 
----
+Transformar **apenas** o Dashboard em ambiente personalizável. Nenhuma rota, tabela existente, query, hook ou outro módulo será modificado. Toda a lógica/dados dos widgets reutiliza o que já existe em `src/pages/Dashboard.tsx`.
 
-### FASE 1 — Cronograma oficial + Diário vinculado
+## Arquivos afetados
 
-**1.1 Banco de Dados (migration)**
-- `cronograma_atividades`: adicionar `tipo_atividade text default 'original'` (valores: `original` | `aditivo`), `observacoes text`.
-- `diario_atividades`: tornar `cronograma_atividade_id` **obrigatório** para novos registros (mantém nullable para legados). Adicionar índice.
-- Nova tabela `obra_aditivos`:
-  - `obra_id`, `descricao`, `dias_adicionais int default 0`, `data_aprovacao date`, `justificativa text`, `documento_url text`, `responsavel_aprovacao text`, `empresa_id`, `created_at`, `created_by uuid`.
-  - RLS por `empresa_id`.
-- Nova tabela `cronograma_historico` (auditoria):
-  - `atividade_id`, `acao` (criada/alterada/excluida), `peso_anterior`, `peso_novo`, `data_inicio_anterior/nova`, `data_fim_anterior/nova`, `usuario_id`, `created_at`, `empresa_id`.
+**Novos:**
+- `supabase/migrations/...` — cria tabela `dashboard_layouts`
+- `src/components/dashboard/DashboardGrid.tsx` — wrapper react-grid-layout
+- `src/components/dashboard/WidgetFrame.tsx` — moldura com borda tracejada, ⚙️, 👁, handles
+- `src/components/dashboard/WidgetLibrary.tsx` — painel lateral "Adicionar Widget"
+- `src/components/dashboard/WidgetConfigDialog.tsx` — modal de configuração individual
+- `src/components/dashboard/widgets/*.tsx` — um arquivo por widget (KPI, gráficos, agenda, ferramentas, listas)
+- `src/components/dashboard/widgetRegistry.ts` — catálogo `{ id, label, categoria, tamanhoPadrão, component }`
+- `src/hooks/useDashboardLayout.ts` — load/save layout + fallback padrão
+- `src/types/dashboard.ts` — tipos de WidgetInstance, LayoutItem, WidgetConfig
 
-**1.2 `src/pages/Cronograma.tsx`**
-- Mostrar **percentual acumulado dos pesos** com barra ("85% / 100% — faltam 15%").
-- Bloquear salvar se soma > 100%; alertar (mas permitir) se < 100%.
-- Novo campo `tipo_atividade` no form (badge "ORIGINAL" / "ADITIVO").
-- Cards de indicadores: se **não houver atividades** → exibir estado neutro "⚪ Planejamento não configurado" e ocultar Progresso/Prazo/Desvio/Status.
-- Botão **"+ Adicionar Aditivo"** abre dialog: cria atividade `tipo='aditivo'` + registro em `obra_aditivos` com dias adicionais, justificativa, data aprovação, upload de documento.
-- Seção **"Aditivos da Obra"** listando todos os aditivos com impacto em prazo e peso.
-- Prazo efetivo = `prazo_contratual_dias` + Σ`dias_adicionais` dos aditivos aprovados.
+**Modificados (apenas Dashboard):**
+- `src/pages/Dashboard.tsx` — refatorado para consumir hooks/queries atuais e renderizar via `DashboardGrid`. Lógica de fetch e cálculos permanece idêntica; apenas a apresentação muda.
 
-**1.3 `src/pages/DiarioObra.tsx`**
-- Remover campo livre `descricao` no formulário de atividades do diário.
-- Substituir por `<Select>` carregando atividades do cronograma da obra (incluindo aditivos), agrupadas por tipo.
-- Se obra não tem cronograma → exibir aviso: "Cadastre atividades no Cronograma antes de registrar execução" + link para Cronograma.
-- Ao salvar: grava `cronograma_atividade_id` + `descricao` (espelhada do nome da atividade p/ compatibilidade) e atualiza `percentual_concluido` no cronograma.
+**Não tocados:** sidebars, rotas, AuthContext, integrações Google Calendar, Supabase client, qualquer outro `src/pages/*` ou `src/components/*` fora de `dashboard/`.
 
-**1.4 `src/pages/Relatorios.tsx` e `src/lib/pdfRelatorio.ts`**
-- Se obra sem atividades de cronograma → Resumo Executivo exibe "Planejamento da obra ainda não configurado." sem mostrar Progresso/Prazo/Desvio/Status.
-- Caso contrário: usar prazo efetivo (com aditivos) no cálculo de Prazo Consumido.
-- Nova seção PDF **"ADITIVOS DA OBRA"**: tabela com descrição, data aprovação, impacto %, dias adicionais, responsável.
+## Banco de dados
 
----
+Nova migration (única alteração no schema):
 
-### FASE 2 — Compatibilidade legado
+```sql
+CREATE TABLE public.dashboard_layouts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  layout_name text NOT NULL DEFAULT 'default',
+  widgets jsonb NOT NULL DEFAULT '[]'::jsonb,
+  grid_config jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (user_id, layout_name)
+);
+ALTER TABLE public.dashboard_layouts ENABLE ROW LEVEL SECURITY;
+-- RLS: usuário só lê/escreve/deleta os próprios layouts (auth.uid() = user_id)
+-- Trigger update_updated_at_column existente reaproveitada
+```
 
-- Diários antigos sem `cronograma_atividade_id` continuam visíveis (read-only legacy badge).
-- No Cronograma, banner se existirem diários órfãos: "X registros sem atividade vinculada — [Associar]" abre dialog para mapear cada um a uma atividade.
+## Fase 1 — Modo de edição
 
----
+Botão **"Personalizar Dashboard"** no header do Dashboard (ao lado de "Criar Diário" / "Nova Obra"). Estado `editMode` em `Dashboard.tsx`. Quando ativo:
 
-### Detalhes técnicos
+- `WidgetFrame` aplica `border-dashed border-2 border-primary/40` + leve `ring`
+- Drag handle no header do card; resize handles via react-grid-layout
+- Ícone ⚙️ abre `WidgetConfigDialog`
+- Ícone 👁 marca `hidden: true` no widget
+- Header do Dashboard troca para **"Salvar Layout"** / **"Cancelar"**
+- Drawer (sheet) lateral direito: `WidgetLibrary`
 
-**Storage**: usar bucket `anexos` para `documento_url` dos aditivos (path `aditivos/{obra_id}/{file}`).
+Cancelar reverte para snapshot inicial; Salvar persiste em `dashboard_layouts` e sai do modo.
 
-**Fórmulas**:
-- `progresso_total = Σ(peso_i × percentual_i) / 100` (sobre TODAS atividades, original+aditivo).
-- `peso_total_escopo = Σ(peso_i)` — pode passar de 100 com aditivos (ex: 115%).
-- `prazo_efetivo_dias = prazo_contratual_dias + Σ dias_adicionais(aditivos)`.
-- `prazo_consumido_pct = dias_uteis_decorridos / prazo_efetivo_dias × 100`.
-- `desvio = progresso_executado - prazo_consumido`.
-- Status: só calcula se houver ≥1 atividade no cronograma.
+## Fase 2 — Grid responsivo
 
-**Auditoria**: trigger AFTER UPDATE em `cronograma_atividades` grava em `cronograma_historico` quando `peso`, `data_inicio` ou `data_fim` mudam.
+Usar `react-grid-layout` (`bun add react-grid-layout`). 12 colunas desktop, 2 tablet, 1 mobile via `WidthProvider` + `Responsive`. Tamanhos preset:
 
-**Arquivos a editar**:
-- `supabase/migrations/...` (1 nova migration)
-- `src/pages/Cronograma.tsx`
-- `src/pages/DiarioObra.tsx`
-- `src/pages/Relatorios.tsx`
-- `src/lib/pdfRelatorio.ts`
-- `src/integrations/supabase/types.ts` (auto)
+- pequeno `w:3 h:2` · médio `w:6 h:3` · grande `w:9 h:4` · full `w:12 h:auto`
 
-**Memórias a atualizar** após implementação:
-- `mem://logic/obras/cronograma-peso-progresso-ponderado` (incluir aditivos no escopo)
-- Nova memória `mem://features/obras/aditivos-gestao-escopo`
+Animação 200ms ease via classes globais já permitidas.
+
+## Fase 3 — Biblioteca de widgets
+
+Cada widget é componente puro que recebe `config` e usa os MESMOS dados já buscados hoje em `Dashboard.tsx`. A busca permanece centralizada no Dashboard (ou movida para hook local `useDashboardData`) e os dados passam por context para os widgets — assim nenhuma query nova é criada.
+
+Catálogo no `widgetRegistry`:
+
+- **Obras:** em andamento, concluídas, atrasadas, evolução física média
+- **Financeiro:** Total Contratos, Total Recebido, Total Gastos, Parcelas Atrasadas, Gráfico Despesas por Tipo, Evolução Mensal, Contas a receber, Contas a pagar
+- **Ferramentas:** Resumo de ferramentas
+- **Agenda:** Agenda do Dia
+- **Cronograma:** Atividades pendentes, Atividades em atraso
+- **Diário de Obra:** Últimos registros
+
+Widgets já existentes (`AgendaDoDiaWidget`, resumo ferramentas, gráficos, KPIs) são extraídos em wrappers para o registry sem alterar seu código interno quando possível.
+
+## Fase 4 — Configuração individual
+
+`WidgetConfigDialog` controla por instância:
+
+- Título (string)
+- Cor do header (color picker simples — `<input type="color">`)
+- Tipo de visualização (apenas opções que fazem sentido para aquele widget)
+- Período: hoje / 7d / 30d / 3m / custom (date range)
+- Obra: dropdown alimentado pela lista já carregada em `useObrasFiltered`
+- Ações: Salvar / Duplicar / Excluir
+
+Config salva em `widgets[].config` no JSONB.
+
+## Visual
+
+Mantém tokens atuais (`bg-card`, `border-border`, primary etc.). Skeleton via `Skeleton` shadcn. Highlight de edição via `ring-2 ring-primary/30`.
+
+## Persistência
+
+`useDashboardLayout()`:
+1. On mount → `select * from dashboard_layouts where user_id = auth.uid() and layout_name='default'`
+2. Se vazio → retorna layout padrão hard-coded (replica posicionamento atual)
+3. `saveLayout(widgets, gridConfig)` faz upsert
+
+## Validação final
+
+Antes de concluir: `rg` para garantir que diffs estão restritos a `src/pages/Dashboard.tsx`, `src/components/dashboard/**`, `src/hooks/useDashboardLayout.ts`, `src/types/dashboard.ts`, e a nova migration.
+
+## Detalhes técnicos
+
+- Dependência nova: `react-grid-layout` + `@types/react-grid-layout`
+- CSS do react-grid-layout importado em `src/index.css` ou no `DashboardGrid` (`react-grid-layout/css/styles.css`, `react-resizable/css/styles.css`)
+- `WidgetInstance`: `{ id, type, title?, color?, size, visualizationType?, period?, obraId?, hidden? }`
+- `LayoutItem` (rgl): `{ i, x, y, w, h, minW, minH }`
+- Default layout: array hard-coded em `useDashboardLayout` que reproduz a ordem atual (KPIs → Agenda → Ferramentas → gráficos)
