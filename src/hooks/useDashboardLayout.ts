@@ -37,39 +37,89 @@ export function useDashboardLayout() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
-    (async () => {
-      setLoading(true);
-      const { data } = await (supabase as any)
-        .from('dashboard_layouts')
-        .select('widgets, grid_config')
-        .eq('user_id', user.id)
-        .eq('layout_name', 'default')
-        .maybeSingle();
+    let cancelled = false;
+    // Safety timeout: never stay in loading forever (preview iframe edge cases)
+    const safety = setTimeout(() => {
+      if (!cancelled) setLoading(false);
+    }, 4000);
 
-      if (data && Array.isArray(data.widgets) && data.widgets.length > 0) {
-        setWidgets(data.widgets as WidgetInstance[]);
-        setGridConfig((data.grid_config as any) || { lg: buildDefaultGrid(data.widgets) });
-      } else {
-        setWidgets(DEFAULT_WIDGETS);
-        setGridConfig({ lg: buildDefaultGrid(DEFAULT_WIDGETS) });
+    (async () => {
+      if (!user) {
+        if (!cancelled) {
+          setWidgets(DEFAULT_WIDGETS);
+          setGridConfig({ lg: buildDefaultGrid(DEFAULT_WIDGETS) });
+          setLoading(false);
+        }
+        return;
       }
-      setLoading(false);
+      setLoading(true);
+      try {
+        const { data, error } = await (supabase as any)
+          .from('dashboard_layouts')
+          .select('widgets, grid_config')
+          .eq('user_id', user.id)
+          .eq('layout_name', 'default')
+          .maybeSingle();
+
+        if (cancelled) return;
+
+        if (error) {
+          setWidgets(DEFAULT_WIDGETS);
+          setGridConfig({ lg: buildDefaultGrid(DEFAULT_WIDGETS) });
+        } else if (data && Array.isArray(data.widgets) && data.widgets.length > 0) {
+          const validWidgets = (data.widgets as any[]).filter(
+            (w) => w && typeof w === 'object' && typeof w.id === 'string' && typeof w.type === 'string'
+          ) as WidgetInstance[];
+          if (validWidgets.length > 0) {
+            setWidgets(validWidgets);
+            const gc = (data.grid_config as any) || {};
+            setGridConfig({
+              lg: Array.isArray(gc.lg) ? gc.lg : buildDefaultGrid(validWidgets),
+              md: Array.isArray(gc.md) ? gc.md : undefined,
+              sm: Array.isArray(gc.sm) ? gc.sm : undefined,
+            });
+          } else {
+            setWidgets(DEFAULT_WIDGETS);
+            setGridConfig({ lg: buildDefaultGrid(DEFAULT_WIDGETS) });
+          }
+        } else {
+          setWidgets(DEFAULT_WIDGETS);
+          setGridConfig({ lg: buildDefaultGrid(DEFAULT_WIDGETS) });
+        }
+      } catch (e) {
+        if (!cancelled) {
+          console.error('[useDashboardLayout] load failed, using default', e);
+          setWidgets(DEFAULT_WIDGETS);
+          setGridConfig({ lg: buildDefaultGrid(DEFAULT_WIDGETS) });
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
+
+    return () => {
+      cancelled = true;
+      clearTimeout(safety);
+    };
   }, [user]);
 
   const save = useCallback(async (nextWidgets: WidgetInstance[], nextGrid: DashboardLayoutData['gridConfig']) => {
     if (!user) return;
     setSaving(true);
-    await (supabase as any)
-      .from('dashboard_layouts')
-      .upsert({
-        user_id: user.id,
-        layout_name: 'default',
-        widgets: nextWidgets,
-        grid_config: nextGrid,
-      }, { onConflict: 'user_id,layout_name' });
-    setSaving(false);
+    try {
+      await (supabase as any)
+        .from('dashboard_layouts')
+        .upsert({
+          user_id: user.id,
+          layout_name: 'default',
+          widgets: nextWidgets,
+          grid_config: nextGrid,
+        }, { onConflict: 'user_id,layout_name' });
+    } catch (e) {
+      console.error('[useDashboardLayout] save failed', e);
+    } finally {
+      setSaving(false);
+    }
   }, [user]);
 
   return {
