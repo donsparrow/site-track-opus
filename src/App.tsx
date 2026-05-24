@@ -20,6 +20,8 @@ import Documentacao from "./pages/Documentacao";
 import Empresas from "./pages/Empresas";
 import Obras from "./pages/Obras";
 import Ferramentas from "./pages/Ferramentas";
+import Calendario from "./pages/Calendario";
+import CalendarioCallback from "./pages/CalendarioCallback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +48,8 @@ const App = () => (
               <Route path="/documentacao" element={<ProtectedRoute modulo="documentos"><Documentacao /></ProtectedRoute>} />
               <Route path="/usuarios" element={<ProtectedRoute modulo="usuarios"><Usuarios /></ProtectedRoute>} />
               <Route path="/ferramentas" element={<ProtectedRoute modulo="ferramentas"><Ferramentas /></ProtectedRoute>} />
+              <Route path="/calendario" element={<Calendario />} />
+              <Route path="/calendario/callback" element={<CalendarioCallback />} />
               <Route path="/empresas" element={<Empresas />} />
             </Route>
             <Route path="*" element={<NotFound />} />

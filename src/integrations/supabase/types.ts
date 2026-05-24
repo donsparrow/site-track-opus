@@ -1050,6 +1050,42 @@ export type Database = {
           },
         ]
       }
+      google_calendar_tokens: {
+        Row: {
+          access_token: string
+          created_at: string
+          google_email: string | null
+          id: string
+          refresh_token: string
+          scope: string | null
+          token_expires_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          google_email?: string | null
+          id?: string
+          refresh_token: string
+          scope?: string | null
+          token_expires_at: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          google_email?: string | null
+          id?: string
+          refresh_token?: string
+          scope?: string | null
+          token_expires_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       imagens: {
         Row: {
           created_at: string
