@@ -69,40 +69,43 @@ export default function DashboardGrid({ widgets, gridConfig, editMode, onLayoutC
   }, [visible, gridConfig]);
 
   return (
-    <ResponsiveGridLayout
-      className="layout"
-      layouts={layouts}
-      breakpoints={{ lg: 1024, md: 768, sm: 0 }}
-      cols={{ lg: 12, md: 10, sm: 6 }}
-      rowHeight={70}
-      margin={[16, 16]}
-      containerPadding={[0, 0]}
-      isDraggable={editMode}
-      isResizable={editMode}
-      draggableHandle=".drag-handle"
-      onLayoutChange={onLayoutChange}
-    >
-      {visible.map(w => {
-        const def = WIDGET_REGISTRY[w.type];
-        if (!def) return <div key={w.id} />;
-        const Comp = def.Component;
-        return (
-          <div key={w.id}>
-            <WidgetFrame
-              editMode={editMode}
-              title={w.config?.title || def.label}
-              headerColor={w.config?.headerColor}
-              hidden={w.hidden}
-              onConfig={() => onConfigWidget(w)}
-              onToggleHidden={() => onToggleHidden(w.id)}
-            >
-              <DashboardErrorBoundary fallbackTitle={`Erro ao carregar "${def.label}"`}>
-                <Comp config={w.config} />
-              </DashboardErrorBoundary>
-            </WidgetFrame>
-          </div>
-        );
-      })}
-    </ResponsiveGridLayout>
+    <div ref={containerRef} className="w-full">
+      <Responsive
+        className="layout"
+        layouts={layouts}
+        breakpoints={{ lg: 1024, md: 768, sm: 0 }}
+        cols={{ lg: 12, md: 10, sm: 6 }}
+        rowHeight={70}
+        margin={[16, 16]}
+        containerPadding={[0, 0]}
+        width={width}
+        isDraggable={editMode}
+        isResizable={editMode}
+        draggableHandle=".drag-handle"
+        onLayoutChange={onLayoutChange}
+      >
+        {visible.map(w => {
+          const def = WIDGET_REGISTRY[w.type];
+          if (!def) return <div key={w.id} />;
+          const Comp = def.Component;
+          return (
+            <div key={w.id}>
+              <WidgetFrame
+                editMode={editMode}
+                title={w.config?.title || def.label}
+                headerColor={w.config?.headerColor}
+                hidden={w.hidden}
+                onConfig={() => onConfigWidget(w)}
+                onToggleHidden={() => onToggleHidden(w.id)}
+              >
+                <DashboardErrorBoundary fallbackTitle={`Erro ao carregar "${def.label}"`}>
+                  <Comp config={w.config} />
+                </DashboardErrorBoundary>
+              </WidgetFrame>
+            </div>
+          );
+        })}
+      </Responsive>
+    </div>
   );
 }
