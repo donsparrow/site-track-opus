@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { usePermissions, type Modulo } from '@/hooks/usePermissions';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,16 +13,66 @@ export default function ProtectedRoute({ modulo, children, requireEdit = false }
   const { loading: authLoading } = useAuth();
   const { loading: permLoading, pode } = usePermissions();
 
-  // Safety timeout: in the Lovable preview iframe, third-party cookies can be
-  // blocked, leaving auth/permissions loading forever. After 3s we let the
-  // page render — RLS still protects data on the server.
-  const [forceRender, setForceRender] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setForceRender(true), 3000);
-    return () => clearTimeout(t);
-  }, []);
+  const [authTimedOut, setAuthTimedOut] = useState(false);
+  const [permTimedOut, setPermTimedOut] = useState(false);
+  const authTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const permTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  if ((authLoading || permLoading) && !forceRender) {
+  useEffect(() => {
+    if (!authLoading) {
+      if (authTimeoutRef.current) {
+        clearTimeout(authTimeoutRef.current);
+        authTimeoutRef.current = null;
+      }
+      if (authTimedOut) setAuthTimedOut(false);
+      return;
+    }
+
+    if (!authTimedOut && !authTimeoutRef.current) {
+      authTimeoutRef.current = setTimeout(() => {
+        setAuthTimedOut(true);
+        authTimeoutRef.current = null;
+      }, 3000);
+    }
+
+    return () => {
+      if (authTimeoutRef.current) {
+        clearTimeout(authTimeoutRef.current);
+        authTimeoutRef.current = null;
+      }
+    };
+  }, [authLoading, authTimedOut]);
+
+  useEffect(() => {
+    if (!permLoading) {
+      if (permTimeoutRef.current) {
+        clearTimeout(permTimeoutRef.current);
+        permTimeoutRef.current = null;
+      }
+      if (permTimedOut) setPermTimedOut(false);
+      return;
+    }
+
+    if (!permTimedOut && !permTimeoutRef.current) {
+      permTimeoutRef.current = setTimeout(() => {
+        setPermTimedOut(true);
+        permTimeoutRef.current = null;
+      }, 3000);
+    }
+
+    return () => {
+      if (permTimeoutRef.current) {
+        clearTimeout(permTimeoutRef.current);
+        permTimeoutRef.current = null;
+      }
+    };
+  }, [permLoading, permTimedOut]);
+
+  const isAuthWaiting = authLoading && !authTimedOut;
+  const isPermWaiting = permLoading && !permTimedOut;
+  const canEvaluatePermissions = !authLoading && !permLoading;
+
+  if (isAuthWaiting || isPermWaiting) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="animate-spin h-8 w-8 border-4 border-accent border-t-transparent rounded-full" />
@@ -30,12 +80,14 @@ export default function ProtectedRoute({ modulo, children, requireEdit = false }
     );
   }
 
-  // After timeout, only block if we already know permission is denied.
-  if (!authLoading && !permLoading && !pode(modulo, 'visualizar')) {
+  // Only enforce frontend permissions after auth and permissions really resolve.
+  // If the Lovable preview iframe keeps loading forever, render after timeout;
+  // backend RLS continues to protect data.
+  if (canEvaluatePermissions && !pode(modulo, 'visualizar')) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  if (!authLoading && !permLoading && requireEdit && !pode(modulo, 'editar')) {
+  if (canEvaluatePermissions && requireEdit && !pode(modulo, 'editar')) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-center space-y-2">
