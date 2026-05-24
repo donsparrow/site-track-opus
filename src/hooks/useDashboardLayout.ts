@@ -30,29 +30,27 @@ function buildDefaultGrid(widgets: WidgetInstance[]): GridLayoutItem[] {
 }
 
 export function useDashboardLayout() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [widgets, setWidgets] = useState<WidgetInstance[]>(DEFAULT_WIDGETS);
   const [gridConfig, setGridConfig] = useState<DashboardLayoutData['gridConfig']>({ lg: buildDefaultGrid(DEFAULT_WIDGETS) });
-  const [loading, setLoading] = useState(true);
+  // IMPORTANT: start as false so the Dashboard never blocks on this hook.
+  // Personalized layout loads silently in the background once the session resolves.
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    // If auth is still resolving or there is no user (preview iframe blocks cookies),
+    // keep the default layout and do nothing — never block render.
+    if (authLoading || !user) return;
+
     let cancelled = false;
-    // Safety timeout: never stay in loading forever (preview iframe edge cases)
+    setLoading(true);
+    // Safety timeout: never stay in loading for more than 3s
     const safety = setTimeout(() => {
       if (!cancelled) setLoading(false);
-    }, 4000);
+    }, 3000);
 
     (async () => {
-      if (!user) {
-        if (!cancelled) {
-          setWidgets(DEFAULT_WIDGETS);
-          setGridConfig({ lg: buildDefaultGrid(DEFAULT_WIDGETS) });
-          setLoading(false);
-        }
-        return;
-      }
-      setLoading(true);
       try {
         const { data, error } = await (supabase as any)
           .from('dashboard_layouts')
@@ -63,10 +61,7 @@ export function useDashboardLayout() {
 
         if (cancelled) return;
 
-        if (error) {
-          setWidgets(DEFAULT_WIDGETS);
-          setGridConfig({ lg: buildDefaultGrid(DEFAULT_WIDGETS) });
-        } else if (data && Array.isArray(data.widgets) && data.widgets.length > 0) {
+        if (!error && data && Array.isArray(data.widgets) && data.widgets.length > 0) {
           const validWidgets = (data.widgets as any[]).filter(
             (w) => w && typeof w === 'object' && typeof w.id === 'string' && typeof w.type === 'string'
           ) as WidgetInstance[];
@@ -78,20 +73,11 @@ export function useDashboardLayout() {
               md: Array.isArray(gc.md) ? gc.md : undefined,
               sm: Array.isArray(gc.sm) ? gc.sm : undefined,
             });
-          } else {
-            setWidgets(DEFAULT_WIDGETS);
-            setGridConfig({ lg: buildDefaultGrid(DEFAULT_WIDGETS) });
           }
-        } else {
-          setWidgets(DEFAULT_WIDGETS);
-          setGridConfig({ lg: buildDefaultGrid(DEFAULT_WIDGETS) });
         }
+        // On error or no row: keep the default layout silently.
       } catch (e) {
-        if (!cancelled) {
-          console.error('[useDashboardLayout] load failed, using default', e);
-          setWidgets(DEFAULT_WIDGETS);
-          setGridConfig({ lg: buildDefaultGrid(DEFAULT_WIDGETS) });
-        }
+        console.error('[useDashboardLayout] load failed, keeping default', e);
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -101,7 +87,8 @@ export function useDashboardLayout() {
       cancelled = true;
       clearTimeout(safety);
     };
-  }, [user]);
+  }, [user, authLoading]);
+
 
   const save = useCallback(async (nextWidgets: WidgetInstance[], nextGrid: DashboardLayoutData['gridConfig']) => {
     if (!user) return;
