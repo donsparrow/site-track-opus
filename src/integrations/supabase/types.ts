@@ -436,6 +436,36 @@ export type Database = {
           },
         ]
       }
+      dashboard_layouts: {
+        Row: {
+          created_at: string
+          grid_config: Json
+          id: string
+          layout_name: string
+          updated_at: string
+          user_id: string
+          widgets: Json
+        }
+        Insert: {
+          created_at?: string
+          grid_config?: Json
+          id?: string
+          layout_name?: string
+          updated_at?: string
+          user_id: string
+          widgets?: Json
+        }
+        Update: {
+          created_at?: string
+          grid_config?: Json
+          id?: string
+          layout_name?: string
+          updated_at?: string
+          user_id?: string
+          widgets?: Json
+        }
+        Relationships: []
+      }
       despesas: {
         Row: {
           anexo: string | null
