@@ -199,3 +199,11 @@ function DashboardInner() {
     </div>
   );
 }
+
+export default function Dashboard() {
+  return (
+    <DashboardErrorBoundary fallbackTitle="Ocorreu um erro inesperado no Dashboard.">
+      <DashboardInner />
+    </DashboardErrorBoundary>
+  );
+}
