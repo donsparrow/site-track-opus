@@ -20,6 +20,8 @@ import Documentacao from "./pages/Documentacao";
 import Empresas from "./pages/Empresas";
 import Obras from "./pages/Obras";
 import Ferramentas from "./pages/Ferramentas";
+import Calendario from "./pages/Calendario";
+import CalendarioCallback from "./pages/CalendarioCallback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
