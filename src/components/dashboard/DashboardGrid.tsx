@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-// @ts-expect-error - v1 API not present in installed @types
 import { Responsive, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
