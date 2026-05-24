@@ -16,7 +16,8 @@ import WidgetConfigDialog from '@/components/dashboard/WidgetConfigDialog';
 import { WIDGET_REGISTRY } from '@/components/dashboard/widgetRegistry';
 import { SIZE_PRESETS, WidgetInstance, GridLayoutItem } from '@/types/dashboard';
 import { toast } from '@/hooks/use-toast';
-import type { Layout, Layouts } from 'react-grid-layout';
+type RglItem = GridLayoutItem;
+type RglLayouts = Record<string, RglItem[]>;
 
 export default function Dashboard() {
   const { canEdit } = useAuth();
