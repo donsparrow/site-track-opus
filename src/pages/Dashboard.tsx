@@ -285,6 +285,13 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Agenda do dia (Google Calendar) */}
+      <div className="mb-8">
+        <AgendaDoDiaWidget />
+      </div>
+
+
+
       {/* Ferramentas card */}
       {canSeeFerramentas && ferramentasResumo.total > 0 && (
         <div className="mb-8">
