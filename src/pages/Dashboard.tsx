@@ -53,9 +53,9 @@ export default function Dashboard() {
     setSnapshot(null);
   };
 
-  const handleLayoutChange = (_lg: Layout[], all: Layouts) => {
+  const handleLayoutChange = (_lg: RglItem[], all: RglLayouts) => {
     if (!editMode) return;
-    const toItems = (arr: Layout[]): GridLayoutItem[] => arr.map(l => ({ i: l.i, x: l.x, y: l.y, w: l.w, h: l.h, minW: l.minW, minH: l.minH }));
+    const toItems = (arr: RglItem[]): GridLayoutItem[] => arr.map(l => ({ i: l.i, x: l.x, y: l.y, w: l.w, h: l.h, minW: l.minW, minH: l.minH }));
     setGridConfig({
       lg: all.lg ? toItems(all.lg) : gridConfig.lg,
       md: all.md ? toItems(all.md) : gridConfig.md,
