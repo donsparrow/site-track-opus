@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Responsive, WidthProvider } from 'react-grid-layout';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Responsive } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import WidgetFrame from './WidgetFrame';
@@ -9,7 +9,6 @@ import { SIZE_PRESETS, WidgetInstance, GridLayoutItem } from '@/types/dashboard'
 
 type RglItem = GridLayoutItem;
 type RglLayouts = Record<string, RglItem[]>;
-const ResponsiveGridLayout = WidthProvider(Responsive);
 
 interface Props {
   widgets: WidgetInstance[];
