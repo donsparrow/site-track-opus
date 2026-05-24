@@ -20,6 +20,7 @@ const navItemsAll = [
   { to: '/relatorios', label: 'Relatórios', icon: FileText, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
   { to: '/documentacao', label: 'Documentação', icon: FolderOpen, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
   { to: '/ferramentas', label: 'Ferramentas', icon: Wrench, roles: ['admin', 'trabalhador', 'super_admin'] },
+  { to: '/calendario', label: 'Calendário', icon: CalendarRange, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
   { to: '/usuarios', label: 'Usuários', icon: Users, roles: ['admin', 'super_admin'] },
   { to: '/configuracoes', label: 'Configurações', icon: Settings, roles: ['admin', 'super_admin'] },
 ];
