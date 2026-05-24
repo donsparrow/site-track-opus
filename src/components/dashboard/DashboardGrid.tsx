@@ -35,17 +35,16 @@ function packDefault(widgets: WidgetInstance[]): GridLayoutItem[] {
 export default function DashboardGrid({ widgets, gridConfig, editMode, onLayoutChange, onConfigWidget, onToggleHidden }: Props) {
   const visible = useMemo(() => widgets.filter(w => editMode || !w.hidden), [widgets, editMode]);
 
-  const layouts: Layouts = useMemo(() => {
+  const layouts: RglLayouts = useMemo(() => {
     const lg = (gridConfig.lg && gridConfig.lg.filter(l => visible.find(w => w.id === l.i))) || packDefault(visible);
-    // For widgets without a layout entry, append
     const lgIds = new Set(lg.map(l => l.i));
     const missing = visible.filter(w => !lgIds.has(w.id));
     const appended = packDefault(missing).map(l => ({ ...l, y: (lg.reduce((m, x) => Math.max(m, x.y + x.h), 0)) + l.y }));
     const fullLg = [...lg, ...appended];
     return {
-      lg: fullLg as Layout[],
-      md: fullLg.map(l => ({ ...l, w: Math.min(l.w, 10), x: Math.min(l.x, 10 - 1) })) as Layout[],
-      sm: visible.map((w, i) => ({ i: w.id, x: 0, y: i * 3, w: 6, h: SIZE_PRESETS[w.size].h })) as Layout[],
+      lg: fullLg,
+      md: fullLg.map(l => ({ ...l, w: Math.min(l.w, 10), x: Math.min(l.x, 10 - 1) })),
+      sm: visible.map((w, i) => ({ i: w.id, x: 0, y: i * 3, w: 6, h: SIZE_PRESETS[w.size].h })),
     };
   }, [visible, gridConfig]);
 
