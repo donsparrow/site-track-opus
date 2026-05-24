@@ -86,6 +86,18 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const { action } = body;
 
+    // ============================== DEBUG (no secrets leaked) ==============================
+    if (action === "debug-client-id") {
+      const cid = clientId ?? "";
+      return json({
+        length: cid.length,
+        first8: cid.slice(0, 8),
+        last8: cid.slice(-8),
+        ends_with_apps_googleusercontent_com: cid.endsWith(".apps.googleusercontent.com"),
+      });
+    }
+
+
     // ============================== AUTH URL ==============================
     if (action === "auth-url") {
       const { redirect_uri } = body;
