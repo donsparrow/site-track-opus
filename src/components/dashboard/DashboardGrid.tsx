@@ -3,6 +3,7 @@ import { Responsive, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import WidgetFrame from './WidgetFrame';
+import DashboardErrorBoundary from './DashboardErrorBoundary';
 import { WIDGET_REGISTRY } from './widgetRegistry';
 import { SIZE_PRESETS, WidgetInstance, GridLayoutItem } from '@/types/dashboard';
 
@@ -32,7 +33,9 @@ function packDefault(widgets: WidgetInstance[]): GridLayoutItem[] {
 }
 
 export default function DashboardGrid({ widgets, gridConfig, editMode, onLayoutChange, onConfigWidget, onToggleHidden }: Props) {
-  const visible = useMemo(() => widgets.filter(w => editMode || !w.hidden), [widgets, editMode]);
+  // Drop widgets whose type is no longer registered, so a stale layout never breaks the page
+  const safeWidgets = useMemo(() => widgets.filter(w => !!WIDGET_REGISTRY[w.type]), [widgets]);
+  const visible = useMemo(() => safeWidgets.filter(w => editMode || !w.hidden), [safeWidgets, editMode]);
 
   const layouts: RglLayouts = useMemo(() => {
     const lg = (gridConfig.lg && gridConfig.lg.filter(l => visible.find(w => w.id === l.i))) || packDefault(visible);
@@ -75,7 +78,9 @@ export default function DashboardGrid({ widgets, gridConfig, editMode, onLayoutC
               onConfig={() => onConfigWidget(w)}
               onToggleHidden={() => onToggleHidden(w.id)}
             >
-              <Comp config={w.config} />
+              <DashboardErrorBoundary fallbackTitle={`Erro ao carregar "${def.label}"`}>
+                <Comp config={w.config} />
+              </DashboardErrorBoundary>
             </WidgetFrame>
           </div>
         );
