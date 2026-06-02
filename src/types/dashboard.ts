@@ -41,7 +41,7 @@ export interface DashboardLayoutData {
 
 export const SIZE_PRESETS: Record<WidgetSize, { w: number; h: number; minW: number; minH: number }> = {
   small: { w: 3, h: 2, minW: 2, minH: 2 },
-  medium: { w: 6, h: 3, minW: 3, minH: 2 },
-  large: { w: 9, h: 4, minW: 4, minH: 3 },
+  medium: { w: 6, h: 2, minW: 3, minH: 2 },
+  large: { w: 6, h: 4, minW: 4, minH: 3 },
   full: { w: 12, h: 4, minW: 6, minH: 3 },
 };

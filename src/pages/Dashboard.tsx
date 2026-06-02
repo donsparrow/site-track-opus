@@ -71,11 +71,30 @@ function DashboardInner() {
     setWidgets(ws => [...ws, { id, type, size: def.defaultSize }]);
   };
 
+  const patchGridSize = (id: string, size: WidgetInstance['size']) => {
+    const p = SIZE_PRESETS[size];
+    const patch = (arr?: GridLayoutItem[]): GridLayoutItem[] | undefined => {
+      if (!arr) return arr;
+      const found = arr.find(l => l.i === id);
+      if (!found) {
+        return [...arr, { i: id, x: 0, y: Infinity, w: p.w, h: p.h, minW: p.minW, minH: p.minH }];
+      }
+      return arr.map(l => l.i === id ? { ...l, w: p.w, h: p.h, minW: p.minW, minH: p.minH } : l);
+    };
+    setGridConfig(gc => ({ lg: patch(gc.lg), md: patch(gc.md), sm: patch(gc.sm) }));
+  };
+
   const handleSaveWidget = (next: WidgetInstance) => {
+    const prev = widgets.find(w => w.id === next.id);
     setWidgets(ws => ws.map(w => w.id === next.id ? next : w));
+    if (!prev || prev.size !== next.size) {
+      patchGridSize(next.id, next.size);
+    }
   };
   const handleDuplicateWidget = (w: WidgetInstance) => {
-    setWidgets(ws => [...ws, { ...w, id: `w-${w.type}-${Date.now()}` }]);
+    const newId = `w-${w.type}-${Date.now()}`;
+    setWidgets(ws => [...ws, { ...w, id: newId }]);
+    patchGridSize(newId, w.size);
   };
   const handleDeleteWidget = (id: string) => {
     setWidgets(ws => ws.filter(w => w.id !== id));
