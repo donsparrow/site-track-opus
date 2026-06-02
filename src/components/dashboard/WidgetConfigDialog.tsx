@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Copy, Trash2 } from 'lucide-react';
 import { WIDGET_REGISTRY } from './widgetRegistry';
-import type { WidgetInstance, WidgetConfig, WidgetPeriod } from '@/types/dashboard';
+import type { WidgetInstance, WidgetConfig, WidgetPeriod, WidgetSize } from '@/types/dashboard';
 import { useDashboardData } from '@/hooks/useDashboardData';
 
 interface Props {
