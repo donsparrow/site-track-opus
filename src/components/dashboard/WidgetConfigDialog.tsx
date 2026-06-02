@@ -64,7 +64,13 @@ export default function WidgetConfigDialog({ widget, onClose, onSave, onDuplicat
           </div>
           <div className="space-y-2">
             <Label>Tamanho</Label>
-            <Select value={widget.size} onValueChange={(v) => onSave({ ...widget, size: v as any, config })}>
+            <Select
+              value={size}
+              onValueChange={(v) => {
+                console.log('[WidgetSize] onValueChange:', v, 'prev local:', size, 'prop:', widget.size);
+                setSize(v as WidgetSize);
+              }}
+            >
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="small">Pequeno</SelectItem>
