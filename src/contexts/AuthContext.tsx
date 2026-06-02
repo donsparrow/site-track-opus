@@ -97,8 +97,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    const bootTimeout = window.setTimeout(() => {
+      setHasCheckedEmpresa(true);
+      setLoading(false);
+    }, METADATA_TIMEOUT_MS);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        window.clearTimeout(bootTimeout);
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
@@ -116,6 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      window.clearTimeout(bootTimeout);
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -128,7 +135,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      window.clearTimeout(bootTimeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signIn = async (email: string, password: string) => {
