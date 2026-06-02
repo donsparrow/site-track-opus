@@ -110,14 +110,14 @@ export default function WidgetConfigDialog({ widget, onClose, onSave, onDuplicat
         </div>
         <DialogFooter className="flex-row justify-between sm:justify-between gap-2">
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => { onDuplicate({ ...widget, config }); onClose(); }}>
+            <Button variant="outline" size="sm" onClick={() => { onDuplicate({ ...widget, size, config }); onClose(); }}>
               <Copy className="h-4 w-4 mr-1" /> Duplicar
             </Button>
             <Button variant="destructive" size="sm" onClick={() => { onDelete(widget.id); onClose(); }}>
               <Trash2 className="h-4 w-4 mr-1" /> Excluir
             </Button>
           </div>
-          <Button onClick={() => { onSave({ ...widget, config }); onClose(); }}>Salvar</Button>
+          <Button onClick={() => { console.log('[WidgetSize] save:', size); onSave({ ...widget, size, config }); onClose(); }}>Salvar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
