@@ -21,6 +21,17 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const METADATA_TIMEOUT_MS = 5000;
+
+const withTimeout = <T,>(promise: Promise<T>, fallback: T): Promise<T> => {
+  return new Promise((resolve) => {
+    const timer = window.setTimeout(() => resolve(fallback), METADATA_TIMEOUT_MS);
+    promise
+      .then(resolve)
+      .catch(() => resolve(fallback))
+      .finally(() => window.clearTimeout(timer));
+  });
+};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -35,7 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .from('user_roles')
       .select('role')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
     const r = (data?.role as AppRole) || null;
     setRole(r);
     return r;
@@ -46,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .from('profiles')
       .select('empresa_id')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
     const eid = data?.empresa_id || null;
     setEmpresaId(eid);
     console.log("empresa_id:", eid);
@@ -55,7 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserMeta = async (userId: string) => {
     try {
-      await Promise.all([fetchRole(userId), fetchEmpresa(userId)]);
+      await withTimeout(Promise.all([fetchRole(userId), fetchEmpresa(userId)]), [null, null]);
     } catch (err) {
       console.error("Erro ao buscar metadados:", err);
     } finally {
@@ -91,14 +102,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          await ensureUserMeta(session.user.id);
+          setHasCheckedEmpresa(false);
+          setLoading(false);
+          void ensureUserMeta(session.user.id);
         } else {
           loadedUserIdRef.current = null;
           setRole(null);
           setEmpresaId(null);
           setHasCheckedEmpresa(true);
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
 
@@ -106,11 +119,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        await ensureUserMeta(session.user.id);
+        setHasCheckedEmpresa(false);
+        setLoading(false);
+        void ensureUserMeta(session.user.id);
       } else {
         setHasCheckedEmpresa(true);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
