@@ -28,9 +28,14 @@ const PERIODS: { value: WidgetPeriod; label: string }[] = [
 export default function WidgetConfigDialog({ widget, onClose, onSave, onDuplicate, onDelete }: Props) {
   const { obras } = useDashboardData();
   const [config, setConfig] = useState<WidgetConfig>({});
+  const [size, setSize] = useState<WidgetSize>('small');
 
   useEffect(() => {
-    if (widget) setConfig(widget.config || {});
+    if (widget) {
+      setConfig(widget.config || {});
+      setSize(widget.size);
+      console.log('[WidgetSize] sync from prop:', widget.size);
+    }
   }, [widget]);
 
   if (!widget) return null;
