@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Copy, Trash2 } from 'lucide-react';
 import { WIDGET_REGISTRY } from './widgetRegistry';
-import type { WidgetInstance, WidgetConfig, WidgetPeriod } from '@/types/dashboard';
+import type { WidgetInstance, WidgetConfig, WidgetPeriod, WidgetSize } from '@/types/dashboard';
 import { useDashboardData } from '@/hooks/useDashboardData';
 
 interface Props {
@@ -28,9 +28,14 @@ const PERIODS: { value: WidgetPeriod; label: string }[] = [
 export default function WidgetConfigDialog({ widget, onClose, onSave, onDuplicate, onDelete }: Props) {
   const { obras } = useDashboardData();
   const [config, setConfig] = useState<WidgetConfig>({});
+  const [size, setSize] = useState<WidgetSize>('small');
 
   useEffect(() => {
-    if (widget) setConfig(widget.config || {});
+    if (widget) {
+      setConfig(widget.config || {});
+      setSize(widget.size);
+      console.log('[WidgetSize] sync from prop:', widget.size);
+    }
   }, [widget]);
 
   if (!widget) return null;
@@ -59,7 +64,13 @@ export default function WidgetConfigDialog({ widget, onClose, onSave, onDuplicat
           </div>
           <div className="space-y-2">
             <Label>Tamanho</Label>
-            <Select value={widget.size} onValueChange={(v) => onSave({ ...widget, size: v as any, config })}>
+            <Select
+              value={size}
+              onValueChange={(v) => {
+                console.log('[WidgetSize] onValueChange:', v, 'prev local:', size, 'prop:', widget.size);
+                setSize(v as WidgetSize);
+              }}
+            >
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="small">Pequeno</SelectItem>
@@ -99,14 +110,14 @@ export default function WidgetConfigDialog({ widget, onClose, onSave, onDuplicat
         </div>
         <DialogFooter className="flex-row justify-between sm:justify-between gap-2">
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => { onDuplicate({ ...widget, config }); onClose(); }}>
+            <Button variant="outline" size="sm" onClick={() => { onDuplicate({ ...widget, size, config }); onClose(); }}>
               <Copy className="h-4 w-4 mr-1" /> Duplicar
             </Button>
             <Button variant="destructive" size="sm" onClick={() => { onDelete(widget.id); onClose(); }}>
               <Trash2 className="h-4 w-4 mr-1" /> Excluir
             </Button>
           </div>
-          <Button onClick={() => { onSave({ ...widget, config }); onClose(); }}>Salvar</Button>
+          <Button onClick={() => { console.log('[WidgetSize] save:', size); onSave({ ...widget, size, config }); onClose(); }}>Salvar</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
