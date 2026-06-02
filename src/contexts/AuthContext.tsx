@@ -66,7 +66,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchUserMeta = async (userId: string) => {
     try {
-      await withTimeout(Promise.all([fetchRole(userId), fetchEmpresa(userId)]), [null, null]);
+      await withTimeout(
+        Promise.all([fetchRole(userId), fetchEmpresa(userId)]),
+        [null, null] as [AppRole | null, string | null]
+      );
     } catch (err) {
       console.error("Erro ao buscar metadados:", err);
     } finally {
@@ -86,7 +89,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const inFlightRef = useRef<Promise<void> | null>(null);
 
   const ensureUserMeta = async (userId: string) => {
-    if (loadedUserIdRef.current === userId) return;
+    if (loadedUserIdRef.current === userId) {
+      setHasCheckedEmpresa(true);
+      return;
+    }
     if (inFlightRef.current) return inFlightRef.current;
     const p = (async () => {
       await fetchUserMeta(userId);
@@ -133,6 +139,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setHasCheckedEmpresa(true);
         setLoading(false);
       }
+    }).catch(() => {
+      window.clearTimeout(bootTimeout);
+      setSession(null);
+      setUser(null);
+      setHasCheckedEmpresa(true);
+      setLoading(false);
     });
 
     return () => {
