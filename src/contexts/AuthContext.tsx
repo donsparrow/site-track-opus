@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -68,19 +68,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) await fetchEmpresa(user.id);
   };
 
-  useEffect(() => {
-    let initialLoad = true;
+  // Tracks which user_id we have already loaded metadata for, so we don't
+  // refetch on every auth event (TOKEN_REFRESHED, USER_UPDATED, ...) but we
+  // also never skip the very first fetch on either getSession or onAuthStateChange.
+  const loadedUserIdRef = useRef<string | null>(null);
+  const inFlightRef = useRef<Promise<void> | null>(null);
 
+  const ensureUserMeta = async (userId: string) => {
+    if (loadedUserIdRef.current === userId) return;
+    if (inFlightRef.current) return inFlightRef.current;
+    const p = (async () => {
+      await fetchUserMeta(userId);
+      loadedUserIdRef.current = userId;
+    })().finally(() => { inFlightRef.current = null; });
+    inFlightRef.current = p;
+    return p;
+  };
+
+  useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          // Avoid duplicate fetch on initial load (getSession handles it)
-          if (!initialLoad) {
-            await fetchUserMeta(session.user.id);
-          }
+          await ensureUserMeta(session.user.id);
         } else {
+          loadedUserIdRef.current = null;
           setRole(null);
           setEmpresaId(null);
           setHasCheckedEmpresa(true);
@@ -93,12 +106,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        await fetchUserMeta(session.user.id);
+        await ensureUserMeta(session.user.id);
       } else {
         setHasCheckedEmpresa(true);
       }
       setLoading(false);
-      initialLoad = false;
     });
 
     return () => subscription.unsubscribe();
