@@ -818,6 +818,11 @@ export default function Relatorios() {
                       <TableCell>{statusBadge(r.status)}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
+                          {((r.revisao_pdf || 0) > 0 || r.status === 'assinado' || (typeof r.status === 'string' && r.status.startsWith('gerado pdf'))) && (
+                            <Button size="sm" variant="ghost" onClick={() => handleDownloadRelatorio(r)} title="Baixar PDF">
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button size="sm" variant="ghost" onClick={() => handleOpenRelatorio(r)} title="Editar">
                             <Edit className="h-4 w-4" />
                           </Button>
