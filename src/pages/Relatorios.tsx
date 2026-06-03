@@ -580,6 +580,111 @@ export default function Relatorios() {
 
   const podeExcluir = isAdmin || isSuperAdmin;
 
+  const handleDownloadRelatorio = async (rel: any) => {
+    try {
+      toast.info('Preparando PDF...');
+      const obra = rel.obras || (await supabase.from('obras').select('*, clientes(nome, cpf_cnpj, email, telefone)').eq('id', rel.obra_id).maybeSingle()).data;
+      if (!obra) { toast.error('Obra do relatório não encontrada'); return; }
+
+      // Diários vinculados ao relatório (fallback por período)
+      let { data: dList } = await supabase
+        .from('diario_obra')
+        .select('*')
+        .eq('relatorio_id', rel.id)
+        .order('data');
+      if (!dList || dList.length === 0) {
+        const r2 = await supabase
+          .from('diario_obra')
+          .select('*')
+          .eq('obra_id', rel.obra_id)
+          .gte('data', rel.data_inicio)
+          .lte('data', rel.data_fim)
+          .order('data');
+        dList = r2.data || [];
+      }
+      const diarioIds = (dList || []).map(d => d.id);
+
+      const [eq, at, mt, oc, im, pa, cronRes, aditRes, assinRes, versRes] = await Promise.all([
+        diarioIds.length ? supabase.from('diario_equipe').select('*').in('diario_id', diarioIds) : Promise.resolve({ data: [] } as any),
+        diarioIds.length ? supabase.from('diario_atividades').select('*').in('diario_id', diarioIds) : Promise.resolve({ data: [] } as any),
+        diarioIds.length ? supabase.from('diario_materiais').select('*').in('diario_id', diarioIds) : Promise.resolve({ data: [] } as any),
+        diarioIds.length ? supabase.from('diario_ocorrencias').select('*').in('diario_id', diarioIds) : Promise.resolve({ data: [] } as any),
+        diarioIds.length ? supabase.from('diario_imagens').select('*').in('diario_id', diarioIds) : Promise.resolve({ data: [] } as any),
+        diarioIds.length ? supabase.from('diario_paralisacoes').select('*').in('diario_id', diarioIds) : Promise.resolve({ data: [] } as any),
+        supabase.from('cronograma').select('id').eq('obra_id', rel.obra_id).maybeSingle(),
+        supabase.from('obra_aditivos' as any).select('*').eq('obra_id', rel.obra_id),
+        supabase.from('assinaturas').select('*').eq('relatorio_id', rel.id).order('data_assinatura'),
+        supabase.from('relatorio_versoes').select('*').eq('relatorio_id', rel.id).order('numero_versao', { ascending: false }),
+      ]);
+
+      let cronAtivs: any[] = [];
+      let planejamentoConf = false;
+      if (cronRes.data) {
+        const { data: cr } = await supabase
+          .from('cronograma_atividades')
+          .select('nome_atividade, data_inicio, data_fim, percentual_concluido, status, peso')
+          .eq('cronograma_id', cronRes.data.id)
+          .order('ordem');
+        cronAtivs = cr || [];
+        planejamentoConf = cronAtivs.length > 0;
+      }
+
+      const pdfRevisao = (rel as any).revisao_pdf || 0;
+
+      await gerarRelatorioPDF({
+        empresa: empresa || null,
+        obra: {
+          nome: obra.nome,
+          endereco: obra.endereco || '',
+          responsavel: obra.responsavel_tecnico || '',
+          crea_cau: obra.crea_cau || '',
+          cliente_nome: obra.clientes?.nome || '',
+          cliente_cpf_cnpj: obra.clientes?.cpf_cnpj || '',
+          cliente_email: obra.clientes?.email || '',
+          cliente_telefone: obra.clientes?.telefone || '',
+        },
+        periodo: { inicio: rel.data_inicio, fim: rel.data_fim },
+        prazos: {
+          contratual: rel.prazo_contratual_dias_uteis || 0,
+          parados: rel.dias_parados || 0,
+          ajustado: rel.prazo_ajustado || 0,
+          trabalhados: rel.dias_trabalhados || 0,
+          saldo: rel.saldo_prazo || 0,
+          dataInicioReal: (dList && dList[0]?.data) || '',
+          percentualTempo: 0,
+          percentualExecutado: 0,
+        },
+        diarios: dList || [],
+        equipe: eq.data || [],
+        atividades: at.data || [],
+        materiais: mt.data || [],
+        ocorrencias: oc.data || [],
+        imagens: im.data || [],
+        cronograma: cronAtivs,
+        aditivos: (aditRes.data as any[]) || [],
+        planejamentoConfigurado: planejamentoConf,
+        assinaturas: assinRes.data || [],
+        versao: pdfRevisao,
+        versoes: (versRes.data || []).map((v: any) => ({
+          rev: `REV ${String(v.numero_versao).padStart(2, '0')}`,
+          data: new Date(v.data_criacao).toLocaleDateString('pt-BR'),
+          resumo: v.descricao_alteracao || '—',
+        })),
+      });
+
+      if (user) {
+        await supabase.from('relatorio_logs').insert({
+          relatorio_id: rel.id,
+          usuario_id: user.id,
+          acao: `baixou PDF REV ${String(pdfRevisao).padStart(2, '0')}`,
+        });
+      }
+      toast.success('PDF baixado!');
+    } catch (err: any) {
+      toast.error('Erro ao baixar PDF: ' + err.message);
+    }
+  };
+
   const handleExcluirRelatorio = async (relatorio: any) => {
     const { error } = await supabase
       .from('relatorios')
@@ -713,6 +818,11 @@ export default function Relatorios() {
                       <TableCell>{statusBadge(r.status)}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
+                          {((r.revisao_pdf || 0) > 0 || r.status === 'assinado' || (typeof r.status === 'string' && r.status.startsWith('gerado pdf'))) && (
+                            <Button size="sm" variant="ghost" onClick={() => handleDownloadRelatorio(r)} title="Baixar PDF">
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button size="sm" variant="ghost" onClick={() => handleOpenRelatorio(r)} title="Editar">
                             <Edit className="h-4 w-4" />
                           </Button>
