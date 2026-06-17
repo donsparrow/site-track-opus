@@ -29,7 +29,7 @@ const HEADER_MAP: Record<keyof Omit<ImportedRow, never>, string[]> = {
   data_inicio: ['inicio', 'datainicio', 'datainicial', 'start', 'startdate', 'comeco', 'dtinicio'],
   data_fim: ['fim', 'termino', 'datafim', 'datafinal', 'end', 'enddate', 'conclusao', 'dtfim'],
   duracao_dias: ['duracao', 'duracaodias', 'dias', 'duration', 'days', 'prazo', 'dur'],
-  observacoes: ['observacoes', 'obs', 'observacao', 'notes', 'comentarios', 'comentario'],
+  observacoes: ['observacoes', 'obs', 'observacao', 'notes', 'comentarios', 'comentario', 'equipe', 'responsavel', 'descritivo'],
 };
 
 // Strict token-based header matcher.
@@ -164,6 +164,8 @@ const rowsFromMatrix = (matrix: unknown[][]): ImportedRow[] => {
   }
 
   const headers = matrix[headerIdx].map(h => String(h ?? ''));
+  const fieldCount = headers.reduce((count, h) => count + (matchColumn(h) ? 1 : 0), 0);
+  if (fieldCount < 2) return [];
   const objs: Record<string, unknown>[] = [];
   for (let i = headerIdx + 1; i < matrix.length; i++) {
     const row = matrix[i];
