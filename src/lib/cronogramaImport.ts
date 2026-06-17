@@ -25,20 +25,37 @@ const normalizeKey = (s: string): string =>
     .replace(/[^a-z0-9]/g, '');
 
 const HEADER_MAP: Record<keyof Omit<ImportedRow, never>, string[]> = {
-  nome_atividade: ['atividade', 'tarefa', 'descricao', 'nome', 'servico', 'item', 'task', 'activity'],
+  nome_atividade: ['atividade', 'atividades', 'tarefa', 'tarefas', 'descricao', 'nome', 'servico', 'servicos', 'item', 'task', 'activity'],
   data_inicio: ['inicio', 'datainicio', 'datainicial', 'start', 'startdate', 'comeco', 'dtinicio'],
   data_fim: ['fim', 'termino', 'datafim', 'datafinal', 'end', 'enddate', 'conclusao', 'dtfim'],
-  duracao_dias: ['duracao', 'duracaodias', 'dias', 'duration', 'days', 'prazo'],
+  duracao_dias: ['duracao', 'duracaodias', 'dias', 'duration', 'days', 'prazo', 'dur'],
   observacoes: ['observacoes', 'obs', 'observacao', 'notes', 'comentarios', 'comentario'],
 };
 
+// Strict token-based header matcher.
+// Splits the header into normalized alpha-numeric tokens and matches a candidate
+// only when (a) a token equals the candidate, or (b) the whole normalized header
+// is short (≤10 chars) and starts with the candidate (so "dur." → "dur" works
+// but "inicio06052026en" does NOT match "inicio").
 const matchColumn = (header: string): keyof ImportedRow | null => {
   const key = normalizeKey(header);
+  if (!key) return null;
+  const tokens = header
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
   for (const [field, candidates] of Object.entries(HEADER_MAP) as [keyof ImportedRow, string[]][]) {
-    if (candidates.some(c => key === c || key.includes(c))) return field;
+    for (const c of candidates) {
+      if (tokens.includes(c)) return field;
+      if (key.length <= 10 && key.startsWith(c) && c.length >= 3) return field;
+    }
   }
   return null;
 };
+
 
 // Parse various date formats to ISO yyyy-mm-dd
 export const parseDateFlexible = (val: unknown): string | null => {
