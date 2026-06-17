@@ -14,7 +14,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Download, AlertTriangle } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Download, AlertTriangle, Upload } from 'lucide-react';
+import ImportarCronogramaDialog from '@/components/cronograma/ImportarCronogramaDialog';
 import { toast } from 'sonner';
 import { format, differenceInDays, addDays, parseISO, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
