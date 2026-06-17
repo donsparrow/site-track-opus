@@ -98,6 +98,7 @@ export default function Cronograma() {
 
   // Delete
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const ganttRef = useRef<HTMLDivElement>(null);
 
