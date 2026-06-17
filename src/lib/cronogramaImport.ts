@@ -25,20 +25,37 @@ const normalizeKey = (s: string): string =>
     .replace(/[^a-z0-9]/g, '');
 
 const HEADER_MAP: Record<keyof Omit<ImportedRow, never>, string[]> = {
-  nome_atividade: ['atividade', 'tarefa', 'descricao', 'nome', 'servico', 'item', 'task', 'activity'],
+  nome_atividade: ['atividade', 'atividades', 'tarefa', 'tarefas', 'descricao', 'nome', 'servico', 'servicos', 'item', 'task', 'activity'],
   data_inicio: ['inicio', 'datainicio', 'datainicial', 'start', 'startdate', 'comeco', 'dtinicio'],
   data_fim: ['fim', 'termino', 'datafim', 'datafinal', 'end', 'enddate', 'conclusao', 'dtfim'],
-  duracao_dias: ['duracao', 'duracaodias', 'dias', 'duration', 'days', 'prazo'],
+  duracao_dias: ['duracao', 'duracaodias', 'dias', 'duration', 'days', 'prazo', 'dur'],
   observacoes: ['observacoes', 'obs', 'observacao', 'notes', 'comentarios', 'comentario'],
 };
 
+// Strict token-based header matcher.
+// Splits the header into normalized alpha-numeric tokens and matches a candidate
+// only when (a) a token equals the candidate, or (b) the whole normalized header
+// is short (≤10 chars) and starts with the candidate (so "dur." → "dur" works
+// but "inicio06052026en" does NOT match "inicio").
 const matchColumn = (header: string): keyof ImportedRow | null => {
   const key = normalizeKey(header);
+  if (!key) return null;
+  const tokens = header
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
   for (const [field, candidates] of Object.entries(HEADER_MAP) as [keyof ImportedRow, string[]][]) {
-    if (candidates.some(c => key === c || key.includes(c))) return field;
+    for (const c of candidates) {
+      if (tokens.includes(c)) return field;
+      if (key.length <= 10 && key.startsWith(c) && c.length >= 3) return field;
+    }
   }
   return null;
 };
+
 
 // Parse various date formats to ISO yyyy-mm-dd
 export const parseDateFlexible = (val: unknown): string | null => {
@@ -110,6 +127,8 @@ const rowsFromObjects = (raw: Record<string, unknown>[]): ImportedRow[] => {
     const fim = map.data_fim ? parseDateFlexible(r[map.data_fim]) : null;
     let dur = map.duracao_dias ? toNumber(r[map.duracao_dias]) : null;
     if (dur == null && inicio && fim) dur = diffDays(inicio, fim);
+    // Skip section/header rows: an activity must have at least one date or a duration.
+    if (!inicio && !fim && (dur == null || dur <= 0)) continue;
     const obs = map.observacoes ? (r[map.observacoes] ?? '').toString().trim() : '';
     out.push({
       nome_atividade: nome,
@@ -125,12 +144,25 @@ const rowsFromObjects = (raw: Record<string, unknown>[]): ImportedRow[] => {
 // Convert array-of-arrays (with first row as headers) into ImportedRow[]
 const rowsFromMatrix = (matrix: unknown[][]): ImportedRow[] => {
   if (matrix.length < 2) return [];
-  // Find header row (first row with at least one matched column)
+  // Score each candidate row by number of matched columns; pick row with highest
+  // score (min 2 matches) among first 10 rows.
   let headerIdx = 0;
-  for (let i = 0; i < Math.min(matrix.length, 5); i++) {
-    const found = matrix[i].some(c => c && matchColumn(String(c)));
-    if (found) { headerIdx = i; break; }
+  let bestScore = 0;
+  const scanLimit = Math.min(matrix.length, 10);
+  for (let i = 0; i < scanLimit; i++) {
+    const row = matrix[i] || [];
+    const matched = new Set<string>();
+    for (const c of row) {
+      if (c == null || c === '') continue;
+      const f = matchColumn(String(c));
+      if (f) matched.add(f);
+    }
+    if (matched.size >= 2 && matched.size > bestScore) {
+      bestScore = matched.size;
+      headerIdx = i;
+    }
   }
+
   const headers = matrix[headerIdx].map(h => String(h ?? ''));
   const objs: Record<string, unknown>[] = [];
   for (let i = headerIdx + 1; i < matrix.length; i++) {
