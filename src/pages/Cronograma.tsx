@@ -458,6 +458,7 @@ export default function Cronograma() {
           </Select>
           <Button variant="outline" onClick={exportPDF}><Download className="h-4 w-4 mr-1" />PDF</Button>
           {canEdit && <Button variant="outline" onClick={openNewAditivo}><Plus className="h-4 w-4 mr-1" />Aditivo</Button>}
+          {canEdit && <Button variant="outline" onClick={() => setImportOpen(true)}><Upload className="h-4 w-4 mr-1" />Importar Cronograma</Button>}
           {canEdit && <Button onClick={() => openNew('original')}><Plus className="h-4 w-4 mr-1" />Atividade</Button>}
         </div>
       </div>
