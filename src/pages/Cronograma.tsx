@@ -886,6 +886,14 @@ export default function Cronograma() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ImportarCronogramaDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        cronogramaId={cronograma?.id || null}
+        startOrdem={atividades.length > 0 ? Math.max(...atividades.map(a => a.ordem)) : 0}
+        onImported={loadCronograma}
+      />
     </div>
   );
 }
