@@ -1,91 +1,47 @@
-## Objetivo
+## Problema
 
-Adicionar na aba **Cronograma** um botão **"Importar Cronograma"** que aceita arquivos PDF, XLS, XLSX e CSV, lê automaticamente as atividades, mostra tela de pré-visualização editável e só grava após confirmação do usuário. Nada na estrutura atual (tabela, CRUD, Gantt, PDF) será alterado — apenas adição.
+Na planilha real (`Cronograma_NEMA_Jardim_Camburi.xlsx`) os cabeçalhos verdadeiros estão na **linha 4** (`ID | Atividade | Início | Fim | Dur. | Equipe | ...80 colunas Gantt`), mas o parser escolheu a linha 1 porque `G1='Início: 06/05/2026 ...'` casou por substring com `inicio`. Resultado: a coluna A (IDs e títulos de seção) virou "Atividade" e datas vieram vazias.
 
-## Escopo
+## Correções em `src/lib/cronogramaImport.ts`
 
-### 1. Novo botão na barra de ações
-- Posicionado ao lado de **"Nova Atividade"** em `src/pages/Cronograma.tsx`
-- Visível apenas com permissão de edição (`canEdit`)
-- Ícone `Upload` (lucide-react)
+### 1. Detecção de cabeçalho por pontuação
+Substituir "primeira linha com ≥1 match" por "linha com a **maior quantidade** de matches dentre as primeiras 10 linhas, exigindo no mínimo 2 matches". Empate → primeira linha. Se ninguém atingir 2, manter linha 0.
 
-### 2. Novo componente: `src/components/cronograma/ImportarCronogramaDialog.tsx`
+### 2. `matchColumn` mais estrito
+Trocar `key.includes(c)` por matching baseado em **tokens** (separar por não-alfanumérico) com:
+- igualdade exata em qualquer token, OU
+- `startsWith` quando o token tem ≥3 chars e o cabeçalho normalizado tem ≤8 chars.
 
-Fluxo em 3 etapas dentro de um Dialog grande:
+Isso impede que `"inicio06052026en"` case com `inicio`, mas mantém `"datainicio"` casando.
 
-**Etapa 1 — Upload**
-- Input `<input type="file" accept=".pdf,.xls,.xlsx,.csv">`
-- Detecta extensão e roteia para o parser correto
-- Mostra instruções de colunas esperadas: `Atividade | Início | Fim | Duração | Observações` (qualquer ordem; cabeçalhos detectados por nome aproximado em pt-BR/EN)
+### 3. Aliases adicionais
+- `duracao_dias`: adicionar `dur`, `dur.`, `qtd` 
+- `data_inicio`: adicionar `data` apenas quando combinada (já coberto por `datainicio`)
+- `observacoes`: adicionar `equipe`, `responsavel`, `descritivo` como secundários (fallback baixa prioridade)
 
-**Etapa 2 — Pré-visualização editável**
-- Tabela com colunas editáveis inline: Atividade · Início · Fim · Duração (dias) · Peso (%) · Observações
-- Botões: **Distribuir pesos automaticamente** (100/N) · **Adicionar linha** · **Remover linha**
-- Edição de datas recalcula duração; edição de duração recalcula `data_fim` a partir de `data_inicio`
-- Painel de validação no topo:
-  - ⚠️ Datas inválidas (fim < início, formato inválido)
-  - ⚠️ Atividades duplicadas (mesmo nome)
-  - ⚠️ Duração inconsistente (fim-início ≠ duração informada)
-  - ⚠️ Soma de pesos ≠ 100%
-- Resumo: nº atividades · data inicial · data final · duração total (dias) · peso total (%)
-- Botão **Confirmar Importação** desabilitado se houver erro bloqueante (datas inválidas)
+### 4. Skip de linhas de seção
+Em `rowsFromObjects`, descartar linha quando:
+- todas as colunas mapeadas (exceto `nome_atividade`) estão vazias **E**
+- o nome bate com padrão de seção: `/^\d+(\.\d+)*\.?\s+[A-ZÀ-Ú]/` (ex.: `1. SERVIÇOS`, `2.1. ALGO`) **E** não tem nenhum dígito-data.
 
-**Etapa 3 — Gravação**
-- Insere em `cronograma_atividades` em lote, mantendo `ordem` sequencial (após a última existente)
-- `tipo_atividade = 'original'`, `status = 'nao_iniciado'`, `percentual_concluido = 0`
-- Após sucesso: fecha dialog, dispara `loadCronograma()` na página → cronograma atualiza imediatamente
-- Toast com resumo (X atividades importadas)
+Alternativa: sempre exigir `data_inicio` OU `data_fim` para incluir como atividade — mais simples e robusto.
 
-### 3. Parsers
+Adotar a alternativa: **só inclui linha se tiver `nome` + (data_inicio OU data_fim OU duracao)**. Linhas de seção sem datas são silenciosamente puladas. Isso preserva o caso CSV simples (que sempre tem datas) e elimina seções do XLSX/PDF.
 
-Novo arquivo `src/lib/cronogramaImport.ts` com:
+### 5. Parser PDF — não muda
+Já requer pelo menos uma data por linha, então seções não entram. Sem mudança.
 
-- `parseCSV(file)` — usa `papaparse` (já leve, adicionar)
-- `parseXLSX(file)` — usa `xlsx` (SheetJS)
-- `parsePDF(file)` — usa `pdfjs-dist` (já presente no projeto via PDF preview) para extrair texto; tenta detectar linhas tabulares por regex de datas (`dd/mm/yyyy`, `yyyy-mm-dd`) e separadores
+## Validação
 
-Saída normalizada:
-```ts
-type ImportedRow = {
-  nome_atividade: string;
-  data_inicio: string | null; // ISO yyyy-mm-dd
-  data_fim: string | null;
-  duracao_dias: number | null;
-  observacoes: string | null;
-}
-```
+Após implementar, rodar mentalmente sobre a planilha do usuário:
+- headerIdx → 3 (linha 4), com 4 matches: Atividade, Início, Fim, Dur.
+- Linha 5 (`1. SERVIÇOS PRELIMINARES`) → sem datas → pulada ✓
+- Linha 6 (`1.1 | Mobilização... | 06/05/2026 | 08/05/2026 | 3`) → atividade válida ✓
+- 56 atividades reais devem aparecer (em vez das 65 atuais com IDs/seções misturados).
 
-Detecção de colunas tolerante: `atividade|tarefa|descrição|nome`, `início|inicio|start|data inicial`, `fim|término|termino|end|data final`, `duração|duracao|dias|duration`, `observações|observacoes|notes|obs`.
-
-### 4. Integrações já existentes (sem mudanças)
-Como as atividades importadas vão para `cronograma_atividades`, elas **automaticamente** aparecem em:
-- Diário de Obra (que já lê atividades do cronograma da obra)
-- Relatórios (que já consolidam o cronograma)
-- Gantt e PDF da página Cronograma
-
-Nenhuma mudança nesses módulos é necessária.
-
-### 5. Validações implementadas
-| Validação | Tipo | Ação |
-|---|---|---|
-| Data inválida ou fim < início | Bloqueante | Impede confirmar |
-| Atividade duplicada (mesmo nome) | Aviso | Permite, mas destaca |
-| Duração ≠ (fim-início) | Aviso | Auto-corrige ao editar |
-| Soma de pesos ≠ 100 | Aviso | Botão "distribuir auto" |
-| Linha sem nome de atividade | Bloqueante | Impede confirmar |
-
-## Detalhes técnicos
-
-- **Dependências novas**: `xlsx` e `papaparse` (+ `@types/papaparse`). `pdfjs-dist` reutilizado.
-- **Sem migration**: estrutura `cronograma_atividades` já tem todos os campos necessários (`nome_atividade`, `data_inicio`, `data_fim`, `peso`, `observacoes`, `ordem`, `tipo_atividade`).
-- **Inserção**: usa `supabase.from('cronograma_atividades').insert([...])` em lote único; `empresa_id` herdado por trigger.
-- **Arquivos tocados**:
-  - `src/pages/Cronograma.tsx` — adicionar botão + estado `importOpen` + callback `onImported`
-  - `src/components/cronograma/ImportarCronogramaDialog.tsx` — novo
-  - `src/lib/cronogramaImport.ts` — novo (parsers)
-  - `package.json` — `xlsx`, `papaparse`, `@types/papaparse`
+## Arquivos tocados
+- `src/lib/cronogramaImport.ts` — apenas funções `matchColumn`, `rowsFromMatrix`, `rowsFromObjects`. Nenhuma mudança em UI, schema ou outros módulos.
 
 ## Fora de escopo
-- Editar PDF/XLS originais
-- Importar pesos do arquivo (peso é sempre definido manualmente ou distribuído auto)
-- Substituir cronograma existente (apenas anexa novas atividades; usuário exclui antigas manualmente se quiser)
+- Importar dados de Equipe como campo separado (vai continuar perdida — só nome, datas, duração e observações são importados, conforme spec original).
+- Importar diretamente do layout Gantt (barras coloridas em G:CF) — datas estão nas colunas C/D explicitamente.
