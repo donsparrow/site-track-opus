@@ -14,7 +14,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Download, AlertTriangle } from 'lucide-react';
+import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Download, AlertTriangle, Upload } from 'lucide-react';
+import ImportarCronogramaDialog from '@/components/cronograma/ImportarCronogramaDialog';
 import { toast } from 'sonner';
 import { format, differenceInDays, addDays, parseISO, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -97,6 +98,7 @@ export default function Cronograma() {
 
   // Delete
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const ganttRef = useRef<HTMLDivElement>(null);
 
@@ -456,6 +458,7 @@ export default function Cronograma() {
           </Select>
           <Button variant="outline" onClick={exportPDF}><Download className="h-4 w-4 mr-1" />PDF</Button>
           {canEdit && <Button variant="outline" onClick={openNewAditivo}><Plus className="h-4 w-4 mr-1" />Aditivo</Button>}
+          {canEdit && <Button variant="outline" onClick={() => setImportOpen(true)}><Upload className="h-4 w-4 mr-1" />Importar Cronograma</Button>}
           {canEdit && <Button onClick={() => openNew('original')}><Plus className="h-4 w-4 mr-1" />Atividade</Button>}
         </div>
       </div>
@@ -883,6 +886,14 @@ export default function Cronograma() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ImportarCronogramaDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        cronogramaId={cronograma?.id || null}
+        startOrdem={atividades.length > 0 ? Math.max(...atividades.map(a => a.ordem)) : 0}
+        onImported={loadCronograma}
+      />
     </div>
   );
 }
