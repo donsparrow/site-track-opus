@@ -50,12 +50,12 @@ export default defineConfig(({ mode }) => ({
             options: { cacheName: "html-cache", networkTimeoutSeconds: 4 },
           },
           {
-            urlPattern: ({ url }) => url.origin === self.location.origin && /\.(?:js|css|woff2?)$/.test(url.pathname),
+            urlPattern: /\.(?:js|css|woff2?)$/,
             handler: "CacheFirst",
             options: { cacheName: "asset-cache", expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 } },
           },
           {
-            urlPattern: ({ url }) => url.origin === self.location.origin && /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/.test(url.pathname),
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/,
             handler: "CacheFirst",
             options: { cacheName: "image-cache", expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 30 } },
           },
