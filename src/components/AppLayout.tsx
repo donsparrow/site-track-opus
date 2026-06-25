@@ -4,6 +4,7 @@ import AppSidebar from './AppSidebar';
 import MobileSidebar from './MobileSidebar';
 import GlobalFooter from './GlobalFooter';
 import EmpresaSetup from './EmpresaSetup';
+import InstallPWABanner from './InstallPWABanner';
 
 export default function AppLayout() {
   const { user, loading } = useAuth();
@@ -35,6 +36,9 @@ export default function AppLayout() {
 
       {/* Empresa setup modal for admin without empresa */}
       <EmpresaSetup />
+
+      {/* PWA install banner */}
+      <InstallPWABanner />
     </div>
   );
 }
