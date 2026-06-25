@@ -1,47 +1,91 @@
-## Problema
 
-Na planilha real (`Cronograma_NEMA_Jardim_Camburi.xlsx`) os cabeçalhos verdadeiros estão na **linha 4** (`ID | Atividade | Início | Fim | Dur. | Equipe | ...80 colunas Gantt`), mas o parser escolheu a linha 1 porque `G1='Início: 06/05/2026 ...'` casou por substring com `inicio`. Resultado: a coluna A (IDs e títulos de seção) virou "Atividade" e datas vieram vazias.
+# Suporte PWA — GestãoPro
 
-## Correções em `src/lib/cronogramaImport.ts`
+## Observação importante
 
-### 1. Detecção de cabeçalho por pontuação
-Substituir "primeira linha com ≥1 match" por "linha com a **maior quantidade** de matches dentre as primeiras 10 linhas, exigindo no mínimo 2 matches". Empate → primeira linha. Se ninguém atingir 2, manter linha 0.
+Você pediu para criar um `public/sw.js` à mão e registrá-lo no `main.tsx`. Por segurança no preview do Lovable (que já tivemos problema com tela branca/cache neste projeto), vou usar a abordagem oficial recomendada: **`vite-plugin-pwa` com `generateSW`** e um **wrapper de registro com guardas** para nunca registrar SW no preview/iframe/dev. O resultado é equivalente (manifest + service worker offline + instalável Android/iOS), mas sem o risco de "service worker preso" servindo HTML velho.
 
-### 2. `matchColumn` mais estrito
-Trocar `key.includes(c)` por matching baseado em **tokens** (separar por não-alfanumérico) com:
-- igualdade exata em qualquer token, OU
-- `startsWith` quando o token tem ≥3 chars e o cabeçalho normalizado tem ≤8 chars.
+Nada de lógica de negócio será alterado.
 
-Isso impede que `"inicio06052026en"` case com `inicio`, mas mantém `"datainicio"` casando.
+---
 
-### 3. Aliases adicionais
-- `duracao_dias`: adicionar `dur`, `dur.`, `qtd` 
-- `data_inicio`: adicionar `data` apenas quando combinada (já coberto por `datainicio`)
-- `observacoes`: adicionar `equipe`, `responsavel`, `descritivo` como secundários (fallback baixa prioridade)
+## 1. Dependências
 
-### 4. Skip de linhas de seção
-Em `rowsFromObjects`, descartar linha quando:
-- todas as colunas mapeadas (exceto `nome_atividade`) estão vazias **E**
-- o nome bate com padrão de seção: `/^\d+(\.\d+)*\.?\s+[A-ZÀ-Ú]/` (ex.: `1. SERVIÇOS`, `2.1. ALGO`) **E** não tem nenhum dígito-data.
+- Adicionar `vite-plugin-pwa` (devDependency).
 
-Alternativa: sempre exigir `data_inicio` OU `data_fim` para incluir como atividade — mais simples e robusto.
+## 2. `vite.config.ts`
 
-Adotar a alternativa: **só inclui linha se tiver `nome` + (data_inicio OU data_fim OU duracao)**. Linhas de seção sem datas são silenciosamente puladas. Isso preserva o caso CSV simples (que sempre tem datas) e elimina seções do XLSX/PDF.
+- Plugar `VitePWA` com:
+  - `registerType: "autoUpdate"`
+  - `injectRegister: null` (registro feito pelo nosso wrapper)
+  - `devOptions: { enabled: false }`
+  - `filename: "sw.js"`
+  - `manifest`:
+    - `name`: "GestãoPro"
+    - `short_name`: "GestãoPro"
+    - `description`: "Sistema de Gestão de Projetos – J&A Engenharia"
+    - `start_url`: "/"
+    - `display`: "standalone"
+    - `orientation`: "portrait"
+    - `background_color`: "#ffffff"
+    - `theme_color`: cor primária do projeto (Navy do design system — confirmar HSL em `src/index.css` e converter)
+    - `icons`: 192x192 e 512x512 (PNG)
+  - `workbox`:
+    - `navigateFallbackDenylist: [/^\/~oauth/, /^\/calendario\/callback/]`
+    - HTML navegações: `NetworkFirst`
+    - Assets hash same-origin: `CacheFirst`
+    - APIs Supabase (`*.supabase.co`): `NetworkFirst`
 
-### 5. Parser PDF — não muda
-Já requer pelo menos uma data por linha, então seções não entram. Sem mudança.
+## 3. Ícones
 
-## Validação
+- Gerar `public/icons/icon-192x192.png` e `public/icons/icon-512x512.png` a partir do logo institucional J&A (ou placeholder se o logo atual não estiver em `public/`).
+- Adicionar `public/apple-touch-icon.png` (180x180).
 
-Após implementar, rodar mentalmente sobre a planilha do usuário:
-- headerIdx → 3 (linha 4), com 4 matches: Atividade, Início, Fim, Dur.
-- Linha 5 (`1. SERVIÇOS PRELIMINARES`) → sem datas → pulada ✓
-- Linha 6 (`1.1 | Mobilização... | 06/05/2026 | 08/05/2026 | 3`) → atividade válida ✓
-- 56 atividades reais devem aparecer (em vez das 65 atuais com IDs/seções misturados).
+## 4. `index.html`
 
-## Arquivos tocados
-- `src/lib/cronogramaImport.ts` — apenas funções `matchColumn`, `rowsFromMatrix`, `rowsFromObjects`. Nenhuma mudança em UI, schema ou outros módulos.
+Adicionar no `<head>`:
+- `<link rel="manifest" href="/manifest.webmanifest" />` (gerado pelo plugin)
+- `<meta name="theme-color" content="<cor primária>" />`
+- `<meta name="apple-mobile-web-app-capable" content="yes" />`
+- `<meta name="apple-mobile-web-app-status-bar-style" content="default" />`
+- `<meta name="apple-mobile-web-app-title" content="GestãoPro" />`
+- `<link rel="apple-touch-icon" href="/icons/icon-192x192.png" />`
 
-## Fora de escopo
-- Importar dados de Equipe como campo separado (vai continuar perdida — só nome, datas, duração e observações são importados, conforme spec original).
-- Importar diretamente do layout Gantt (barras coloridas em G:CF) — datas estão nas colunas C/D explicitamente.
+## 5. Wrapper de registro do SW
+
+Criar `src/pwa/registerSW.ts` que **recusa registro** quando:
+- `!import.meta.env.PROD`
+- está em iframe (`window.self !== window.top`)
+- hostname começa com `id-preview--` ou `preview--`
+- hostname termina em `.lovableproject.com`, `.lovableproject-dev.com`, `.beta.lovable.dev`
+- URL tem `?sw=off`
+
+Nesses casos, faz `unregister()` de qualquer SW antigo em `/sw.js`. Em produção real (ex.: `gestaoproja.lovable.app`), registra `/sw.js` no `window.load`.
+
+Importar esse wrapper em `src/main.tsx` (uma linha, sem mexer no resto).
+
+## 6. Componente `InstallPWABanner`
+
+Criar `src/components/InstallPWABanner.tsx` e montar uma vez em `src/components/AppLayout.tsx` (rodapé/canto, discreto, estilizado com tokens do design system — sem cores hardcoded):
+
+- Escuta `beforeinstallprompt` (Android/Chrome): guarda o evento, mostra botão "Instalar app". No clique, chama `prompt()`.
+- Persistência em `localStorage`:
+  - `pwa-install-dismissed` → não mostra mais se usuário fechar.
+  - `pwa-install-accepted` → não mostra após instalar (`appinstalled` event).
+- Detecção iOS Safari: `/iphone|ipad|ipod/i.test(ua)` e `!(window.navigator as any).standalone` → mostra instrução: "Para instalar, toque em Compartilhar → Adicionar à Tela de Início".
+- Esconde automaticamente se já estiver rodando em modo standalone (`matchMedia('(display-mode: standalone)')`).
+
+## 7. Verificação
+
+- Build local para garantir que o plugin gera `sw.js` e `manifest.webmanifest`.
+- Confirmar visualmente no preview que **nenhum SW é registrado** (o preview deve continuar funcionando normalmente).
+- Banner aparece em mobile/Chrome quando o navegador dispara `beforeinstallprompt`.
+
+---
+
+## Detalhes técnicos (para referência)
+
+- Por que não `public/sw.js` manual: o preview Lovable roda em iframe sob `id-preview--*.lovable.app`. Um SW registrado lá interfere com HMR e pode servir HTML antigo causando tela branca — exatamente o sintoma que já tratamos neste projeto. O wrapper guardado + `vite-plugin-pwa` é o caminho oficial para evitar isso.
+- `injectRegister: null` garante que o único registrador é o nosso wrapper.
+- `NetworkFirst` em navegações evita "app instalado nunca atualiza".
+- `/calendario/callback` excluído do fallback para não quebrar o OAuth do Google Calendar.
