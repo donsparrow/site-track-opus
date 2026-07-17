@@ -166,9 +166,18 @@ export default function Documentacao() {
   };
 
   const extractStoragePath = (url: string): string | null => {
-    const match = url.match(/\/storage\/v1\/object\/public\/anexos\/(.+)/);
+    const match = url.match(/\/storage\/v1\/object\/(?:public|sign)\/anexos\/([^?]+)/);
     return match ? decodeURIComponent(match[1]) : null;
   };
+
+  const getSignedUrl = async (url: string): Promise<string | null> => {
+    const path = extractStoragePath(url);
+    if (!path) return null;
+    const { data, error } = await supabase.storage.from('anexos').createSignedUrl(path, 3600);
+    if (error) { console.error('signed url error', error); return null; }
+    return data?.signedUrl || null;
+  };
+
 
   const getFileExtension = (fileName: string) => fileName.split('.').pop()?.trim().toLowerCase() ?? '';
 
