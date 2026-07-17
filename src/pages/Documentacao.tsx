@@ -166,9 +166,18 @@ export default function Documentacao() {
   };
 
   const extractStoragePath = (url: string): string | null => {
-    const match = url.match(/\/storage\/v1\/object\/public\/anexos\/(.+)/);
+    const match = url.match(/\/storage\/v1\/object\/(?:public|sign)\/anexos\/([^?]+)/);
     return match ? decodeURIComponent(match[1]) : null;
   };
+
+  const getSignedUrl = async (url: string): Promise<string | null> => {
+    const path = extractStoragePath(url);
+    if (!path) return null;
+    const { data, error } = await supabase.storage.from('anexos').createSignedUrl(path, 3600);
+    if (error) { console.error('signed url error', error); return null; }
+    return data?.signedUrl || null;
+  };
+
 
   const getFileExtension = (fileName: string) => fileName.split('.').pop()?.trim().toLowerCase() ?? '';
 
@@ -436,12 +445,15 @@ export default function Documentacao() {
                 <div className="space-y-2">
                   {arquivos.map(arq => (
                     <div key={arq.id} className="relative flex items-center justify-between rounded-lg border px-4 py-3"
-                      onMouseEnter={(e) => {
+                       onMouseEnter={async (e) => {
                         setHoverArquivo(arq);
                         setHoverPos({ x: e.clientX, y: e.clientY });
                         setPdfPreviewUrl(null);
+                        const signed = await getSignedUrl(arq.url_arquivo);
+                        if (!signed) return;
+                        setHoverArquivo({ ...arq, url_arquivo: signed });
                         if (arq.tipo === 'pdf') {
-                          hoverTimeoutRef.current = setTimeout(() => renderPdfPreview(arq.url_arquivo, arq.id), 200);
+                          hoverTimeoutRef.current = setTimeout(() => renderPdfPreview(signed, arq.id), 200);
                         }
                       }}
                       onMouseMove={(e) => setHoverPos({ x: e.clientX, y: e.clientY })}
@@ -467,8 +479,10 @@ export default function Documentacao() {
                           size="icon"
                           variant="ghost"
                           className="h-8 w-8"
-                          onClick={() => {
-                            setPreviewUrl(arq.url_arquivo);
+                          onClick={async () => {
+                            const signed = await getSignedUrl(arq.url_arquivo);
+                            if (!signed) { toast.error('Arquivo indisponível'); return; }
+                            setPreviewUrl(signed);
                             setPreviewTipo(arq.tipo);
                           }}
                         >
@@ -478,16 +492,22 @@ export default function Documentacao() {
                           size="icon"
                           variant="ghost"
                           className="h-8 w-8"
-                          onClick={() => {
+                          onClick={async () => {
+                            const signed = await getSignedUrl(arq.url_arquivo);
+                            if (!signed) { toast.error('Arquivo indisponível'); return; }
                             const link = document.createElement('a');
-                            link.href = arq.url_arquivo;
+                            link.href = signed;
                             link.download = arq.nome_arquivo;
                             link.target = '_blank';
+                            link.rel = 'noopener';
+                            document.body.appendChild(link);
                             link.click();
+                            document.body.removeChild(link);
                           }}
                         >
                           <Download className="h-4 w-4" />
                         </Button>
+
                         {canManage && (
                           <Button
                             size="icon"
