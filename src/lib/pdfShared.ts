@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import { resolveLogoUrl } from '@/lib/logoUrl';
 
 export const BLUE = [30, 58, 95] as const;
 export const MARGIN = 15;
@@ -91,7 +92,8 @@ export async function setupPDFHelpers(doc: jsPDF, empresa: EmpresaPDFData | null
   let logoNatH = 0;
 
   if (emp.logo_url) {
-    logoDataUrl = await loadImageAsDataUrl(emp.logo_url);
+    const resolvedLogoUrl = (await resolveLogoUrl(emp.logo_url)) || emp.logo_url;
+    logoDataUrl = await loadImageAsDataUrl(resolvedLogoUrl);
     if (logoDataUrl) {
       await new Promise<void>((resolve) => {
         const tmpImg = new Image();
