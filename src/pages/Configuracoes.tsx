@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Settings, Upload } from 'lucide-react';
+import { resolveLogoUrl } from '@/lib/logoUrl';
 
 export default function Configuracoes() {
   const { isAdmin, empresaId } = useAuth();
@@ -26,6 +27,7 @@ export default function Configuracoes() {
     cpf_responsavel_legal: '',
     cargo_responsavel_legal: '',
   });
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (empresaId) fetchConfig();
@@ -54,6 +56,7 @@ export default function Configuracoes() {
         cpf_responsavel_legal: data.cpf_responsavel_legal || '',
         cargo_responsavel_legal: data.cargo_responsavel_legal || '',
       });
+      setLogoPreview(await resolveLogoUrl(data.logo_url));
     }
     setLoading(false);
   };
@@ -82,9 +85,10 @@ export default function Configuracoes() {
     const filePath = `empresa/${empresaId}/logo.${ext}`;
     const { error: upErr } = await supabase.storage.from('anexos').upload(filePath, file, { upsert: true });
     if (upErr) { toast.error(upErr.message); return; }
-    const { data: urlData } = supabase.storage.from('anexos').getPublicUrl(filePath);
-    setForm({ ...form, logo_url: urlData.publicUrl });
-    toast.success('Logo enviada!');
+    setForm(prev => ({ ...prev, logo_url: filePath }));
+    const signed = await resolveLogoUrl(filePath);
+    setLogoPreview(signed);
+    toast.success('Logo enviada! Clique em Salvar Configurações para confirmar.');
   };
 
   if (!isAdmin) return <p className="text-muted-foreground">Acesso restrito ao administrador.</p>;
@@ -123,7 +127,7 @@ export default function Configuracoes() {
             <div>
               <Label>Logo</Label>
               <div className="flex items-center gap-4">
-                {form.logo_url && <img src={form.logo_url} alt="Logo" className="h-16 w-16 object-contain rounded border" />}
+                {logoPreview && <img src={logoPreview} alt="Logo" className="h-16 w-16 object-contain rounded border" />}
                 <label className="cursor-pointer">
                   <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleLogoUpload(f); }} />
                   <Button type="button" variant="outline" size="sm" asChild><span><Upload className="h-4 w-4 mr-1" />Enviar Logo</span></Button>
