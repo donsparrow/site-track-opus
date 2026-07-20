@@ -1,19 +1,33 @@
-## Objetivo
-Usar a logo do J&A GestãoPro (`src/assets/logo-ja-gestaopro.jpeg`) como ícone do "app" instalado no celular, tablet e desktop (PWA + Apple Touch).
+## Problema
 
-## Alterações
+O bucket `anexos` foi tornado **privado** (correção de segurança anterior). O upload da logo em Configurações continua salvando a **URL pública** (`getPublicUrl`) no campo `logo_url`, mas essa URL retorna 404 num bucket privado — por isso a miniatura aparece quebrada mesmo após o toast "Logo enviada!".
 
-1. **Gerar 3 PNGs** a partir da logo existente, com fundo branco (evita fundo transparente/preto no iOS):
-   - `public/icons/icon-192x192.png` (192×192)
-   - `public/icons/icon-512x512.png` (512×512, usada também como maskable — com padding de segurança para não cortar nas bordas arredondadas do Android)
-   - `public/apple-touch-icon.png` (180×180, iOS)
+O mesmo problema afeta qualquer lugar que renderiza `logo_url` diretamente: sidebar (`useEmpresaLogo`) e cabeçalhos de PDF (`pdfShared.ts`, `pdfRelatorio.ts`, `pdfDashboard.ts`).
 
-2. **Favicon**: opcionalmente atualizar para a mesma logo (`public/favicon.ico` → gerar novo a partir da logo). Confirme se quer trocar também o favicon do navegador ou manter o atual.
+## Solução
 
-3. **Sem mudanças em código**: `vite.config.ts` e `index.html` já referenciam esses arquivos — só substituir as imagens já resolve.
+Passar a armazenar o **caminho relativo** do arquivo (ex.: `empresa/<id>/logo.png`) em `logo_url` e gerar **signed URL** sob demanda para exibição, seguindo o mesmo padrão já usado em `Documentacao.tsx`.
 
-## Observação importante
-Quem já instalou o "app" antes vai continuar vendo o ícone antigo até desinstalar e reinstalar (o sistema operacional cacheia o ícone no momento da instalação). Novos instaladores verão a logo nova imediatamente após o próximo publish.
+### Mudanças
 
-## Pergunta
-Quer que eu troque também o **favicon** do navegador (aba) pela mesma logo, ou mantém o atual?
+1. **`src/pages/Configuracoes.tsx`**
+   - No `handleLogoUpload`: após upload, salvar apenas o `filePath` em `form.logo_url` (não mais `getPublicUrl`).
+   - Estado adicional `logoPreviewUrl` gerado via `createSignedUrl(filePath, 3600)` para o `<img>` de preview (tanto após upload quanto ao carregar config existente que já tenha caminho salvo).
+   - Suportar retrocompatibilidade: se `logo_url` já for uma URL http completa antiga, extrair o path com helper (mesmo `extractStoragePath` de Documentacao).
+
+2. **`src/hooks/useEmpresaLogo.ts`**
+   - Após buscar `logo_url`, se for path relativo gerar signed URL; se for URL http antiga, extrair path e gerar signed URL. Retornar a URL assinada.
+
+3. **PDFs (`src/lib/pdfShared.ts` e chamadores)**
+   - Onde a logo é convertida para dataURL para o cabeçalho, receber signed URL em vez da public URL. Ajustar o ponto único que resolve a logo antes de fazer `fetch` → base64.
+
+### Fora de escopo
+
+- Não mexer nas policies do bucket (mantém privado).
+- Não migrar registros antigos no banco — o helper de compatibilidade cobre.
+
+## Arquivos alterados
+
+- `src/pages/Configuracoes.tsx`
+- `src/hooks/useEmpresaLogo.ts`
+- `src/lib/pdfShared.ts` (e, se necessário, os pontos em `pdfRelatorio.ts` / `pdfDashboard.ts` que passam a logo)
