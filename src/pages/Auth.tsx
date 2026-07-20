@@ -43,7 +43,7 @@ export default function Auth() {
       <div className="absolute inset-0 bg-primary/70" />
       <Card className="relative z-10 w-full max-w-md mx-4 border-0 shadow-2xl">
         <CardHeader className="text-center pb-2">
-          <div className="mx-auto mb-3 flex h-[104px] w-auto items-center justify-center rounded-xl overflow-hidden">
+          <div className="mx-auto mb-3 flex h-[114px] w-auto items-center justify-center rounded-xl overflow-hidden">
             <img src={logoSistema} alt="J&A GestãoPro" className="h-full w-auto object-contain" />
           </div>
           <CardTitle className="leading-none tracking-tight text-base text-center font-medium mx-[63px] px-0 rounded-none shadow-none">
