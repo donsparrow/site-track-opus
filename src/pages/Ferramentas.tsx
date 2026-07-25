@@ -578,6 +578,20 @@ export default function Ferramentas() {
                 </Select>
               </div>
             </div>
+            {tipo === 'eletrica' && (
+              <div className="space-y-2">
+                <Label>Voltagem *</Label>
+                <Select value={voltagem} onValueChange={setVoltagem}>
+                  <SelectTrigger><SelectValue placeholder="Selecione a voltagem" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="110V">110V</SelectItem>
+                    <SelectItem value="220V">220V</SelectItem>
+                    <SelectItem value="Bivolt (110V/220V)">Bivolt (110V/220V)</SelectItem>
+                    <SelectItem value="380V">380V</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Obra Vinculada</Label>
               <Select value={obraId} onValueChange={setObraId}>
