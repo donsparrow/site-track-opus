@@ -119,6 +119,10 @@ export default function Ferramentas() {
       toast.error('Preencha nome e número de cadastro');
       return;
     }
+    if (tipo === 'eletrica' && !voltagem) {
+      toast.error('Selecione a voltagem do equipamento elétrico');
+      return;
+    }
 
     const realObraId = obraId && obraId !== 'nenhuma' ? obraId : null;
 
@@ -128,6 +132,7 @@ export default function Ferramentas() {
       tipo,
       status,
       obra_id: realObraId,
+      voltagem: tipo === 'eletrica' ? voltagem : null,
     };
 
     if (editId) {
