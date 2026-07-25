@@ -1,0 +1,1 @@
+ALTER TABLE public.ferramentas ADD COLUMN IF NOT EXISTS voltagem TEXT;
