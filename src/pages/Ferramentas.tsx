@@ -561,7 +561,7 @@ export default function Ferramentas() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Tipo</Label>
-                <Select value={tipo} onValueChange={setTipo}>
+                <Select value={tipo} onValueChange={(v) => { setTipo(v); if (v !== 'eletrica') setVoltagem(''); }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {Object.entries(TIPO_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
