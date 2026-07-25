@@ -100,7 +100,7 @@ export default function Ferramentas() {
   }, [obrasFilterLoading]);
 
   const resetForm = () => {
-    setNome(''); setNumeroCadastro(''); setTipo('manual'); setStatus('disponivel'); setObraId(''); setEditId(null);
+    setNome(''); setNumeroCadastro(''); setTipo('manual'); setStatus('disponivel'); setObraId(''); setVoltagem(''); setEditId(null);
   };
 
   const openEdit = (f: Ferramenta) => {
@@ -110,6 +110,7 @@ export default function Ferramentas() {
     setTipo(f.tipo);
     setStatus(f.status);
     setObraId(f.obra_id || '');
+    setVoltagem(f.voltagem || '');
     setDialogOpen(true);
   };
 
