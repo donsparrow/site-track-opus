@@ -76,6 +76,7 @@ export default function Ferramentas() {
   const [tipo, setTipo] = useState('manual');
   const [status, setStatus] = useState('disponivel');
   const [obraId, setObraId] = useState<string>('');
+  const [voltagem, setVoltagem] = useState<string>('');
 
   // Manutenção fields
   const [manutData, setManutData] = useState(new Date().toISOString().split('T')[0]);
