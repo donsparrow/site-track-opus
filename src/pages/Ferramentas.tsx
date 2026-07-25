@@ -421,7 +421,7 @@ export default function Ferramentas() {
                       <TableRow key={f.id}>
                         <TableCell className="font-medium">{f.nome}</TableCell>
                         <TableCell>{f.numero_cadastro}</TableCell>
-                        <TableCell>{TIPO_LABELS[f.tipo] || f.tipo}</TableCell>
+                        <TableCell>{(TIPO_LABELS[f.tipo] || f.tipo) + (f.tipo === 'eletrica' && f.voltagem ? ` · ${f.voltagem}` : '')}</TableCell>
                         <TableCell>
                           {canEdit ? (
                             <Select value={f.status} onValueChange={async (newStatus) => {
