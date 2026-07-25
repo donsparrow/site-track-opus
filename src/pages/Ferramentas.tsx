@@ -23,6 +23,7 @@ interface Ferramenta {
   obra_id: string | null;
   empresa_id: string | null;
   ultima_manutencao: string | null;
+  voltagem: string | null;
   created_at: string;
 }
 
@@ -75,6 +76,7 @@ export default function Ferramentas() {
   const [tipo, setTipo] = useState('manual');
   const [status, setStatus] = useState('disponivel');
   const [obraId, setObraId] = useState<string>('');
+  const [voltagem, setVoltagem] = useState<string>('');
 
   // Manutenção fields
   const [manutData, setManutData] = useState(new Date().toISOString().split('T')[0]);
@@ -98,7 +100,7 @@ export default function Ferramentas() {
   }, [obrasFilterLoading]);
 
   const resetForm = () => {
-    setNome(''); setNumeroCadastro(''); setTipo('manual'); setStatus('disponivel'); setObraId(''); setEditId(null);
+    setNome(''); setNumeroCadastro(''); setTipo('manual'); setStatus('disponivel'); setObraId(''); setVoltagem(''); setEditId(null);
   };
 
   const openEdit = (f: Ferramenta) => {
@@ -108,12 +110,17 @@ export default function Ferramentas() {
     setTipo(f.tipo);
     setStatus(f.status);
     setObraId(f.obra_id || '');
+    setVoltagem(f.voltagem || '');
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
     if (!nome.trim() || !numeroCadastro.trim()) {
       toast.error('Preencha nome e número de cadastro');
+      return;
+    }
+    if (tipo === 'eletrica' && !voltagem) {
+      toast.error('Selecione a voltagem do equipamento elétrico');
       return;
     }
 
@@ -125,6 +132,7 @@ export default function Ferramentas() {
       tipo,
       status,
       obra_id: realObraId,
+      voltagem: tipo === 'eletrica' ? voltagem : null,
     };
 
     if (editId) {
@@ -413,7 +421,7 @@ export default function Ferramentas() {
                       <TableRow key={f.id}>
                         <TableCell className="font-medium">{f.nome}</TableCell>
                         <TableCell>{f.numero_cadastro}</TableCell>
-                        <TableCell>{TIPO_LABELS[f.tipo] || f.tipo}</TableCell>
+                        <TableCell>{(TIPO_LABELS[f.tipo] || f.tipo) + (f.tipo === 'eletrica' && f.voltagem ? ` · ${f.voltagem}` : '')}</TableCell>
                         <TableCell>
                           {canEdit ? (
                             <Select value={f.status} onValueChange={async (newStatus) => {
@@ -553,7 +561,7 @@ export default function Ferramentas() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Tipo</Label>
-                <Select value={tipo} onValueChange={setTipo}>
+                <Select value={tipo} onValueChange={(v) => { setTipo(v); if (v !== 'eletrica') setVoltagem(''); }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {Object.entries(TIPO_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
@@ -570,6 +578,20 @@ export default function Ferramentas() {
                 </Select>
               </div>
             </div>
+            {tipo === 'eletrica' && (
+              <div className="space-y-2">
+                <Label>Voltagem *</Label>
+                <Select value={voltagem} onValueChange={setVoltagem}>
+                  <SelectTrigger><SelectValue placeholder="Selecione a voltagem" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="110V">110V</SelectItem>
+                    <SelectItem value="220V">220V</SelectItem>
+                    <SelectItem value="Bivolt (110V/220V)">Bivolt (110V/220V)</SelectItem>
+                    <SelectItem value="380V">380V</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Obra Vinculada</Label>
               <Select value={obraId} onValueChange={setObraId}>

@@ -945,6 +945,7 @@ export type Database = {
           tipo: string
           ultima_manutencao: string | null
           updated_at: string
+          voltagem: string | null
         }
         Insert: {
           created_at?: string
@@ -957,6 +958,7 @@ export type Database = {
           tipo?: string
           ultima_manutencao?: string | null
           updated_at?: string
+          voltagem?: string | null
         }
         Update: {
           created_at?: string
@@ -969,6 +971,7 @@ export type Database = {
           tipo?: string
           ultima_manutencao?: string | null
           updated_at?: string
+          voltagem?: string | null
         }
         Relationships: [
           {
