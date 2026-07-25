@@ -23,6 +23,7 @@ interface Ferramenta {
   obra_id: string | null;
   empresa_id: string | null;
   ultima_manutencao: string | null;
+  voltagem: string | null;
   created_at: string;
 }
 
