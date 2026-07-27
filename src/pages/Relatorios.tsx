@@ -544,14 +544,23 @@ export default function Relatorios() {
   };
 
   const handleOpenRelatorio = async (rel: any, opts?: { readOnly?: boolean }) => {
+    openingExistingRef.current = true;
     setReadOnly(!!opts?.readOnly);
+    setRelatorioId(rel.id);
     setSelectedObra(rel.obra_id);
     setPeriodoInicio(rel.data_inicio || '');
     setPeriodoFim(rel.data_fim || '');
+    setRevisaoPdf(rel.revisao_pdf || 0);
     // Prazo will be fetched from obra during consolidation
     setViewMode('edit');
     // Wait for obra data to load then consolidate
-    setTimeout(() => consolidar(), 500);
+    setTimeout(async () => {
+      try {
+        await consolidar();
+      } finally {
+        openingExistingRef.current = false;
+      }
+    }, 500);
   };
 
   const handleSign = async () => {
