@@ -51,8 +51,10 @@ export default function Relatorios() {
   const [revisaoPdf, setRevisaoPdf] = useState<number>(0);
 
   // Period
-  const [periodoInicio, setPeriodoInicio] = useState('');
-  const [periodoFim, setPeriodoFim] = useState('');
+  const [periodoInicioState, setPeriodoInicio] = useState('');
+  const [periodoFimState, setPeriodoFim] = useState('');
+  const periodoInicio = periodoInicioState;
+  const periodoFim = periodoFimState;
 
   // Prazo contratual comes from obra (read-only)
 
