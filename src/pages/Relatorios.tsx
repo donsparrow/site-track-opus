@@ -1253,7 +1253,13 @@ export default function Relatorios() {
                     <div className="space-y-4">
                       {assinaturas.map(a => (
                         <div key={a.id} className="flex items-center gap-4 p-3 border rounded-lg">
-                          <img src={a.assinatura_url} alt="Assinatura" className="h-16 w-24 object-contain border rounded" />
+                          {assinaturaUrls[a.id] ? (
+                            <img src={assinaturaUrls[a.id]} alt={`Assinatura de ${a.nome_assinante}`} className="h-16 w-24 object-contain border rounded bg-background" />
+                          ) : (
+                            <div className="h-16 w-24 flex items-center justify-center border rounded text-[10px] text-muted-foreground text-center px-1">
+                              Carregando assinatura...
+                            </div>
+                          )}
                           <div>
                             <p className="font-medium">{a.nome_assinante}</p>
                             {a.cargo && <p className="text-sm text-muted-foreground">{a.cargo}</p>}
