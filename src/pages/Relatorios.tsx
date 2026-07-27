@@ -45,7 +45,8 @@ export default function Relatorios() {
   const [readOnly, setReadOnly] = useState(false);
   const openingExistingRef = useRef(false);
   const [obras, setObras] = useState<any[]>([]);
-  const [selectedObra, setSelectedObra] = useState('');
+  const [selectedObraState, setSelectedObra] = useState('');
+  const selectedObra = selectedObraState;
   const [obraData, setObraData] = useState<any>(null);
   const [revisaoPdf, setRevisaoPdf] = useState<number>(0);
 
