@@ -605,10 +605,14 @@ export default function Relatorios() {
       });
     }
 
+    // Report becomes officially "assinado"
+    await supabase.from('relatorios').update({ status: 'assinado' } as any).eq('id', relatorioId);
+
     toast.success('Assinatura registrada!');
     setSignOpen(false);
     setSignName(''); setSignCargo('');
-    consolidar();
+    await consolidar();
+    await loadRelatoriosList();
   };
 
   const podeExcluir = isAdmin || isSuperAdmin;
