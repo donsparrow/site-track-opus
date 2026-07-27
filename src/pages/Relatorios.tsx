@@ -546,7 +546,6 @@ export default function Relatorios() {
     const filePath = `assinaturas/${relatorioId}/${Date.now()}.png`;
     const { error: upErr } = await supabase.storage.from('anexos').upload(filePath, blob);
     if (upErr) { toast.error(upErr.message); return; }
-    const { data: urlData } = supabase.storage.from('anexos').getPublicUrl(filePath);
 
     const { error } = await supabase.from('assinaturas').insert({
       relatorio_id: relatorioId,
@@ -554,7 +553,7 @@ export default function Relatorios() {
       nome_assinante: signName,
       cargo: signCargo || null,
       tipo_assinatura: 'desenho',
-      assinatura_url: urlData.publicUrl,
+      assinatura_url: filePath,
     });
     if (error) { toast.error(error.message); return; }
 
