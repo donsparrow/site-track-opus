@@ -1,30 +1,31 @@
-## Problemas confirmados (em `src/pages/Relatorios.tsx`)
+## Objetivo
 
-**1. Aviso "Não há novos diários para gerar relatório nesta obra."**
-Ao clicar em Visualizar, `handleOpenRelatorio` define a obra selecionada. O `useEffect` que observa `selectedObra` só ignora a auto-detecção quando `relatorioId` já está preenchido — mas nesse momento ele ainda é `null` (só é definido depois, dentro de `consolidar()`, com 500 ms de atraso). Resultado: o efeito roda o fluxo de "novo relatório", mostra o aviso e ainda limpa as datas do período (`setPeriodoInicio('')` / `setPeriodoFim('')`) do relatório que está sendo aberto.
+1. Eliminar o status "gerado pdf revNN" dos relatórios (mantendo Rascunho, Finalizado, Assinado, Excluído).
+2. No Histórico do relatório, mostrar no resumo qual usuário gerou/baixou o PDF — registrando apenas na primeira vez de cada usuário.
+3. Validar de fato que a atualização de status (assinatura) está funcionando.
 
-**2. Status continua "rascunho"**
-- `handleSign` grava a assinatura e cria uma versão com status `assinado`, mas **nunca** atualiza `relatorios.status` — a lista lê o status da tabela `relatorios`, por isso continua "rascunho".
-- `handleGerarPDF` só atualiza `status` quando `hasChanges` é verdadeiro. Na primeira geração (revisão 0, snapshot igual ao da última versão salva) não há mudanças, então o PDF é gerado sem gravar `gerado pdf rev01`.
+## 1. Remover o status "gerado pdf"
 
-## Correções propostas
+- Ao gerar PDF, o status do relatório **não muda** (rascunho continua rascunho; assinado continua assinado). Continua-se apenas incrementando a revisão (`revisao_pdf`) e criando nova versão quando houver alterações reais de conteúdo.
+- Nas novas versões criadas ao gerar PDF, gravar o status atual do relatório em vez de "gerado pdf revNN".
+- Remover o tratamento especial de `status.startsWith('gerado pdf')` no badge da lista e no badge do Histórico.
+- Manter o botão de download visível para relatórios com `revisao_pdf > 0` ou assinados.
+- Migração de dados: converter os 5 relatórios existentes com status "gerado pdf revNN" para `rascunho` (nenhum deles está assinado), e normalizar os registros de `relatorio_versoes` com esse status para `rascunho`.
 
-**A. Abrir relatório existente sem disparar auto-detecção**
-- Adicionar um marcador (`openingRelatorioRef` / estado `isOpeningExisting`) definido em `handleOpenRelatorio` antes de `setSelectedObra`.
-- No `useEffect`, executar a auto-detecção de período apenas quando não houver `relatorioId` **e** não estiver abrindo um relatório existente; limpar o marcador depois que a consolidação terminar.
-- Em `handleOpenRelatorio`, definir `setRelatorioId(rel.id)` imediatamente (em vez de esperar a consolidação), o que também elimina a dependência do `setTimeout`.
-- Manter o aviso somente no caso real: usuário escolhe uma obra ao criar um **novo** relatório e não há diários novos.
+## 2. Autor do PDF no Histórico
 
-**B. Status "assinado" após assinar**
-- Em `handleSign`, após inserir a assinatura, atualizar `relatorios.status = 'assinado'` e recarregar a lista (`loadRelatoriosList()`), para que o badge reflita a mudança na hora.
+- A aba Histórico passa a exibir uma coluna "Usuário", buscando o nome em `profiles` a partir de `criado_por` da versão.
+- No resumo da versão, quando o PDF for gerado/baixado, acrescentar a marcação "PDF gerado por <nome>".
+- Regra de uma vez por usuário: antes de anexar essa marcação ou criar log de download, verificar em `relatorio_logs` se já existe registro de PDF daquele `usuario_id` para aquele relatório. Se já existir, não duplicar nada no histórico (o PDF é gerado normalmente, só não gera novo registro).
+- Isso vale tanto para a geração dentro do relatório aberto quanto para o download direto pela lista.
 
-**C. Status "gerado pdf revNN" ao gerar PDF**
-- Em `handleGerarPDF`, gravar o status do PDF também quando não houver alterações: manter a revisão atual (sem criar nova versão) mas atualizar `relatorios.status` para `gerado pdf revNN`.
-- Precedência: se o relatório já estiver `assinado`, o status permanece `assinado` (assinado é o estado final) — apenas o número de revisão é atualizado.
-- Na primeira geração (revisão 0), incrementar para `rev01` para que o status fique coerente com o PDF entregue.
+## 3. Teste da atualização de status
+
+- Verificação no banco: hoje nenhum relatório está com status `assinado` — vou confirmar, após o ajuste, se assinar grava `assinado` corretamente.
+- Teste automatizado no preview (Playwright) percorrendo: abrir relatório → assinar → conferir badge na lista → gerar PDF → conferir que o status permanece o mesmo e que o histórico mostra o autor do PDF apenas uma vez.
 
 ## Detalhes técnicos
 
-- Arquivo único afetado: `src/pages/Relatorios.tsx`. Sem migração de banco — as colunas `status` e `revisao_pdf` de `relatorios` já existem.
-- `statusBadge` já trata rótulos iniciados por `gerado pdf`, e o filtro de status da lista continua funcionando.
-- Modo somente leitura permanece igual: campos bloqueados, apenas "Gerar PDF" disponível.
+- Arquivo principal: `src/pages/Relatorios.tsx` (`handleGerarPDF`, `handleDownloadRelatorio`, `handleSign`, `statusBadge`, aba `versoes`).
+- Migração de dados via UPDATE em `relatorios` e `relatorio_versoes`.
+- Consulta de nomes: `profiles.nome` por `user_id` em lote para as versões carregadas.
