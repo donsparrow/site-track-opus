@@ -74,6 +74,7 @@ export default function Relatorios() {
   // Versions & signatures
   const [relatorioId, setRelatorioId] = useState<string | null>(null);
   const [versoes, setVersoes] = useState<any[]>([]);
+  const [nomesUsuarios, setNomesUsuarios] = useState<Record<string, string>>({});
   const [assinaturas, setAssinaturas] = useState<any[]>([]);
   const [signOpen, setSignOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -446,6 +447,44 @@ export default function Relatorios() {
     setSaving(false);
   };
 
+  // Registra a autoria do PDF apenas na primeira vez de cada usuário por relatório
+  const isPrimeiroPdfDoUsuario = async (relId: string, userId: string) => {
+    const { data } = await supabase
+      .from('relatorio_logs')
+      .select('id, acao')
+      .eq('relatorio_id', relId)
+      .eq('usuario_id', userId)
+      .ilike('acao', '%PDF%')
+      .limit(1);
+    return !(data && data.length > 0);
+  };
+
+  const getNomeUsuario = async (userId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('nome, email')
+      .eq('user_id', userId)
+      .maybeSingle();
+    return (data as any)?.nome || (data as any)?.email || 'Usuário';
+  };
+
+  // Resolve os nomes dos autores das versões exibidas no histórico
+  useEffect(() => {
+    const ids = Array.from(new Set(versoes.map(v => v.criado_por).filter(Boolean)));
+    const faltando = ids.filter(id => !nomesUsuarios[id]);
+    if (faltando.length === 0) return;
+    (async () => {
+      const { data } = await supabase.from('profiles').select('user_id, nome, email').in('user_id', faltando);
+      if (!data) return;
+      setNomesUsuarios(prev => {
+        const next = { ...prev };
+        (data as any[]).forEach(p => { next[p.user_id] = p.nome || p.email || 'Usuário'; });
+        return next;
+      });
+    })();
+  }, [versoes, nomesUsuarios]);
+
+
   const handleGerarPDF = async () => {
     if (!obraData) { toast.error('Selecione uma obra e consolide os dados'); return; }
     if (!empresa) { toast.info('Dados da empresa não configurados. O PDF será gerado sem cabeçalho/logo.'); }
@@ -498,21 +537,22 @@ export default function Relatorios() {
       });
 
       if (relatorioId && user) {
-        // "assinado" is a final state — never downgrade it to a PDF-revision status
         const { data: relAtual } = await supabase
           .from('relatorios')
           .select('status')
           .eq('id', relatorioId)
           .maybeSingle();
-        const isAssinado = (relAtual as any)?.status === 'assinado';
+        const statusAtual = ((relAtual as any)?.status as string) || 'rascunho';
+
+        // Only register the PDF authorship the first time each user generates it
+        const primeiraVez = await isPrimeiroPdfDoUsuario(relatorioId, user.id);
+        const autorNome = await getNomeUsuario(user.id);
 
         if (hasChanges) {
           // Increment revision only on actual changes
           const nextRevisao = revisaoPdf + 1;
-          const newStatus = `gerado pdf rev${String(nextRevisao).padStart(2, '0')}`;
           await supabase.from('relatorios').update({
             revisao_pdf: nextRevisao,
-            ...(isAssinado ? {} : { status: newStatus }),
           } as any).eq('id', relatorioId);
           setRevisaoPdf(nextRevisao);
 
@@ -521,35 +561,47 @@ export default function Relatorios() {
             relatorio_id: relatorioId,
             numero_versao: nextVersion,
             criado_por: user.id,
-            status: newStatus,
-            descricao_alteracao: summary,
+            status: statusAtual,
+            descricao_alteracao: primeiraVez ? `${summary} — PDF gerado por ${autorNome}` : summary,
             snapshot_dados: currentSnapshot,
           });
 
-          await supabase.from('relatorio_logs').insert({
-            relatorio_id: relatorioId,
-            usuario_id: user.id,
-            acao: `gerou PDF ${revLabel} (com alterações)`,
-          });
+          if (primeiraVez) {
+            await supabase.from('relatorio_logs').insert({
+              relatorio_id: relatorioId,
+              usuario_id: user.id,
+              acao: `gerou PDF ${revLabel}`,
+            });
+          }
 
           toast.success(`PDF ${revLabel} gerado — nova revisão criada!`);
         } else {
-          // No content changes — no new version, but the report is no longer a draft
           const efetivaRevisao = revisaoPdf > 0 ? revisaoPdf : 1;
           await supabase.from('relatorios').update({
             revisao_pdf: efetivaRevisao,
-            ...(isAssinado ? {} : { status: `gerado pdf rev${String(efetivaRevisao).padStart(2, '0')}` }),
           } as any).eq('id', relatorioId);
           setRevisaoPdf(efetivaRevisao);
 
-          await supabase.from('relatorio_logs').insert({
-            relatorio_id: relatorioId,
-            usuario_id: user.id,
-            acao: `baixou PDF ${revLabel} (sem alterações)`,
-          });
+          if (primeiraVez) {
+            const nextVersion = versoes.length > 0 ? versoes[0].numero_versao + 1 : 1;
+            await supabase.from('relatorio_versoes').insert({
+              relatorio_id: relatorioId,
+              numero_versao: nextVersion,
+              criado_por: user.id,
+              status: statusAtual,
+              descricao_alteracao: `PDF gerado por ${autorNome}`,
+              snapshot_dados: currentSnapshot,
+            });
+            await supabase.from('relatorio_logs').insert({
+              relatorio_id: relatorioId,
+              usuario_id: user.id,
+              acao: `gerou PDF ${revLabel}`,
+            });
+          }
 
           toast.success(`PDF ${revLabel} gerado (mesma revisão, sem alterações).`);
         }
+
 
 
         // Reload versions
@@ -725,11 +777,20 @@ export default function Relatorios() {
         })),
       });
 
-      if (user) {
+      if (user && await isPrimeiroPdfDoUsuario(rel.id, user.id)) {
+        const autorNome = await getNomeUsuario(user.id);
+        const ultimaVersao = (versRes.data || [])[0];
+        await supabase.from('relatorio_versoes').insert({
+          relatorio_id: rel.id,
+          numero_versao: ultimaVersao ? ultimaVersao.numero_versao + 1 : 1,
+          criado_por: user.id,
+          status: rel.status || 'rascunho',
+          descricao_alteracao: `PDF gerado por ${autorNome}`,
+        });
         await supabase.from('relatorio_logs').insert({
           relatorio_id: rel.id,
           usuario_id: user.id,
-          acao: `baixou PDF REV ${String(pdfRevisao).padStart(2, '0')}`,
+          acao: `gerou PDF REV ${String(pdfRevisao).padStart(2, '0')}`,
         });
       }
       toast.success('PDF baixado!');
@@ -787,14 +848,12 @@ export default function Relatorios() {
   const saldoColor = prazos.saldo > 0 ? 'text-success' : prazos.saldo < 0 ? 'text-destructive' : 'text-foreground';
 
   const statusBadge = (status: string) => {
-    const isRevStatus = status.startsWith('gerado pdf');
     const map: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
       rascunho: 'outline',
       finalizado: 'secondary',
       assinado: 'default',
     };
-    const variant = isRevStatus ? 'default' : (map[status] || 'outline');
-    return <Badge variant={variant}>{status.toUpperCase()}</Badge>;
+    return <Badge variant={map[status] || 'outline'}>{(status || '').toUpperCase()}</Badge>;
   };
 
   // ========== LIST VIEW ==========
@@ -871,7 +930,7 @@ export default function Relatorios() {
                       <TableCell>{statusBadge(r.status)}</TableCell>
                       <TableCell>
                         <div className="flex gap-1">
-                          {((r.revisao_pdf || 0) > 0 || r.status === 'assinado' || (typeof r.status === 'string' && r.status.startsWith('gerado pdf'))) && (
+                          {((r.revisao_pdf || 0) > 0 || r.status === 'assinado') && (
                             <Button size="sm" variant="ghost" onClick={() => handleDownloadRelatorio(r)} title="Baixar PDF">
                               <Download className="h-4 w-4" />
                             </Button>
@@ -1326,6 +1385,7 @@ export default function Relatorios() {
                         <TableRow>
                           <TableHead>REV</TableHead>
                           <TableHead>Status</TableHead>
+                          <TableHead>Usuário</TableHead>
                           <TableHead>Resumo das Alterações</TableHead>
                           <TableHead>Data</TableHead>
                         </TableRow>
@@ -1335,15 +1395,17 @@ export default function Relatorios() {
                           <TableRow key={v.id}>
                             <TableCell className="font-bold">REV {String(v.numero_versao - 1).padStart(2, '0')}</TableCell>
                             <TableCell>
-                              <Badge variant={v.status.startsWith('gerado pdf') ? 'default' : v.status === 'assinado' ? 'default' : 'outline'}>
+                              <Badge variant={v.status === 'assinado' ? 'default' : v.status === 'finalizado' ? 'secondary' : 'outline'}>
                                 {v.status}
                               </Badge>
                             </TableCell>
+                            <TableCell className="text-sm">{nomesUsuarios[v.criado_por] || '—'}</TableCell>
                             <TableCell>{v.descricao_alteracao || '—'}</TableCell>
                             <TableCell>{new Date(v.data_criacao).toLocaleDateString('pt-BR')}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
+
                     </Table>
                   )}
                 </CardContent>
