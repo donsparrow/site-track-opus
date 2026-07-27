@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useObrasFiltered } from '@/hooks/useObrasFiltered';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,7 +40,11 @@ function calcBusinessDays(start: string, end: string): number {
 type ViewMode = 'list' | 'edit';
 
 export default function Relatorios() {
-  const { canEdit, user, role, isAdmin, isSuperAdmin } = useAuth();
+  const { user, role } = useAuth();
+  const { pode } = usePermissions();
+  const podeCriar = pode('relatorios', 'criar');
+  const podeEditar = pode('relatorios', 'editar');
+  const podeExcluirRel = pode('relatorios', 'excluir');
   const { filterObras, isObraAllowed, loading: obrasFilterLoading } = useObrasFiltered();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [readOnly, setReadOnly] = useState(false);
@@ -619,7 +624,7 @@ export default function Relatorios() {
 
   const handleOpenRelatorio = async (rel: any, opts?: { readOnly?: boolean }) => {
     openingExistingRef.current = true;
-    setReadOnly(!!opts?.readOnly);
+    setReadOnly(!!opts?.readOnly || !podeEditar);
     setRelatorioId(rel.id);
     setSelectedObra(rel.obra_id);
     setPeriodoInicio(rel.data_inicio || '');
@@ -683,7 +688,7 @@ export default function Relatorios() {
     await loadRelatoriosList();
   };
 
-  const podeExcluir = isAdmin || isSuperAdmin;
+  const podeExcluir = podeExcluirRel;
 
   const handleDownloadRelatorio = async (rel: any) => {
     try {
@@ -862,9 +867,11 @@ export default function Relatorios() {
       <div>
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-display font-bold">Relatórios</h1>
-          <Button onClick={() => { setReadOnly(false); setRelatorioId(null); setSelectedObra(''); setPeriodoInicio(''); setPeriodoFim(''); setViewMode('edit'); }} className="bg-accent text-accent-foreground hover:bg-accent/90">
-            <FileText className="h-4 w-4 mr-2" />Novo Relatório
-          </Button>
+          {podeCriar && (
+            <Button onClick={() => { setReadOnly(false); setRelatorioId(null); setSelectedObra(''); setPeriodoInicio(''); setPeriodoFim(''); setViewMode('edit'); }} className="bg-accent text-accent-foreground hover:bg-accent/90">
+              <FileText className="h-4 w-4 mr-2" />Novo Relatório
+            </Button>
+          )}
         </div>
 
         {/* Filters */}
@@ -938,7 +945,7 @@ export default function Relatorios() {
                           <Button size="sm" variant="ghost" onClick={() => handleOpenRelatorio(r, { readOnly: true })} title="Visualizar">
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {canEdit && (
+                          {podeEditar && (
                             <Button size="sm" variant="ghost" onClick={() => handleOpenRelatorio(r)} title="Editar">
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -1018,7 +1025,7 @@ export default function Relatorios() {
               <Label>Data Fim</Label>
               <Input type="date" value={periodoFim} onChange={e => setPeriodoFim(e.target.value)} disabled={readOnly} />
             </div>
-            {!readOnly && (
+            {!readOnly && podeEditar && (
               <Button onClick={() => consolidar()} disabled={!selectedObra || !periodoInicio || !periodoFim} className="bg-accent text-accent-foreground hover:bg-accent/90">
                 <BarChart3 className="h-4 w-4 mr-2" />Consolidar
               </Button>
@@ -1104,17 +1111,15 @@ export default function Relatorios() {
 
           {/* Action Buttons */}
           <div className="flex gap-3 mb-6 flex-wrap">
-            {canEdit && !readOnly && (
+            {podeEditar && !readOnly && (
               <Button onClick={handleSalvar} disabled={saving} variant="outline">
                 <Save className="h-4 w-4 mr-2" />{saving ? 'Salvando...' : 'Salvar Relatório'}
               </Button>
             )}
-            {canEdit && (
-              <Button onClick={handleGerarPDF} disabled={generating} className="bg-accent text-accent-foreground hover:bg-accent/90">
-                <Download className="h-4 w-4 mr-2" />{generating ? 'Gerando...' : 'Gerar PDF'}
-              </Button>
-            )}
-            {!readOnly && (
+            <Button onClick={handleGerarPDF} disabled={generating} className="bg-accent text-accent-foreground hover:bg-accent/90">
+              <Download className="h-4 w-4 mr-2" />{generating ? 'Gerando...' : 'Gerar PDF'}
+            </Button>
+            {podeEditar && !readOnly && (
               <Button variant="outline" onClick={() => setSignOpen(true)}>
                 <PenTool className="h-4 w-4 mr-2" />Assinar
               </Button>
