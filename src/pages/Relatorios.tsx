@@ -665,7 +665,7 @@ export default function Relatorios() {
         cronograma: cronAtivs,
         aditivos: (aditRes.data as any[]) || [],
         planejamentoConfigurado: planejamentoConf,
-        assinaturas: assinRes.data || [],
+        assinaturas: await resolveAssinaturas((assinRes.data as any[]) || []),
         versao: pdfRevisao,
         versoes: (versRes.data || []).map((v: any) => ({
           rev: `REV ${String(v.numero_versao).padStart(2, '0')}`,
