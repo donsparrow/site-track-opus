@@ -624,7 +624,7 @@ export default function Relatorios() {
 
   const handleOpenRelatorio = async (rel: any, opts?: { readOnly?: boolean }) => {
     openingExistingRef.current = true;
-    setReadOnly(!!opts?.readOnly);
+    setReadOnly(!!opts?.readOnly || !podeEditar);
     setRelatorioId(rel.id);
     setSelectedObra(rel.obra_id);
     setPeriodoInicio(rel.data_inicio || '');
