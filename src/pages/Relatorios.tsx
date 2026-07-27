@@ -40,7 +40,7 @@ function calcBusinessDays(start: string, end: string): number {
 type ViewMode = 'list' | 'edit';
 
 export default function Relatorios() {
-  const { canEdit, user, role, isAdmin, isSuperAdmin } = useAuth();
+  const { user, role } = useAuth();
   const { pode } = usePermissions();
   const podeCriar = pode('relatorios', 'criar');
   const podeEditar = pode('relatorios', 'editar');
