@@ -16,6 +16,7 @@ import { FileText, Calendar, Clock, BarChart3, PenTool, History, Download, Save,
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { gerarRelatorioPDF } from '@/lib/pdfRelatorio';
+import { resolveAnexoUrl, resolveAssinaturas } from '@/lib/anexoUrl';
 import SignatureCanvas from 'react-signature-canvas';
 
 const fmt = (d: string) => {
