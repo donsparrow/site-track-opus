@@ -148,7 +148,10 @@ export default function Relatorios() {
     }
   }, [selectedObra, obras]);
 
-  const consolidar = async () => {
+  const consolidar = async (override?: { obraId?: string; inicio?: string; fim?: string }) => {
+    const selectedObra = override?.obraId || selectedObraState;
+    const periodoInicio = override?.inicio || periodoInicioState;
+    const periodoFim = override?.fim || periodoFimState;
     if (!selectedObra || !periodoInicio || !periodoFim) return;
 
     const { data: diariosList } = await supabase
