@@ -1,31 +1,34 @@
-## Objetivo
+## Causa confirmada
 
-1. Eliminar o status "gerado pdf revNN" dos relatórios (mantendo Rascunho, Finalizado, Assinado, Excluído).
-2. No Histórico do relatório, mostrar no resumo qual usuário gerou/baixou o PDF — registrando apenas na primeira vez de cada usuário.
-3. Validar de fato que a atualização de status (assinatura) está funcionando.
+A página de Relatórios (`src/pages/Relatorios.tsx`) **não usa o sistema de permissões modulares**. Ela importa apenas `useAuth` e decide as ações por papel:
 
-## 1. Remover o status "gerado pdf"
+- Botão "Novo Relatório" (linha 865): renderizado **sempre**, sem nenhuma condição.
+- Botão "Editar" (linha 941): usa `canEdit`, que no `AuthContext` é `role === 'admin' | 'trabalhador' | 'super_admin'` — ignora `permissoes_usuario`.
+- Botão "Excluir" (linha 946): usa `isAdmin || isSuperAdmin`.
 
-- Ao gerar PDF, o status do relatório **não muda** (rascunho continua rascunho; assinado continua assinado). Continua-se apenas incrementando a revisão (`revisao_pdf`) e criando nova versão quando houver alterações reais de conteúdo.
-- Nas novas versões criadas ao gerar PDF, gravar o status atual do relatório em vez de "gerado pdf revNN".
-- Remover o tratamento especial de `status.startsWith('gerado pdf')` no badge da lista e no badge do Histórico.
-- Manter o botão de download visível para relatórios com `revisao_pdf > 0` ou assinados.
-- Migração de dados: converter os 5 relatórios existentes com status "gerado pdf revNN" para `rascunho` (nenhum deles está assinado), e normalizar os registros de `relatorio_versoes` com esse status para `rascunho`.
+Confirmei no banco que `espindulasindico@gmail.com` tem, no módulo `relatorios`, apenas visualizar = sim; criar, editar e excluir = não. Portanto o botão aparece porque nada o consulta.
 
-## 2. Autor do PDF no Histórico
+Outras páginas (Clientes, Obras, Dashboard) já usam `usePermissions().pode(...)` — Relatórios ficou de fora.
 
-- A aba Histórico passa a exibir uma coluna "Usuário", buscando o nome em `profiles` a partir de `criado_por` da versão.
-- No resumo da versão, quando o PDF for gerado/baixado, acrescentar a marcação "PDF gerado por <nome>".
-- Regra de uma vez por usuário: antes de anexar essa marcação ou criar log de download, verificar em `relatorio_logs` se já existe registro de PDF daquele `usuario_id` para aquele relatório. Se já existir, não duplicar nada no histórico (o PDF é gerado normalmente, só não gera novo registro).
-- Isso vale tanto para a geração dentro do relatório aberto quanto para o download direto pela lista.
+## Correção proposta
 
-## 3. Teste da atualização de status
+Em `src/pages/Relatorios.tsx`:
 
-- Verificação no banco: hoje nenhum relatório está com status `assinado` — vou confirmar, após o ajuste, se assinar grava `assinado` corretamente.
-- Teste automatizado no preview (Playwright) percorrendo: abrir relatório → assinar → conferir badge na lista → gerar PDF → conferir que o status permanece o mesmo e que o histórico mostra o autor do PDF apenas uma vez.
+1. Passar a usar `usePermissions()` e derivar:
+   - `podeCriar = pode('relatorios', 'criar')`
+   - `podeEditar = pode('relatorios', 'editar')`
+   - `podeExcluir = pode('relatorios', 'excluir')`
+   (o hook já concede tudo automaticamente para admin e super admin)
+2. Esconder o botão "Novo Relatório" quando `podeCriar` for falso.
+3. Trocar a condição do botão "Editar" de `canEdit` para `podeEditar`, e a do "Excluir" para o novo `podeExcluir` baseado em permissão.
+4. Na tela de edição, aplicar a mesma regra aos botões de escrita (Salvar / Consolidar / Assinar, linhas ~1107 e ~1112): só aparecem com permissão de editar. Visualizar e Gerar/Baixar PDF continuam disponíveis para quem só tem visualização.
+5. Proteção extra: se o usuário sem permissão de criar/editar chegar à tela de edição (por exemplo por estado antigo), forçar modo somente leitura.
+
+## Validação
+
+Entrar como o usuário síndico no preview e confirmar que: a lista aparece, os botões Novo/Editar/Excluir somem, e Visualizar + Download continuam funcionando. Depois confirmar que um admin continua vendo todas as ações.
 
 ## Detalhes técnicos
 
-- Arquivo principal: `src/pages/Relatorios.tsx` (`handleGerarPDF`, `handleDownloadRelatorio`, `handleSign`, `statusBadge`, aba `versoes`).
-- Migração de dados via UPDATE em `relatorios` e `relatorio_versoes`.
-- Consulta de nomes: `profiles.nome` por `user_id` em lote para as versões carregadas.
+- Arquivo alterado: apenas `src/pages/Relatorios.tsx`.
+- Sem alterações de banco de dados nem de regras de acesso (RLS já bloqueia gravação indevida no servidor; esta correção alinha a interface).
