@@ -688,7 +688,7 @@ export default function Relatorios() {
     await loadRelatoriosList();
   };
 
-  const podeExcluir = isAdmin || isSuperAdmin;
+  const podeExcluir = podeExcluirRel;
 
   const handleDownloadRelatorio = async (rel: any) => {
     try {
