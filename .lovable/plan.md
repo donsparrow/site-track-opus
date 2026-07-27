@@ -1,19 +1,20 @@
 ## Objetivo
-Adicionar campo "Voltagem" no cadastro de ferramentas, visível apenas quando o Tipo for "Elétrica".
+Adicionar a ação "Visualizar" na lista de relatórios, abrindo a tela do relatório em modo somente leitura (campos bloqueados), ao lado de Editar e Excluir.
 
-## Alterações
+## Alterações — `src/pages/Relatorios.tsx`
 
-### 1. Banco de dados (migração)
-- Adicionar coluna `voltagem TEXT` (nullable) na tabela `ferramentas`.
+1. **Estado de leitura**
+   - Novo estado `readOnly` (boolean), ativado ao abrir via botão Visualizar e desativado ao abrir via Editar.
+   - Reaproveitar `handleOpenRelatorio(r)` com um parâmetro opcional (`handleOpenRelatorio(r, { readOnly: true })`).
 
-### 2. `src/pages/Ferramentas.tsx`
-- Adicionar `voltagem` na interface `Ferramenta` e no estado (`useState`).
-- Resetar/preencher `voltagem` em `resetForm` e ao editar.
-- Incluir `voltagem` no payload salvo (apenas se tipo = `eletrica`; caso contrário salvar `null`).
-- No diálogo de cadastro/edição: renderizar condicionalmente um campo `<Select>` "Voltagem *" quando `tipo === 'eletrica'`, com opções: **110V**, **220V**, **Bivolt (110V/220V)**, **380V**.
-- Validação: se tipo elétrica, exigir voltagem preenchida antes de salvar.
-- Exibir a voltagem como badge/texto na coluna Tipo da tabela (ex.: "Elétrica · 220V") para ferramentas elétricas.
+2. **Botão na tabela (coluna Ações)**
+   - Ícone `Eye` (já importado) como primeiro botão, com `title="Visualizar"`, visível para todos que acessam a aba (inclusive perfis sem permissão de edição).
+
+3. **Tela de edição em modo leitura**
+   - Título passa a "Visualizar Relatório" quando `readOnly`.
+   - Todos os inputs/textareas/selects recebem `disabled`/`readOnly`.
+   - Ocultar botões de ação de escrita: Salvar, Consolidar, Assinar, Nova Revisão, e demais controles de edição.
+   - Manter disponíveis: voltar para a lista, Gerar/Baixar PDF e o histórico de versões (somente leitura).
 
 ## Fora do escopo
-- Sem alterações em relatórios, PDFs ou outros módulos.
-- Sem alterações nos históricos ou manutenções.
+- Sem mudanças em permissões no banco, PDFs ou lógica de consolidação.
