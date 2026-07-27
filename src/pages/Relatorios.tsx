@@ -498,13 +498,21 @@ export default function Relatorios() {
       });
 
       if (relatorioId && user) {
+        // "assinado" is a final state — never downgrade it to a PDF-revision status
+        const { data: relAtual } = await supabase
+          .from('relatorios')
+          .select('status')
+          .eq('id', relatorioId)
+          .maybeSingle();
+        const isAssinado = (relAtual as any)?.status === 'assinado';
+
         if (hasChanges) {
           // Increment revision only on actual changes
           const nextRevisao = revisaoPdf + 1;
           const newStatus = `gerado pdf rev${String(nextRevisao).padStart(2, '0')}`;
           await supabase.from('relatorios').update({
             revisao_pdf: nextRevisao,
-            status: newStatus,
+            ...(isAssinado ? {} : { status: newStatus }),
           } as any).eq('id', relatorioId);
           setRevisaoPdf(nextRevisao);
 
@@ -526,7 +534,14 @@ export default function Relatorios() {
 
           toast.success(`PDF ${revLabel} gerado — nova revisão criada!`);
         } else {
-          // No changes — just download, no new revision
+          // No content changes — no new version, but the report is no longer a draft
+          const efetivaRevisao = revisaoPdf > 0 ? revisaoPdf : 1;
+          await supabase.from('relatorios').update({
+            revisao_pdf: efetivaRevisao,
+            ...(isAssinado ? {} : { status: `gerado pdf rev${String(efetivaRevisao).padStart(2, '0')}` }),
+          } as any).eq('id', relatorioId);
+          setRevisaoPdf(efetivaRevisao);
+
           await supabase.from('relatorio_logs').insert({
             relatorio_id: relatorioId,
             usuario_id: user.id,
@@ -535,6 +550,7 @@ export default function Relatorios() {
 
           toast.success(`PDF ${revLabel} gerado (mesma revisão, sem alterações).`);
         }
+
 
         // Reload versions
         const { data: vers } = await supabase.from('relatorio_versoes').select('*').eq('relatorio_id', relatorioId).order('numero_versao', { ascending: false });
