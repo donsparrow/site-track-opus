@@ -562,7 +562,7 @@ export default function Relatorios() {
     // Wait for obra data to load then consolidate
     setTimeout(async () => {
       try {
-        await consolidar();
+        await consolidar({ obraId: rel.obra_id, inicio: rel.data_inicio || '', fim: rel.data_fim || '' });
       } finally {
         openingExistingRef.current = false;
       }
