@@ -943,7 +943,7 @@ export default function Relatorios() {
                           <Button size="sm" variant="ghost" onClick={() => handleOpenRelatorio(r, { readOnly: true })} title="Visualizar">
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {canEdit && (
+                          {podeEditar && (
                             <Button size="sm" variant="ghost" onClick={() => handleOpenRelatorio(r)} title="Editar">
                               <Edit className="h-4 w-4" />
                             </Button>
