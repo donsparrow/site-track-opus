@@ -1109,17 +1109,15 @@ export default function Relatorios() {
 
           {/* Action Buttons */}
           <div className="flex gap-3 mb-6 flex-wrap">
-            {canEdit && !readOnly && (
+            {podeEditar && !readOnly && (
               <Button onClick={handleSalvar} disabled={saving} variant="outline">
                 <Save className="h-4 w-4 mr-2" />{saving ? 'Salvando...' : 'Salvar Relatório'}
               </Button>
             )}
-            {canEdit && (
-              <Button onClick={handleGerarPDF} disabled={generating} className="bg-accent text-accent-foreground hover:bg-accent/90">
-                <Download className="h-4 w-4 mr-2" />{generating ? 'Gerando...' : 'Gerar PDF'}
-              </Button>
-            )}
-            {!readOnly && (
+            <Button onClick={handleGerarPDF} disabled={generating} className="bg-accent text-accent-foreground hover:bg-accent/90">
+              <Download className="h-4 w-4 mr-2" />{generating ? 'Gerando...' : 'Gerar PDF'}
+            </Button>
+            {podeEditar && !readOnly && (
               <Button variant="outline" onClick={() => setSignOpen(true)}>
                 <PenTool className="h-4 w-4 mr-2" />Assinar
               </Button>
