@@ -940,7 +940,7 @@ export default function Relatorios() {
               <Input type="date" value={periodoFim} onChange={e => setPeriodoFim(e.target.value)} disabled={readOnly} />
             </div>
             {!readOnly && (
-              <Button onClick={consolidar} disabled={!selectedObra || !periodoInicio || !periodoFim} className="bg-accent text-accent-foreground hover:bg-accent/90">
+              <Button onClick={() => consolidar()} disabled={!selectedObra || !periodoInicio || !periodoFim} className="bg-accent text-accent-foreground hover:bg-accent/90">
                 <BarChart3 className="h-4 w-4 mr-2" />Consolidar
               </Button>
             )}
