@@ -465,7 +465,7 @@ export default function Relatorios() {
         cronograma: cronogramaAtividades,
         aditivos,
         planejamentoConfigurado,
-        assinaturas,
+        assinaturas: await resolveAssinaturas(assinaturas),
         versao: pdfRevisao,
         versoes: versoes.map(v => ({
           rev: `REV ${String(v.numero_versao).padStart(2, '0')}`,
