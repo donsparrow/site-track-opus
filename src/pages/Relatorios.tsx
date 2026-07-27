@@ -86,6 +86,20 @@ export default function Relatorios() {
   const [signCargo, setSignCargo] = useState('');
   const [signTipo, setSignTipo] = useState('responsavel_tecnico');
 
+  // Signed URLs for signature images (the `anexos` bucket is private)
+  const [assinaturaUrls, setAssinaturaUrls] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const entries = await Promise.all(
+        assinaturas.map(async (a: any) => [a.id, (await resolveAnexoUrl(a.assinatura_url)) || ''] as const)
+      );
+      if (!cancelled) setAssinaturaUrls(Object.fromEntries(entries));
+    })();
+    return () => { cancelled = true; };
+  }, [assinaturas]);
+
   useEffect(() => {
     if (!obrasFilterLoading) {
       supabase.from('obras').select('id, nome, data_inicio, data_fim_prevista, endereco, responsavel_tecnico, crea_cau, prazo_contratual_dias, clientes(nome, cpf_cnpj, email, telefone)').order('nome').then(({ data }) => setObras(filterObras((data || []) as any[])));
