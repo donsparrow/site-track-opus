@@ -525,7 +525,8 @@ export default function Relatorios() {
     setGenerating(false);
   };
 
-  const handleOpenRelatorio = async (rel: any) => {
+  const handleOpenRelatorio = async (rel: any, opts?: { readOnly?: boolean }) => {
+    setReadOnly(!!opts?.readOnly);
     setSelectedObra(rel.obra_id);
     setPeriodoInicio(rel.data_inicio || '');
     setPeriodoFim(rel.data_fim || '');
