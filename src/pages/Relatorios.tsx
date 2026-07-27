@@ -41,6 +41,10 @@ type ViewMode = 'list' | 'edit';
 
 export default function Relatorios() {
   const { canEdit, user, role, isAdmin, isSuperAdmin } = useAuth();
+  const { pode } = usePermissions();
+  const podeCriar = pode('relatorios', 'criar');
+  const podeEditar = pode('relatorios', 'editar');
+  const podeExcluirRel = pode('relatorios', 'excluir');
   const { filterObras, isObraAllowed, loading: obrasFilterLoading } = useObrasFiltered();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [readOnly, setReadOnly] = useState(false);
