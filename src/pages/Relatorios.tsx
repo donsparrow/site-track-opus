@@ -122,8 +122,9 @@ export default function Relatorios() {
       const obra = obras.find(o => o.id === selectedObra);
       setObraData(obra);
 
-      // If creating a new report (no relatorioId), auto-detect period from unused diaries
-      if (!relatorioId) {
+      // If creating a new report (no relatorioId and not opening an existing one),
+      // auto-detect period from unused diaries
+      if (!relatorioId && !openingExistingRef.current) {
         (async () => {
           const { data: unusedDiarios } = await supabase
             .from('diario_obra')
