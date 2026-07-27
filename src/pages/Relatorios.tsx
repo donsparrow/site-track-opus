@@ -16,6 +16,7 @@ import { FileText, Calendar, Clock, BarChart3, PenTool, History, Download, Save,
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { gerarRelatorioPDF } from '@/lib/pdfRelatorio';
+import { resolveAnexoUrl, resolveAssinaturas } from '@/lib/anexoUrl';
 import SignatureCanvas from 'react-signature-canvas';
 
 const fmt = (d: string) => {
@@ -84,6 +85,20 @@ export default function Relatorios() {
   const [signName, setSignName] = useState('');
   const [signCargo, setSignCargo] = useState('');
   const [signTipo, setSignTipo] = useState('responsavel_tecnico');
+
+  // Signed URLs for signature images (the `anexos` bucket is private)
+  const [assinaturaUrls, setAssinaturaUrls] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const entries = await Promise.all(
+        assinaturas.map(async (a: any) => [a.id, (await resolveAnexoUrl(a.assinatura_url)) || ''] as const)
+      );
+      if (!cancelled) setAssinaturaUrls(Object.fromEntries(entries));
+    })();
+    return () => { cancelled = true; };
+  }, [assinaturas]);
 
   useEffect(() => {
     if (!obrasFilterLoading) {
@@ -465,7 +480,7 @@ export default function Relatorios() {
         cronograma: cronogramaAtividades,
         aditivos,
         planejamentoConfigurado,
-        assinaturas,
+        assinaturas: await resolveAssinaturas(assinaturas),
         versao: pdfRevisao,
         versoes: versoes.map(v => ({
           rev: `REV ${String(v.numero_versao).padStart(2, '0')}`,
@@ -546,7 +561,6 @@ export default function Relatorios() {
     const filePath = `assinaturas/${relatorioId}/${Date.now()}.png`;
     const { error: upErr } = await supabase.storage.from('anexos').upload(filePath, blob);
     if (upErr) { toast.error(upErr.message); return; }
-    const { data: urlData } = supabase.storage.from('anexos').getPublicUrl(filePath);
 
     const { error } = await supabase.from('assinaturas').insert({
       relatorio_id: relatorioId,
@@ -554,7 +568,7 @@ export default function Relatorios() {
       nome_assinante: signName,
       cargo: signCargo || null,
       tipo_assinatura: 'desenho',
-      assinatura_url: urlData.publicUrl,
+      assinatura_url: filePath,
     });
     if (error) { toast.error(error.message); return; }
 
@@ -665,7 +679,7 @@ export default function Relatorios() {
         cronograma: cronAtivs,
         aditivos: (aditRes.data as any[]) || [],
         planejamentoConfigurado: planejamentoConf,
-        assinaturas: assinRes.data || [],
+        assinaturas: await resolveAssinaturas((assinRes.data as any[]) || []),
         versao: pdfRevisao,
         versoes: (versRes.data || []).map((v: any) => ({
           rev: `REV ${String(v.numero_versao).padStart(2, '0')}`,
@@ -1239,7 +1253,13 @@ export default function Relatorios() {
                     <div className="space-y-4">
                       {assinaturas.map(a => (
                         <div key={a.id} className="flex items-center gap-4 p-3 border rounded-lg">
-                          <img src={a.assinatura_url} alt="Assinatura" className="h-16 w-24 object-contain border rounded" />
+                          {assinaturaUrls[a.id] ? (
+                            <img src={assinaturaUrls[a.id]} alt={`Assinatura de ${a.nome_assinante}`} className="h-16 w-24 object-contain border rounded bg-background" />
+                          ) : (
+                            <div className="h-16 w-24 flex items-center justify-center border rounded text-[10px] text-muted-foreground text-center px-1">
+                              Carregando assinatura...
+                            </div>
+                          )}
                           <div>
                             <p className="font-medium">{a.nome_assinante}</p>
                             {a.cargo && <p className="text-sm text-muted-foreground">{a.cargo}</p>}
