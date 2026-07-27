@@ -43,14 +43,18 @@ export default function Relatorios() {
   const { filterObras, isObraAllowed, loading: obrasFilterLoading } = useObrasFiltered();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [readOnly, setReadOnly] = useState(false);
+  const openingExistingRef = useRef(false);
   const [obras, setObras] = useState<any[]>([]);
-  const [selectedObra, setSelectedObra] = useState('');
+  const [selectedObraState, setSelectedObra] = useState('');
+  const selectedObra = selectedObraState;
   const [obraData, setObraData] = useState<any>(null);
   const [revisaoPdf, setRevisaoPdf] = useState<number>(0);
 
   // Period
-  const [periodoInicio, setPeriodoInicio] = useState('');
-  const [periodoFim, setPeriodoFim] = useState('');
+  const [periodoInicioState, setPeriodoInicio] = useState('');
+  const [periodoFimState, setPeriodoFim] = useState('');
+  const periodoInicio = periodoInicioState;
+  const periodoFim = periodoFimState;
 
   // Prazo contratual comes from obra (read-only)
 
@@ -122,8 +126,9 @@ export default function Relatorios() {
       const obra = obras.find(o => o.id === selectedObra);
       setObraData(obra);
 
-      // If creating a new report (no relatorioId), auto-detect period from unused diaries
-      if (!relatorioId) {
+      // If creating a new report (no relatorioId and not opening an existing one),
+      // auto-detect period from unused diaries
+      if (!relatorioId && !openingExistingRef.current) {
         (async () => {
           const { data: unusedDiarios } = await supabase
             .from('diario_obra')
@@ -146,7 +151,10 @@ export default function Relatorios() {
     }
   }, [selectedObra, obras]);
 
-  const consolidar = async () => {
+  const consolidar = async (override?: { obraId?: string; inicio?: string; fim?: string }) => {
+    const selectedObra = override?.obraId || selectedObraState;
+    const periodoInicio = override?.inicio || periodoInicioState;
+    const periodoFim = override?.fim || periodoFimState;
     if (!selectedObra || !periodoInicio || !periodoFim) return;
 
     const { data: diariosList } = await supabase
@@ -490,13 +498,21 @@ export default function Relatorios() {
       });
 
       if (relatorioId && user) {
+        // "assinado" is a final state — never downgrade it to a PDF-revision status
+        const { data: relAtual } = await supabase
+          .from('relatorios')
+          .select('status')
+          .eq('id', relatorioId)
+          .maybeSingle();
+        const isAssinado = (relAtual as any)?.status === 'assinado';
+
         if (hasChanges) {
           // Increment revision only on actual changes
           const nextRevisao = revisaoPdf + 1;
           const newStatus = `gerado pdf rev${String(nextRevisao).padStart(2, '0')}`;
           await supabase.from('relatorios').update({
             revisao_pdf: nextRevisao,
-            status: newStatus,
+            ...(isAssinado ? {} : { status: newStatus }),
           } as any).eq('id', relatorioId);
           setRevisaoPdf(nextRevisao);
 
@@ -518,7 +534,14 @@ export default function Relatorios() {
 
           toast.success(`PDF ${revLabel} gerado — nova revisão criada!`);
         } else {
-          // No changes — just download, no new revision
+          // No content changes — no new version, but the report is no longer a draft
+          const efetivaRevisao = revisaoPdf > 0 ? revisaoPdf : 1;
+          await supabase.from('relatorios').update({
+            revisao_pdf: efetivaRevisao,
+            ...(isAssinado ? {} : { status: `gerado pdf rev${String(efetivaRevisao).padStart(2, '0')}` }),
+          } as any).eq('id', relatorioId);
+          setRevisaoPdf(efetivaRevisao);
+
           await supabase.from('relatorio_logs').insert({
             relatorio_id: relatorioId,
             usuario_id: user.id,
@@ -527,6 +550,7 @@ export default function Relatorios() {
 
           toast.success(`PDF ${revLabel} gerado (mesma revisão, sem alterações).`);
         }
+
 
         // Reload versions
         const { data: vers } = await supabase.from('relatorio_versoes').select('*').eq('relatorio_id', relatorioId).order('numero_versao', { ascending: false });
@@ -542,14 +566,23 @@ export default function Relatorios() {
   };
 
   const handleOpenRelatorio = async (rel: any, opts?: { readOnly?: boolean }) => {
+    openingExistingRef.current = true;
     setReadOnly(!!opts?.readOnly);
+    setRelatorioId(rel.id);
     setSelectedObra(rel.obra_id);
     setPeriodoInicio(rel.data_inicio || '');
     setPeriodoFim(rel.data_fim || '');
+    setRevisaoPdf(rel.revisao_pdf || 0);
     // Prazo will be fetched from obra during consolidation
     setViewMode('edit');
     // Wait for obra data to load then consolidate
-    setTimeout(() => consolidar(), 500);
+    setTimeout(async () => {
+      try {
+        await consolidar({ obraId: rel.obra_id, inicio: rel.data_inicio || '', fim: rel.data_fim || '' });
+      } finally {
+        openingExistingRef.current = false;
+      }
+    }, 500);
   };
 
   const handleSign = async () => {
@@ -588,10 +621,14 @@ export default function Relatorios() {
       });
     }
 
+    // Report becomes officially "assinado"
+    await supabase.from('relatorios').update({ status: 'assinado' } as any).eq('id', relatorioId);
+
     toast.success('Assinatura registrada!');
     setSignOpen(false);
     setSignName(''); setSignCargo('');
-    consolidar();
+    await consolidar();
+    await loadRelatoriosList();
   };
 
   const podeExcluir = isAdmin || isSuperAdmin;
@@ -923,7 +960,7 @@ export default function Relatorios() {
               <Input type="date" value={periodoFim} onChange={e => setPeriodoFim(e.target.value)} disabled={readOnly} />
             </div>
             {!readOnly && (
-              <Button onClick={consolidar} disabled={!selectedObra || !periodoInicio || !periodoFim} className="bg-accent text-accent-foreground hover:bg-accent/90">
+              <Button onClick={() => consolidar()} disabled={!selectedObra || !periodoInicio || !periodoFim} className="bg-accent text-accent-foreground hover:bg-accent/90">
                 <BarChart3 className="h-4 w-4 mr-2" />Consolidar
               </Button>
             )}

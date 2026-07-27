@@ -1,25 +1,30 @@
-## Diagnóstico (confirmado)
-O bucket `anexos` é privado, mas ao salvar a assinatura o código usa `getPublicUrl` (`src/pages/Relatorios.tsx`, linha 549) e grava essa URL pública em `assinaturas.assinatura_url`. URLs públicas de um bucket privado retornam 404 — por isso:
-- na aba "Assinaturas" a imagem não carrega;
-- no PDF, `loadImageAsPngDataUrl` falha e imprime "assinatura não disponível".
+## Problemas confirmados (em `src/pages/Relatorios.tsx`)
 
-As políticas de leitura do bucket já permitem que usuários da mesma empresa acessem o arquivo via URL assinada.
+**1. Aviso "Não há novos diários para gerar relatório nesta obra."**
+Ao clicar em Visualizar, `handleOpenRelatorio` define a obra selecionada. O `useEffect` que observa `selectedObra` só ignora a auto-detecção quando `relatorioId` já está preenchido — mas nesse momento ele ainda é `null` (só é definido depois, dentro de `consolidar()`, com 500 ms de atraso). Resultado: o efeito roda o fluxo de "novo relatório", mostra o aviso e ainda limpa as datas do período (`setPeriodoInicio('')` / `setPeriodoFim('')`) do relatório que está sendo aberto.
 
-## Alterações
+**2. Status continua "rascunho"**
+- `handleSign` grava a assinatura e cria uma versão com status `assinado`, mas **nunca** atualiza `relatorios.status` — a lista lê o status da tabela `relatorios`, por isso continua "rascunho".
+- `handleGerarPDF` só atualiza `status` quando `hasChanges` é verdadeiro. Na primeira geração (revisão 0, snapshot igual ao da última versão salva) não há mudanças, então o PDF é gerado sem gravar `gerado pdf rev01`.
 
-### 1. `src/lib/logoUrl.ts` (reuso)
-Generalizar os helpers existentes (`extractLogoPath` / `resolveLogoUrl`) como utilitários de caminho no bucket `anexos` — ou criar `src/lib/anexoUrl.ts` reexportando a mesma lógica — para uso também nas assinaturas. Eles já convertem URLs públicas/assinadas antigas em caminho relativo, garantindo compatibilidade com registros existentes.
+## Correções propostas
 
-### 2. `src/pages/Relatorios.tsx`
-- Ao assinar (`handleSign`): gravar em `assinatura_url` o **caminho relativo** (`assinaturas/<relatorioId>/<timestamp>.png`) em vez da URL pública.
-- Aba "Assinaturas": resolver cada `assinatura_url` para URL assinada (1h) em um estado/mapa local e usar esse valor no `<img>`; manter fallback visual quando não resolver.
-- Ao montar os dados do PDF (`handleGerarPDF` e `handleDownloadRelatorio`): substituir `assinatura_url` de cada assinatura pela URL assinada antes de passar para o gerador.
+**A. Abrir relatório existente sem disparar auto-detecção**
+- Adicionar um marcador (`openingRelatorioRef` / estado `isOpeningExisting`) definido em `handleOpenRelatorio` antes de `setSelectedObra`.
+- No `useEffect`, executar a auto-detecção de período apenas quando não houver `relatorioId` **e** não estiver abrindo um relatório existente; limpar o marcador depois que a consolidação terminar.
+- Em `handleOpenRelatorio`, definir `setRelatorioId(rel.id)` imediatamente (em vez de esperar a consolidação), o que também elimina a dependência do `setTimeout`.
+- Manter o aviso somente no caso real: usuário escolhe uma obra ao criar um **novo** relatório e não há diários novos.
 
-### 3. `src/lib/pdfRelatorio.ts`
-Nenhuma mudança de lógica necessária — passará a receber URLs assinadas válidas. Manter o texto de fallback atual.
+**B. Status "assinado" após assinar**
+- Em `handleSign`, após inserir a assinatura, atualizar `relatorios.status = 'assinado'` e recarregar a lista (`loadRelatoriosList()`), para que o badge reflita a mudança na hora.
 
-## Compatibilidade
-Assinaturas antigas gravadas como URL pública continuam funcionando: o extrator recupera o caminho a partir da URL e assina novamente.
+**C. Status "gerado pdf revNN" ao gerar PDF**
+- Em `handleGerarPDF`, gravar o status do PDF também quando não houver alterações: manter a revisão atual (sem criar nova versão) mas atualizar `relatorios.status` para `gerado pdf revNN`.
+- Precedência: se o relatório já estiver `assinado`, o status permanece `assinado` (assinado é o estado final) — apenas o número de revisão é atualizado.
+- Na primeira geração (revisão 0), incrementar para `rev01` para que o status fique coerente com o PDF entregue.
 
-## Fora do escopo
-- Sem alterações no layout do PDF nem nas políticas do banco/storage.
+## Detalhes técnicos
+
+- Arquivo único afetado: `src/pages/Relatorios.tsx`. Sem migração de banco — as colunas `status` e `revisao_pdf` de `relatorios` já existem.
+- `statusBadge` já trata rótulos iniciados por `gerado pdf`, e o filtro de status da lista continua funcionando.
+- Modo somente leitura permanece igual: campos bloqueados, apenas "Gerar PDF" disponível.
