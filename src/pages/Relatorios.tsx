@@ -43,6 +43,7 @@ export default function Relatorios() {
   const { filterObras, isObraAllowed, loading: obrasFilterLoading } = useObrasFiltered();
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [readOnly, setReadOnly] = useState(false);
+  const openingExistingRef = useRef(false);
   const [obras, setObras] = useState<any[]>([]);
   const [selectedObra, setSelectedObra] = useState('');
   const [obraData, setObraData] = useState<any>(null);
