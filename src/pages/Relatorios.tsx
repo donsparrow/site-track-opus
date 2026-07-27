@@ -880,7 +880,8 @@ export default function Relatorios() {
         <Button variant="outline" onClick={() => { setViewMode('list'); loadRelatoriosList(); }}>
           <List className="h-4 w-4 mr-2" />Voltar à Lista
         </Button>
-        <h1 className="text-3xl font-display font-bold">{relatorioId ? 'Editar Relatório' : 'Novo Relatório'}</h1>
+        <h1 className="text-3xl font-display font-bold">{readOnly ? 'Visualizar Relatório' : (relatorioId ? 'Editar Relatório' : 'Novo Relatório')}</h1>
+        {readOnly && <Badge variant="secondary" className="text-sm">Somente leitura</Badge>}
         {relatorioId && revisaoPdf > 0 && (
           <Badge variant="default" className="text-sm">REV {String(revisaoPdf - 1).padStart(2, '0')}</Badge>
         )}
@@ -892,7 +893,7 @@ export default function Relatorios() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             <div>
               <Label>Obra</Label>
-              <Select value={selectedObra} onValueChange={setSelectedObra}>
+              <Select value={selectedObra} onValueChange={setSelectedObra} disabled={readOnly}>
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
                   {obras.map(o => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
@@ -901,15 +902,17 @@ export default function Relatorios() {
             </div>
             <div>
               <Label>Data Início</Label>
-              <Input type="date" value={periodoInicio} onChange={e => setPeriodoInicio(e.target.value)} />
+              <Input type="date" value={periodoInicio} onChange={e => setPeriodoInicio(e.target.value)} disabled={readOnly} />
             </div>
             <div>
               <Label>Data Fim</Label>
-              <Input type="date" value={periodoFim} onChange={e => setPeriodoFim(e.target.value)} />
+              <Input type="date" value={periodoFim} onChange={e => setPeriodoFim(e.target.value)} disabled={readOnly} />
             </div>
-            <Button onClick={consolidar} disabled={!selectedObra || !periodoInicio || !periodoFim} className="bg-accent text-accent-foreground hover:bg-accent/90">
-              <BarChart3 className="h-4 w-4 mr-2" />Consolidar
-            </Button>
+            {!readOnly && (
+              <Button onClick={consolidar} disabled={!selectedObra || !periodoInicio || !periodoFim} className="bg-accent text-accent-foreground hover:bg-accent/90">
+                <BarChart3 className="h-4 w-4 mr-2" />Consolidar
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
