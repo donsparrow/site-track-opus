@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { downloadPdf } from './pdfDownload';
+import { resolveAnexoUrl } from './anexoUrl';
 
 interface RelatorioPDFData {
   empresa: {
@@ -824,7 +825,8 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
         const xPos = MARGIN + col * (imgW + 8);
 
         try {
-          const imgDataUrl = await loadImageAsDataUrl(img.url);
+          const resolvedUrl = (await resolveAnexoUrl(img.url)) || img.url;
+          const imgDataUrl = await loadImageAsDataUrl(resolvedUrl);
           if (imgDataUrl) {
             doc.setDrawColor(200);
             doc.rect(xPos, y, imgW, imgH);

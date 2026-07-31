@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useObrasFiltered } from '@/hooks/useObrasFiltered';
+import { resolveAnexoUrl } from '@/lib/anexoUrl';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -172,7 +173,14 @@ export default function DiarioObra() {
     setAtividades(a.data || []);
     setMateriais(m.data || []);
     setOcorrencias(o.data || []);
-    setImagens(i.data || []);
+    setImagens(
+      await Promise.all(
+        (i.data || []).map(async (img: any) => ({
+          ...img,
+          url: (await resolveAnexoUrl(img.url)) || img.url,
+        })),
+      ),
+    );
     setParalisacoes(p.data || []);
   };
 
@@ -478,9 +486,8 @@ export default function DiarioObra() {
     const filePath = `diarios/${selectedDiario.id}/${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage.from('anexos').upload(filePath, file);
     if (upErr) { toast.error(upErr.message); return; }
-    const { data: urlData } = supabase.storage.from('anexos').getPublicUrl(filePath);
     const { error } = await supabase.from('diario_imagens').insert({
-      diario_id: selectedDiario.id, url: urlData.publicUrl, descricao: descricao || null
+      diario_id: selectedDiario.id, url: filePath, descricao: descricao || null
     });
     if (error) toast.error(error.message);
     else { toast.success('Imagem enviada!'); fetchDiarioDetails(selectedDiario); }
