@@ -597,48 +597,12 @@ export default function Relatorios() {
       const obra = rel.obras || (await supabase.from('obras').select('*, clientes(nome, cpf_cnpj, email, telefone)').eq('id', rel.obra_id).maybeSingle()).data;
       if (!obra) { toast.error('Obra do relatório não encontrada'); return; }
 
-      // Diários vinculados ao relatório (fallback por período)
-      let { data: dList } = await supabase
-        .from('diario_obra')
-        .select('*')
-        .eq('relatorio_id', rel.id)
-        .order('data');
-      if (!dList || dList.length === 0) {
-        const r2 = await supabase
-          .from('diario_obra')
-          .select('*')
-          .eq('obra_id', rel.obra_id)
-          .gte('data', rel.data_inicio)
-          .lte('data', rel.data_fim)
-          .order('data');
-        dList = r2.data || [];
-      }
-      const diarioIds = (dList || []).map(d => d.id);
+      const dados = await carregarDadosRelatorio(rel.obra_id, rel.data_inicio, rel.data_fim, { relatorioId: rel.id });
 
-      const [eq, at, mt, oc, im, pa, cronRes, aditRes, assinRes, versRes] = await Promise.all([
-        diarioIds.length ? supabase.from('diario_equipe').select('*').in('diario_id', diarioIds) : Promise.resolve({ data: [] } as any),
-        diarioIds.length ? supabase.from('diario_atividades').select('*').in('diario_id', diarioIds) : Promise.resolve({ data: [] } as any),
-        diarioIds.length ? supabase.from('diario_materiais').select('*').in('diario_id', diarioIds) : Promise.resolve({ data: [] } as any),
-        diarioIds.length ? supabase.from('diario_ocorrencias').select('*').in('diario_id', diarioIds) : Promise.resolve({ data: [] } as any),
-        diarioIds.length ? supabase.from('diario_imagens').select('*').in('diario_id', diarioIds) : Promise.resolve({ data: [] } as any),
-        diarioIds.length ? supabase.from('diario_paralisacoes').select('*').in('diario_id', diarioIds) : Promise.resolve({ data: [] } as any),
-        supabase.from('cronograma').select('id').eq('obra_id', rel.obra_id).maybeSingle(),
-        supabase.from('obra_aditivos' as any).select('*').eq('obra_id', rel.obra_id),
+      const [assinRes, versRes] = await Promise.all([
         supabase.from('assinaturas').select('*').eq('relatorio_id', rel.id).order('data_assinatura'),
         supabase.from('relatorio_versoes').select('*').eq('relatorio_id', rel.id).order('numero_versao', { ascending: false }),
       ]);
-
-      let cronAtivs: any[] = [];
-      let planejamentoConf = false;
-      if (cronRes.data) {
-        const { data: cr } = await supabase
-          .from('cronograma_atividades')
-          .select('nome_atividade, data_inicio, data_fim, percentual_concluido, status, peso')
-          .eq('cronograma_id', cronRes.data.id)
-          .order('ordem');
-        cronAtivs = cr || [];
-        planejamentoConf = cronAtivs.length > 0;
-      }
 
       const pdfRevisao = (rel as any).revisao_pdf || 0;
 
@@ -655,25 +619,16 @@ export default function Relatorios() {
           cliente_telefone: obra.clientes?.telefone || '',
         },
         periodo: { inicio: rel.data_inicio, fim: rel.data_fim },
-        prazos: {
-          contratual: rel.prazo_contratual_dias_uteis || 0,
-          parados: rel.dias_parados || 0,
-          ajustado: rel.prazo_ajustado || 0,
-          trabalhados: rel.dias_trabalhados || 0,
-          saldo: rel.saldo_prazo || 0,
-          dataInicioReal: (dList && dList[0]?.data) || '',
-          percentualTempo: 0,
-          percentualExecutado: 0,
-        },
-        diarios: dList || [],
-        equipe: eq.data || [],
-        atividades: at.data || [],
-        materiais: mt.data || [],
-        ocorrencias: oc.data || [],
-        imagens: im.data || [],
-        cronograma: cronAtivs,
-        aditivos: (aditRes.data as any[]) || [],
-        planejamentoConfigurado: planejamentoConf,
+        prazos: dados.prazos,
+        diarios: dados.diarios,
+        equipe: dados.equipe,
+        atividades: dados.atividades,
+        materiais: dados.materiais,
+        ocorrencias: dados.ocorrencias,
+        imagens: dados.imagens,
+        cronograma: dados.cronograma,
+        aditivos: dados.aditivos,
+        planejamentoConfigurado: dados.planejamentoConfigurado,
         assinaturas: await resolveAssinaturas((assinRes.data as any[]) || []),
         versao: pdfRevisao,
         versoes: (versRes.data || []).map((v: any) => ({
