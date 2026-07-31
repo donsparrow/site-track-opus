@@ -18,6 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from 'sonner';
 import { gerarRelatorioPDF } from '@/lib/pdfRelatorio';
 import { resolveAnexoUrl, resolveAssinaturas } from '@/lib/anexoUrl';
+import { carregarDadosRelatorio } from '@/lib/relatorioDados';
 import SignatureCanvas from 'react-signature-canvas';
 
 const fmt = (d: string) => {
@@ -247,7 +248,7 @@ export default function Relatorios() {
       setRelatorioId(relatorio.id);
 
       // Mark diaries as linked to this report
-      const diarioIds = dList.map(d => d.id);
+      const diarioIds = dados.diarios.map((d: any) => d.id);
       if (diarioIds.length > 0) {
         await supabase
           .from('diario_obra')
