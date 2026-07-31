@@ -486,9 +486,8 @@ export default function DiarioObra() {
     const filePath = `diarios/${selectedDiario.id}/${Date.now()}.${ext}`;
     const { error: upErr } = await supabase.storage.from('anexos').upload(filePath, file);
     if (upErr) { toast.error(upErr.message); return; }
-    const { data: urlData } = supabase.storage.from('anexos').getPublicUrl(filePath);
     const { error } = await supabase.from('diario_imagens').insert({
-      diario_id: selectedDiario.id, url: urlData.publicUrl, descricao: descricao || null
+      diario_id: selectedDiario.id, url: filePath, descricao: descricao || null
     });
     if (error) toast.error(error.message);
     else { toast.success('Imagem enviada!'); fetchDiarioDetails(selectedDiario); }
