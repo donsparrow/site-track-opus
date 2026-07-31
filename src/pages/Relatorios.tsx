@@ -163,125 +163,25 @@ export default function Relatorios() {
     const periodoFim = override?.fim || periodoFimState;
     if (!selectedObra || !periodoInicio || !periodoFim) return;
 
-    const { data: diariosList } = await supabase
-      .from('diario_obra')
-      .select('*')
-      .eq('obra_id', selectedObra)
-      .gte('data', periodoInicio)
-      .lte('data', periodoFim)
-      .order('data');
-    const dList = diariosList || [];
-    setDiarios(dList);
+    const dados = await carregarDadosRelatorio(selectedObra, periodoInicio, periodoFim);
 
-    const diarioIds = dList.map(d => d.id);
+    setDiarios(dados.diarios);
+    setAllEquipe(dados.equipe);
+    setAllAtividades(dados.atividades);
+    setAllMateriais(dados.materiais);
+    setAllOcorrencias(dados.ocorrencias);
+    setAllImagens(dados.imagens);
+    setParalisacoes(dados.paralisacoes);
+    setCronogramaAtividades(dados.cronograma);
+    setAditivos(dados.aditivos);
+    setPlanejamentoConfigurado(dados.planejamentoConfigurado);
+    setPrazos(dados.prazos);
 
-    if (diarioIds.length > 0) {
-      const [eq, at, mt, oc, im, pa] = await Promise.all([
-        supabase.from('diario_equipe').select('*').in('diario_id', diarioIds),
-        supabase.from('diario_atividades').select('*').in('diario_id', diarioIds),
-        supabase.from('diario_materiais').select('*').in('diario_id', diarioIds),
-        supabase.from('diario_ocorrencias').select('*').in('diario_id', diarioIds),
-        supabase.from('diario_imagens').select('*').in('diario_id', diarioIds),
-        supabase.from('diario_paralisacoes').select('*').in('diario_id', diarioIds),
-      ]);
-      setAllEquipe(eq.data || []);
-      setAllAtividades(at.data || []);
-      setAllMateriais(mt.data || []);
-      setAllOcorrencias(oc.data || []);
-      setAllImagens(im.data || []);
-      setParalisacoes(pa.data || []);
-    } else {
-      setAllEquipe([]); setAllAtividades([]); setAllMateriais([]); setAllOcorrencias([]); setAllImagens([]); setParalisacoes([]); 
-    }
-
-    // Fetch cronograma activities for this obra
-    const { data: cronData } = await supabase
-      .from('cronograma')
-      .select('id')
-      .eq('obra_id', selectedObra)
-      .maybeSingle();
-    if (cronData) {
-      const { data: cronAtivs } = await supabase
-        .from('cronograma_atividades')
-        .select('nome_atividade, data_inicio, data_fim, percentual_concluido, status, peso')
-        .eq('cronograma_id', cronData.id)
-        .order('ordem');
-      setCronogramaAtividades(cronAtivs || []);
-    } else {
-      setCronogramaAtividades([]);
-    }
-
-    // Fetch the FIRST diary entry for this obra (not just the period)
-    const { data: primeiroDiario } = await supabase
-      .from('diario_obra')
-      .select('data')
-      .eq('obra_id', selectedObra)
-      .order('data', { ascending: true })
-      .limit(1)
-      .maybeSingle();
-
-    const dataInicioReal = primeiroDiario?.data || '';
-
-    const obra = obras.find(o => o.id === selectedObra);
-    const prazoContratualBase = (obra?.prazo_contratual_dias && obra.prazo_contratual_dias > 0)
-      ? obra.prazo_contratual_dias
-      : (obra?.data_inicio && obra?.data_fim_prevista
-        ? calcBusinessDays(obra.data_inicio, obra.data_fim_prevista)
-        : 0);
-
-    // Load aditivos and apply to prazo efetivo
-    const { data: aditivosRows } = await supabase.from('obra_aditivos' as any).select('*').eq('obra_id', selectedObra);
-    const aditivosList = (aditivosRows as any[]) || [];
-    const diasAditivos = aditivosList.reduce((s, a) => s + (a.dias_adicionais || 0), 0);
-    const prazoContratual = prazoContratualBase + diasAditivos;
-    setAditivos(aditivosList);
-
-    let diasParados = 0;
-    if (diarioIds.length > 0) {
-      const { data: parData } = await supabase
-        .from('diario_paralisacoes')
-        .select('total_dias')
-        .in('diario_id', diarioIds);
-      diasParados = (parData || []).reduce((s, p) => s + (p.total_dias || 0), 0);
-    }
-
-    // Dias trabalhados = business days from real start to report end
-    const diasTrabalhados = (dataInicioReal && periodoFim) ? calcBusinessDays(dataInicioReal, periodoFim) : 0;
-    const prazoAjustado = prazoContratual + diasParados;
-    const saldoPrazo = prazoAjustado - diasTrabalhados;
-
-    // Smart status: percentual de tempo vs percentual executado
-    const percentualTempo = prazoContratual > 0 ? Math.round((diasTrabalhados / prazoContratual) * 100) : 0;
-
-    // Calculate weighted progress from cronograma — only if cronograma exists
-    let percentualExecutado = 0;
-    let cronogramaHasAtividades = false;
-    if (cronData) {
-      const { data: cronAtivs } = await supabase
-        .from('cronograma_atividades')
-        .select('percentual_concluido, peso')
-        .eq('cronograma_id', cronData.id);
-      const ativs = cronAtivs || [];
-      cronogramaHasAtividades = ativs.length > 0;
-      if (ativs.length > 0) {
-        const totalPesoCalc = ativs.reduce((s: number, c: any) => s + (c.peso || 0), 0);
-        percentualExecutado = totalPesoCalc > 0
-          ? Math.round(ativs.reduce((s: number, c: any) => s + ((c.peso || 0) * c.percentual_concluido), 0) / Math.max(totalPesoCalc, 1))
-          : Math.round(ativs.reduce((s: number, c: any) => s + c.percentual_concluido, 0) / ativs.length);
-      }
-    }
-    setPlanejamentoConfigurado(cronogramaHasAtividades);
-
-    setPrazos({
-      contratual: prazoContratual,
-      parados: diasParados,
-      ajustado: prazoAjustado,
-      trabalhados: diasTrabalhados,
-      saldo: saldoPrazo,
-      dataInicioReal,
-      percentualTempo,
-      percentualExecutado,
-    });
+    const prazoContratual = dados.prazos.contratual;
+    const diasParados = dados.prazos.parados;
+    const diasTrabalhados = dados.prazos.trabalhados;
+    const prazoAjustado = dados.prazos.ajustado;
+    const saldoPrazo = dados.prazos.saldo;
 
     // Find or create relatorio
     let { data: relatorio } = await supabase
