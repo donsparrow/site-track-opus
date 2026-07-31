@@ -594,7 +594,11 @@ export default function Relatorios() {
   const handleDownloadRelatorio = async (rel: any) => {
     try {
       toast.info('Preparando PDF...');
-      const obra = rel.obras || (await supabase.from('obras').select('*, clientes(nome, cpf_cnpj, email, telefone)').eq('id', rel.obra_id).maybeSingle()).data;
+      const { data: obra } = await supabase
+        .from('obras')
+        .select('*, clientes(nome, cpf_cnpj, email, telefone)')
+        .eq('id', rel.obra_id)
+        .maybeSingle();
       if (!obra) { toast.error('Obra do relatório não encontrada'); return; }
 
       const dados = await carregarDadosRelatorio(rel.obra_id, rel.data_inicio, rel.data_fim, { relatorioId: rel.id });
