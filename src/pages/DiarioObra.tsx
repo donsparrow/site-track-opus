@@ -173,7 +173,14 @@ export default function DiarioObra() {
     setAtividades(a.data || []);
     setMateriais(m.data || []);
     setOcorrencias(o.data || []);
-    setImagens(i.data || []);
+    setImagens(
+      await Promise.all(
+        (i.data || []).map(async (img: any) => ({
+          ...img,
+          url: (await resolveAnexoUrl(img.url)) || img.url,
+        })),
+      ),
+    );
     setParalisacoes(p.data || []);
   };
 
