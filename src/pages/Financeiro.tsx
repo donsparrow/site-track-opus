@@ -960,8 +960,12 @@ export default function Financeiro() {
 
       {/* ===== DIALOGS ===== */}
 
+      {/* Anexo Preview Dialog */}
+      <AnexoPreviewDialog anexo={previewAnexo} onOpenChange={(o) => { if (!o) setPreviewAnexo(null); }} onDownload={handleDownload} />
+
       <NovaReceitaDialog open={receitaOpen} onOpenChange={setReceitaOpen} onCreated={() => { fetchData(); fetchAnexos(); }} />
       <NovaDespesaDialog open={despesaOpen} onOpenChange={setDespesaOpen} onCreated={() => { fetchData(); fetchAnexos(); }} />
+
 
       {/* Anexo Upload Dialog */}
       <Dialog open={anexoUploadOpen} onOpenChange={setAnexoUploadOpen}>
