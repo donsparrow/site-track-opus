@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { ChevronDown, ChevronRight, Plus, DollarSign, TrendingDown, Pencil, Trash2, Check, Paperclip, Download, X, FileText, Upload, BarChart3 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, DollarSign, TrendingDown, Pencil, Trash2, Check, Paperclip, Download, X, FileText, Upload, BarChart3, Eye } from 'lucide-react';
 import ExtratoFinanceiro from '@/components/ExtratoFinanceiro';
 import { toast } from 'sonner';
 import NovaReceitaDialog from '@/components/NovaReceitaDialog';
@@ -21,6 +21,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { downloadPdf } from '@/lib/pdfDownload';
 import { resolveAnexoUrl } from '@/lib/anexoUrl';
+import AnexoPreviewDialog, { AnexoPreviewTarget } from '@/components/AnexoPreviewDialog';
 
 interface Anexo {
   id: string;
