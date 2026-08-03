@@ -931,9 +931,15 @@ export default function Financeiro() {
                           <Badge variant="outline">{a.tipo_anexo === 'nota_fiscal' ? '📄 Nota Fiscal' : '💳 Boleto'}</Badge>
                         </TableCell>
                         <TableCell>
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDownload(a.url_arquivo, a.nome_arquivo)}>
-                            <Download className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button size="icon" variant="ghost" className="h-7 w-7" title="Visualizar"
+                              onClick={() => setPreviewAnexo({ url: a.url_arquivo, nome: a.nome_arquivo, tipo: a.tipo_anexo })}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" title="Baixar" onClick={() => handleDownload(a.url_arquivo, a.nome_arquivo)}>
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
