@@ -20,6 +20,7 @@ import NovaDespesaDialog from '@/components/NovaDespesaDialog';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { downloadPdf } from '@/lib/pdfDownload';
+import { resolveAnexoUrl } from '@/lib/anexoUrl';
 
 interface Anexo {
   id: string;
@@ -206,14 +207,12 @@ export default function Financeiro() {
         const path = `financeiro/${anexoTipoRegistro}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
         const { error: upErr } = await supabase.storage.from('anexos').upload(path, file);
         if (upErr) { toast.error('Erro ao enviar ' + file.name + ': ' + upErr.message); continue; }
-        const { data: urlData } = supabase.storage.from('anexos').getPublicUrl(path);
-
         await supabase.from('financeiro_anexos').insert({
           tipo_registro: anexoTipoRegistro,
           registro_id: anexoRegistroId,
           tipo_anexo: anexoTipo,
           nome_arquivo: file.name,
-          url_arquivo: urlData.publicUrl,
+          url_arquivo: path,
         } as any);
       }
       toast.success('Arquivo(s) anexado(s) com sucesso!');
@@ -454,12 +453,36 @@ export default function Financeiro() {
   };
 
   // --- DOWNLOAD ---
-  const handleDownload = (url: string, nome?: string) => {
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = nome || 'anexo';
-    a.target = '_blank';
-    a.click();
+  const handleDownload = async (url: string, nome?: string) => {
+    try {
+      const signed = await resolveAnexoUrl(url);
+      if (!signed) { toast.error('Arquivo não encontrado no armazenamento.'); return; }
+
+      const res = await fetch(signed);
+      if (!res.ok) throw new Error('Falha ao baixar arquivo');
+      const blob = await res.blob();
+      const objectUrl = URL.createObjectURL(blob);
+
+      const ua = navigator.userAgent;
+      const isIOS = /iphone|ipad|ipod/i.test(ua);
+      const isAndroid = /android/i.test(ua);
+
+      const a = document.createElement('a');
+      a.href = objectUrl;
+      a.rel = 'noopener';
+      if (isIOS) {
+        a.target = '_blank';
+      } else {
+        a.download = nome || 'anexo';
+        if (isAndroid) a.target = '_blank';
+      }
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(objectUrl), isIOS || isAndroid ? 60000 : 10000);
+    } catch (err: any) {
+      toast.error('Erro ao baixar arquivo: ' + (err?.message || 'desconhecido'));
+    }
   };
 
   // --- RENDER ANEXOS INLINE ---

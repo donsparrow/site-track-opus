@@ -44,8 +44,7 @@ export default function NovaDespesaDialog({ open, onOpenChange, onCreated }: Pro
       const path = `despesas/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
       const { error: upErr } = await supabase.storage.from('anexos').upload(path, anexoFile);
       if (upErr) { toast.error('Erro ao enviar arquivo: ' + upErr.message); setLoading(false); return; }
-      const { data: urlData } = supabase.storage.from('anexos').getPublicUrl(path);
-      anexoUrl = urlData.publicUrl;
+      anexoUrl = path;
     }
 
     const { error } = await supabase.from('despesas').insert({
