@@ -53,6 +53,7 @@ export default function Financeiro() {
   const [anexoFiles, setAnexoFiles] = useState<File[]>([]);
   const [anexoUploading, setAnexoUploading] = useState(false);
   const anexoFileRef = useRef<HTMLInputElement>(null);
+  const [previewAnexo, setPreviewAnexo] = useState<AnexoPreviewTarget | null>(null);
 
   // Filters
   const [obras, setObras] = useState<any[]>([]);
