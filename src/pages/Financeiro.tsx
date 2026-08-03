@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { ChevronDown, ChevronRight, Plus, DollarSign, TrendingDown, Pencil, Trash2, Check, Paperclip, Download, X, FileText, Upload, BarChart3 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, DollarSign, TrendingDown, Pencil, Trash2, Check, Paperclip, Download, X, FileText, Upload, BarChart3, Eye } from 'lucide-react';
 import ExtratoFinanceiro from '@/components/ExtratoFinanceiro';
 import { toast } from 'sonner';
 import NovaReceitaDialog from '@/components/NovaReceitaDialog';
@@ -21,6 +21,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { downloadPdf } from '@/lib/pdfDownload';
 import { resolveAnexoUrl } from '@/lib/anexoUrl';
+import AnexoPreviewDialog, { AnexoPreviewTarget } from '@/components/AnexoPreviewDialog';
 
 interface Anexo {
   id: string;
@@ -52,6 +53,7 @@ export default function Financeiro() {
   const [anexoFiles, setAnexoFiles] = useState<File[]>([]);
   const [anexoUploading, setAnexoUploading] = useState(false);
   const anexoFileRef = useRef<HTMLInputElement>(null);
+  const [previewAnexo, setPreviewAnexo] = useState<AnexoPreviewTarget | null>(null);
 
   // Filters
   const [obras, setObras] = useState<any[]>([]);
@@ -491,28 +493,35 @@ export default function Financeiro() {
     const boletos = getAnexosPorTipo(registroId, tipoRegistro, 'boleto');
     if (nfs.length === 0 && boletos.length === 0) return <span className="text-muted-foreground">—</span>;
 
+    const chip = (a: Anexo) => (
+      <span key={a.id} className="inline-flex items-center gap-0.5">
+        <button onClick={(e) => { e.stopPropagation(); setPreviewAnexo({ url: a.url_arquivo, nome: a.nome_arquivo, tipo: a.tipo_anexo }); }}
+          className="text-primary hover:underline cursor-pointer truncate max-w-[120px]" title={`Visualizar ${a.nome_arquivo}`}>
+          {a.nome_arquivo}
+        </button>
+        <button onClick={(e) => { e.stopPropagation(); setPreviewAnexo({ url: a.url_arquivo, nome: a.nome_arquivo, tipo: a.tipo_anexo }); }}
+          className="text-muted-foreground hover:text-primary" title="Pré-visualizar">
+          <Eye className="h-3.5 w-3.5" />
+        </button>
+        <button onClick={(e) => { e.stopPropagation(); handleDownload(a.url_arquivo, a.nome_arquivo); }}
+          className="text-muted-foreground hover:text-primary" title="Baixar">
+          <Download className="h-3.5 w-3.5" />
+        </button>
+      </span>
+    );
+
     return (
       <div className="flex flex-col gap-0.5 text-xs">
         {nfs.length > 0 && (
           <div className="flex items-center gap-1 flex-wrap">
             <span className="font-medium">📄 NF:</span>
-            {nfs.map(a => (
-              <button key={a.id} onClick={(e) => { e.stopPropagation(); handleDownload(a.url_arquivo, a.nome_arquivo); }}
-                className="text-primary hover:underline cursor-pointer truncate max-w-[120px]" title={a.nome_arquivo}>
-                {a.nome_arquivo}
-              </button>
-            ))}
+            {nfs.map(chip)}
           </div>
         )}
         {boletos.length > 0 && (
           <div className="flex items-center gap-1 flex-wrap">
             <span className="font-medium">💳 Boleto:</span>
-            {boletos.map(a => (
-              <button key={a.id} onClick={(e) => { e.stopPropagation(); handleDownload(a.url_arquivo, a.nome_arquivo); }}
-                className="text-primary hover:underline cursor-pointer truncate max-w-[120px]" title={a.nome_arquivo}>
-                {a.nome_arquivo}
-              </button>
-            ))}
+            {boletos.map(chip)}
           </div>
         )}
       </div>
@@ -922,9 +931,15 @@ export default function Financeiro() {
                           <Badge variant="outline">{a.tipo_anexo === 'nota_fiscal' ? '📄 Nota Fiscal' : '💳 Boleto'}</Badge>
                         </TableCell>
                         <TableCell>
-                          <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDownload(a.url_arquivo, a.nome_arquivo)}>
-                            <Download className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            <Button size="icon" variant="ghost" className="h-7 w-7" title="Visualizar"
+                              onClick={() => setPreviewAnexo({ url: a.url_arquivo, nome: a.nome_arquivo, tipo: a.tipo_anexo })}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" title="Baixar" onClick={() => handleDownload(a.url_arquivo, a.nome_arquivo)}>
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -945,8 +960,12 @@ export default function Financeiro() {
 
       {/* ===== DIALOGS ===== */}
 
+      {/* Anexo Preview Dialog */}
+      <AnexoPreviewDialog anexo={previewAnexo} onOpenChange={(o) => { if (!o) setPreviewAnexo(null); }} onDownload={handleDownload} />
+
       <NovaReceitaDialog open={receitaOpen} onOpenChange={setReceitaOpen} onCreated={() => { fetchData(); fetchAnexos(); }} />
       <NovaDespesaDialog open={despesaOpen} onOpenChange={setDespesaOpen} onCreated={() => { fetchData(); fetchAnexos(); }} />
+
 
       {/* Anexo Upload Dialog */}
       <Dialog open={anexoUploadOpen} onOpenChange={setAnexoUploadOpen}>
