@@ -23,7 +23,7 @@ export default function HistoricoDialog({ open, onOpenChange, historico }: Props
               <div key={h.id} className="flex items-start gap-3 border-b border-border pb-3">
                 <div className="mt-1">
                   {h.tipo_evento === 'manutencao' ? (
-                    <Wrench className="h-4 w-4 text-yellow-500" />
+                    <Wrench className="h-4 w-4 text-warning" />
                   ) : h.tipo_evento === 'movimentacao' ? (
                     <History className="h-4 w-4 text-blue-500" />
                   ) : (

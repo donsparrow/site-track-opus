@@ -11,10 +11,10 @@ export interface ObraOption {
 }
 
 export const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  disponivel: { label: 'Disponível', color: 'bg-blue-500' },
-  em_uso: { label: 'Em Uso', color: 'bg-green-500' },
-  manutencao: { label: 'Manutenção', color: 'bg-yellow-500' },
-  inativo: { label: 'Inativo', color: 'bg-red-500' },
+  disponivel: { label: 'Disponível', color: 'bg-primary-muted' },
+  em_uso: { label: 'Em Uso', color: 'bg-success' },
+  manutencao: { label: 'Manutenção', color: 'bg-warning' },
+  inativo: { label: 'Inativo', color: 'bg-destructive' },
 };
 
 export const TIPO_LABELS: Record<string, string> = {
