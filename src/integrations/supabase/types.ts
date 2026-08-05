@@ -1865,6 +1865,8 @@ export type Database = {
         Returns: boolean
       }
       is_operacional: { Args: { _uid: string }; Returns: boolean }
+      pasta_obra_acessivel: { Args: { _pasta_id: string }; Returns: boolean }
+      pasta_visivel_cliente: { Args: { _pasta_id: string }; Returns: boolean }
       set_default_permissions: {
         Args: { _role: string; _user_id: string }
         Returns: undefined
