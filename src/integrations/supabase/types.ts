@@ -1841,15 +1841,27 @@ export type Database = {
         | {
             Args: never
             Returns: {
+              cnpj: string
+              email: string
+              instagram: string
               logo_url: string
               nome_empresa: string
+              site: string
+              telefone: string
+              texto_rodape: string
             }[]
           }
         | {
             Args: { _empresa_id: string }
             Returns: {
+              cnpj: string
+              email: string
+              instagram: string
               logo_url: string
               nome_empresa: string
+              site: string
+              telefone: string
+              texto_rodape: string
             }[]
           }
       get_user_empresa_id: { Args: { _user_id: string }; Returns: string }
