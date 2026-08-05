@@ -5,6 +5,7 @@ import { carregarDadosRelatorio } from '@/lib/relatorioDados';
 import type { Json } from '@/integrations/supabase/types';
 import { relatoriosPrefixes } from '../queryKeys';
 import { gerarPDFRelatorio } from '../pdf';
+import { aplicarIndicadoresCongelados, calcularIndicadores } from '../indicadores';
 import { buildSnapshot, detectChanges, revLabel } from '../utils';
 import type {
   Assinatura, DadosRelatorio, EmpresaConfig, ObraRelatorio, Relatorio,
@@ -99,6 +100,7 @@ export function useRelatorioMutations() {
   const consolidar = useMutation({
     mutationFn: async ({ obraId, inicio, fim, dados }: ConsolidarInput) => {
       const { contratual, parados, trabalhados, ajustado, saldo } = dados.prazos;
+      const indicadores = calcularIndicadores(dados);
 
       let { data: relatorio } = await supabase
         .from('relatorios')
@@ -123,6 +125,7 @@ export function useRelatorioMutations() {
             prazo_ajustado: ajustado,
             saldo_prazo: saldo,
             status: 'rascunho',
+            ...indicadores,
           })
           .select('id, status, prazo_contratual_dias_uteis, revisao_pdf')
           .single();
@@ -157,6 +160,7 @@ export function useRelatorioMutations() {
           dias_trabalhados: trabalhados,
           prazo_ajustado: ajustado,
           saldo_prazo: saldo,
+          ...indicadores,
         }).eq('id', relatorio.id);
       }
 
@@ -187,6 +191,7 @@ export function useRelatorioMutations() {
         saldo_prazo: dados.prazos.saldo,
         data_inicio: periodo.inicio,
         data_fim: periodo.fim,
+        ...calcularIndicadores(dados),
       }).eq('id', relatorioId);
 
       const versoes = await fetchVersoes(relatorioId);
@@ -315,12 +320,14 @@ export function useRelatorioMutations() {
         .maybeSingle();
       if (!obra) throw new Error('Obra do relatório não encontrada');
 
-      const dados = await carregarDadosRelatorio(
+      const dadosBrutos = await carregarDadosRelatorio(
         relatorio.obra_id,
         relatorio.data_inicio || '',
         relatorio.data_fim || '',
         { relatorioId: relatorio.id },
       );
+      // Documento imutável: indicadores congelados no fechamento têm precedência.
+      const dados = aplicarIndicadoresCongelados(dadosBrutos, relatorio);
 
       const [assinRes, versRes] = await Promise.all([
         supabase.from('assinaturas').select('*').eq('relatorio_id', relatorio.id).order('data_assinatura'),
