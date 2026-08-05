@@ -17,13 +17,19 @@ export function useEmpresaLogo() {
     }
     setLoading(true);
     (async () => {
-      const { data } = await supabase
-        .from('configuracoes_empresa')
-        .select('logo_url')
-        .eq('empresa_id', empresaId)
-        .limit(1)
-        .single();
-      const signed = await resolveLogoUrl(data?.logo_url);
+      // RPC de branding: devolve apenas nome/logo, acessível a todos os papéis.
+      const { data: branding } = await supabase.rpc('get_empresa_branding');
+      let stored: string | null | undefined = branding?.[0]?.logo_url;
+      if (!stored) {
+        const { data } = await supabase
+          .from('configuracoes_empresa')
+          .select('logo_url')
+          .eq('empresa_id', empresaId)
+          .limit(1)
+          .maybeSingle();
+        stored = data?.logo_url;
+      }
+      const signed = await resolveLogoUrl(stored);
       if (!cancelled) {
         setLogoUrl(signed);
         setLoading(false);
