@@ -194,7 +194,7 @@ export default function ObraDetail() {
     if (!obra) return;
     setExportingPdf(true);
     try {
-      const { data: empresaData } = await supabase.from('configuracoes_empresa').select('*').limit(1).single();
+      const empresaData = await fetchEmpresaConfigOrBranding<Record<string, unknown>>();
 
       let chartImage: string | null = null;
       if (chartRef.current) {
