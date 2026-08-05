@@ -80,24 +80,34 @@ Observação: as políticas atuais quase nunca incluem `super_admin`, que hoje s
 
 Escrita (INSERT/UPDATE/DELETE) em qualquer tabela permanece restrita a admin/trabalhador; síndico e cliente nunca escrevem.
 
-### Decisão que preciso confirmar
-Você pediu que síndico/cliente vejam apenas "fotos/ocorrências marcadas como visíveis ao cliente". **Essa coluna não existe hoje** em `diario_imagens`, `diario_ocorrencias` nem `imagens` — verifiquei o schema. Opções:
+### Decisão confirmada
+Opção **A** aprovada: síndico/cliente leem diário e imagens das obras vinculadas, sem flag de "interno". Nenhuma coluna nova, nenhuma mudança de tela.
 
-- **A (recomendada para esta fase):** síndico/cliente leem diário e imagens das obras vinculadas, sem filtro de "interno". Nada de flag nova, nenhuma mudança de tela.
-- **B:** adicionar coluna `visivel_cliente boolean default false` em `diario_obra`, `diario_imagens`, `diario_ocorrencias` e `imagens`, e a RLS de síndico/cliente exige `visivel_cliente = true`. Isso exige, depois, uma mudança de UI para marcar o que é visível (fora desta fase, então na prática síndico/cliente veriam nada até isso ser feito).
-- **C:** bloquear diário e imagens totalmente para síndico/cliente por enquanto.
+---
 
-## Passo 3 — Migration (após sua confirmação)
+## Verificações solicitadas antes de aplicar
+
+**(a) Colunas de `configuracoes_empresa`** — verificado no banco:
+`id, nome_empresa, cnpj, endereco, telefone, email, logo_url, site, instagram, texto_rodape, empresa_id, responsavel_legal, cpf_responsavel_legal, cargo_responsavel_legal, created_at, updated_at`.
+
+Há campos sensíveis: **CNPJ, e-mail, telefone, endereço, responsável legal e CPF do responsável legal**. O PostgREST não permite RLS por coluna (grants de coluna são por role do Postgres, não por `app_role`), então a leitura parcial só seria possível criando uma view/função de branding — o que exigiria alterar hooks e telas, fora desta fase. Decisão: **`configuracoes_empresa` passa a ser legível apenas por admin/trabalhador da empresa**. Síndico e cliente não leem nada dessa tabela; o cabeçalho/PDF deles cai no logotipo global J&A já usado como fallback. Se depois quiser nome/logo por tenant para esses papéis, crio uma função `get_empresa_branding()` numa fase seguinte.
+
+**(b) RLS habilitado** — verificado: **nenhuma tabela do schema public está sem RLS**. Todas as 40 tabelas têm `rowsecurity = true`.
+
+**(c) Gate do relatório** — verificado: `relatorios.status` contém hoje `rascunho` (10), `assinado` (2) e `excluido` (2). `assinado` é o gate correto; o filtro será `status = 'assinado'`, o que exclui automaticamente rascunhos e soft-deletados.
+
+## Passo 3 — Migration
 
 Uma única migration, sem tocar em código de aplicação:
 
 1. Criar função auxiliar SECURITY DEFINER `public.is_operacional(_uid uuid)` = `has_role(_uid,'admin') OR has_role(_uid,'trabalhador') OR has_role(_uid,'super_admin')`, para evitar repetição e recursão.
-2. `DROP POLICY` + `CREATE POLICY` de SELECT em: despesas, receitas, parcelas, mao_de_obra, financeiro_anexos, ferramentas, ferramentas_historico, compras_ferramentas, compras_materiais, manutencao_ferramentas, clientes, documentos_pastas, documentos_arquivos, relatorio_logs — todas passando a exigir `empresa_id = get_user_empresa_id(auth.uid()) AND public.is_operacional(auth.uid())`.
+2. `DROP POLICY` + `CREATE POLICY` de SELECT em: despesas, receitas, parcelas, mao_de_obra, financeiro_anexos, ferramentas, ferramentas_historico, compras_ferramentas, compras_materiais, manutencao_ferramentas, clientes, documentos_pastas, documentos_arquivos, relatorio_logs, configuracoes_empresa — todas passando a exigir `empresa_id = get_user_empresa_id(auth.uid()) AND public.is_operacional(auth.uid())`.
 3. SELECT das tabelas de obra (atividades_obra, cronograma, cronograma_atividades, diario_obra e filhas, relatorios, relatorio_versoes, assinaturas, imagens, obra_aditivos): substituir o filtro puro de empresa por
-   `(empresa_da_linha = get_user_empresa_id(auth.uid()) AND is_operacional(auth.uid())) OR can_access_obra(obra_id)` — usando a função `can_access_obra` já existente (SECURITY DEFINER, sem recursão). Em `relatorios` a via síndico/cliente também exige `status = 'assinado'`.
+   `(empresa_da_linha = get_user_empresa_id(auth.uid()) AND is_operacional(auth.uid())) OR can_access_obra(obra_id)` — usando a função `can_access_obra` já existente (SECURITY DEFINER, sem recursão). Em `relatorios`, `relatorio_versoes` e `assinaturas` a via síndico/cliente exige também `status = 'assinado'` no relatório.
 4. Para as tabelas filhas (diario_*, cronograma_atividades, relatorio_versoes, assinaturas) a checagem usa `EXISTS` na tabela pai — nunca na própria tabela protegida.
-5. Adicionar DELETE explícito onde hoje falta e é esperado (atividades_obra, compras_materiais, mao_de_obra, manutencao_ferramentas, relatorios): restrito a admin/trabalhador da empresa. Se preferir manter o bloqueio total atual, retiro este item.
+5. Adicionar DELETE explícito onde hoje falta e é esperado (atividades_obra, compras_materiais, mao_de_obra, manutencao_ferramentas, relatorios): restrito a admin/trabalhador da empresa.
 6. Rodar o linter de segurança ao final.
+
 
 ## Passo 4 — Como validar (fornecerei os comandos prontos)
 
