@@ -195,7 +195,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     ].filter(Boolean);
     doc.text(infoParts.join('  |  '), hx, 19);
     doc.setTextColor(0);
-    doc.setTextColor(0);
+
     doc.setDrawColor(BLUE[0], BLUE[1], BLUE[2]);
     doc.setLineWidth(0.5);
     doc.line(MARGIN, 27, pageW - MARGIN, 27);
