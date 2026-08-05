@@ -136,7 +136,8 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   let logoNatW = 0;
   let logoNatH = 0;
   if (emp.logo_url) {
-    logoDataUrl = await loadImageAsDataUrl(emp.logo_url);
+    const resolvedLogo = (await resolveAnexoUrl(emp.logo_url)) || emp.logo_url;
+    logoDataUrl = await loadImageAsDataUrl(resolvedLogo);
     if (logoDataUrl) {
       await new Promise<void>((resolve) => {
         const tmpImg = new Image();
@@ -888,7 +889,8 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
     const renderSigBlock = async (sig: any, xPos: number) => {
       try {
-        const sigDataUrl = await loadImageAsPngDataUrl(sig.assinatura_url);
+        const resolvedSig = (await resolveAnexoUrl(sig.assinatura_url)) || sig.assinatura_url;
+        const sigDataUrl = await loadImageAsPngDataUrl(resolvedSig);
         if (sigDataUrl) {
           doc.addImage(sigDataUrl, 'PNG', xPos, y, 50, 20);
         } else {

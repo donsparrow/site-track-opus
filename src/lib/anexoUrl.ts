@@ -1,4 +1,4 @@
-import { extractLogoPath, resolveLogoUrl } from './logoUrl';
+import { extractLogoPath, resolveLogoUrl, clearSignedUrlCache } from './logoUrl';
 
 /**
  * Generic helpers for the private `anexos` bucket.
@@ -6,6 +6,7 @@ import { extractLogoPath, resolveLogoUrl } from './logoUrl';
  */
 export const extractAnexoPath = extractLogoPath;
 export const resolveAnexoUrl = resolveLogoUrl;
+export const clearAnexoUrlCache = clearSignedUrlCache;
 
 /** Resolve `assinatura_url` of each signature into a short-lived signed URL. */
 export async function resolveAssinaturas<T extends { assinatura_url?: string | null }>(

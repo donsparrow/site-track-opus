@@ -229,8 +229,7 @@ export default function Ferramentas() {
         const path = `manutencao/${Date.now()}.${ext}`;
         const { error: upErr } = await supabase.storage.from('anexos').upload(path, manutAnexo);
         if (upErr) { toast.error('Erro ao enviar anexo'); return; }
-        const { data: urlData } = supabase.storage.from('anexos').getPublicUrl(path);
-        anexoUrl = urlData.publicUrl;
+        anexoUrl = path;
       }
 
       const { data: manutencao, error } = await supabase

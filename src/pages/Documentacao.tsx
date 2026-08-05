@@ -3,6 +3,7 @@ import * as pdfjsLib from 'pdfjs-dist';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useObrasFiltered } from '@/hooks/useObrasFiltered';
+import { extractAnexoPath, resolveAnexoUrl } from '@/lib/anexoUrl';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -165,18 +166,9 @@ export default function Documentacao() {
     setPastas((data as Pasta[]) || []);
   };
 
-  const extractStoragePath = (url: string): string | null => {
-    const match = url.match(/\/storage\/v1\/object\/(?:public|sign)\/anexos\/([^?]+)/);
-    return match ? decodeURIComponent(match[1]) : null;
-  };
+  const extractStoragePath = (url: string): string | null => extractAnexoPath(url);
 
-  const getSignedUrl = async (url: string): Promise<string | null> => {
-    const path = extractStoragePath(url);
-    if (!path) return null;
-    const { data, error } = await supabase.storage.from('anexos').createSignedUrl(path, 3600);
-    if (error) { console.error('signed url error', error); return null; }
-    return data?.signedUrl || null;
-  };
+  const getSignedUrl = async (url: string): Promise<string | null> => resolveAnexoUrl(url);
 
 
   const getFileExtension = (fileName: string) => fileName.split('.').pop()?.trim().toLowerCase() ?? '';
@@ -243,18 +235,11 @@ export default function Documentacao() {
             throw new Error(resposta.error?.message || `Falha no upload do arquivo ${file.name}.`);
           }
 
-          const { data: urlData } = supabase.storage.from('anexos').getPublicUrl(resposta.data.path);
-
-          if (!urlData?.publicUrl) {
-            await supabase.storage.from('anexos').remove([resposta.data.path]);
-            throw new Error(`Não foi possível obter a URL do arquivo ${file.name}.`);
-          }
-
           const { error: insertErr } = await supabase.from('documentos_arquivos').insert({
             pasta_id: pastaAberta,
             nome_arquivo: file.name,
             tipo,
-            url_arquivo: urlData.publicUrl,
+            url_arquivo: resposta.data.path,
             tamanho: file.size,
           });
 
