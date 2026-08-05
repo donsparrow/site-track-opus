@@ -889,7 +889,8 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
     const renderSigBlock = async (sig: any, xPos: number) => {
       try {
-        const sigDataUrl = await loadImageAsPngDataUrl(sig.assinatura_url);
+        const resolvedSig = (await resolveAnexoUrl(sig.assinatura_url)) || sig.assinatura_url;
+        const sigDataUrl = await loadImageAsPngDataUrl(resolvedSig);
         if (sigDataUrl) {
           doc.addImage(sigDataUrl, 'PNG', xPos, y, 50, 20);
         } else {
