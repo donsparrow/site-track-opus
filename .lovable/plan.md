@@ -90,11 +90,16 @@ Opção **A** aprovada: síndico/cliente leem diário e imagens das obras vincul
 **(a) Colunas de `configuracoes_empresa`** — verificado no banco:
 `id, nome_empresa, cnpj, endereco, telefone, email, logo_url, site, instagram, texto_rodape, empresa_id, responsavel_legal, cpf_responsavel_legal, cargo_responsavel_legal, created_at, updated_at`.
 
-Há campos sensíveis: **CNPJ, e-mail, telefone, endereço, responsável legal e CPF do responsável legal**. O PostgREST não permite RLS por coluna (grants de coluna são por role do Postgres, não por `app_role`), então a leitura parcial só seria possível criando uma view/função de branding — o que exigiria alterar hooks e telas, fora desta fase. Decisão: **`configuracoes_empresa` passa a ser legível apenas por admin/trabalhador da empresa**. Síndico e cliente não leem nada dessa tabela; o cabeçalho/PDF deles cai no logotipo global J&A já usado como fallback. Se depois quiser nome/logo por tenant para esses papéis, crio uma função `get_empresa_branding()` numa fase seguinte.
+Há campos sensíveis: **CNPJ, e-mail, telefone, endereço, responsável legal e CPF do responsável legal**. O PostgREST não faz RLS por coluna, então a solução aprovada é:
+- SELECT direto na tabela passa a exigir admin/trabalhador da empresa;
+- criar `public.get_empresa_branding()` (SECURITY DEFINER, STABLE) retornando **apenas `nome_empresa` e `logo_url`** da empresa do usuário logado (`get_user_empresa_id(auth.uid())`), com `GRANT EXECUTE TO authenticated`. Assim síndico/cliente continuam vendo logo e nome no cabeçalho e nos PDFs, sem acesso a CNPJ/CPF/contatos.
+- Ajuste mínimo de front nesta fase: `src/hooks/useEmpresaLogo.ts` e `src/hooks/useEmpresaNome.ts` passam a chamar a RPC de branding (fallback para a tabela quando a RPC não retornar nada). As telas administrativas (`Configuracoes.tsx`, PDFs de relatório/cronograma) continuam lendo a tabela completa — só admin/trabalhador acessam essas telas.
 
-**(b) RLS habilitado** — verificado: **nenhuma tabela do schema public está sem RLS**. Todas as 40 tabelas têm `rowsecurity = true`.
+**(b) RLS habilitado** — verificado: **nenhuma tabela do schema public está sem RLS**. Todas têm `rowsecurity = true`.
 
-**(c) Gate do relatório** — verificado: `relatorios.status` contém hoje `rascunho` (10), `assinado` (2) e `excluido` (2). `assinado` é o gate correto; o filtro será `status = 'assinado'`, o que exclui automaticamente rascunhos e soft-deletados.
+**(c) Gate do relatório** — verificado: `relatorios.status` contém hoje `rascunho` (10), `assinado` (2) e `excluido` (2). `assinado` é o gate correto; o filtro `status = 'assinado'` exclui automaticamente rascunhos e soft-deletados.
+
+Aprovado também: função `is_operacional`, uso de `EXISTS` na tabela pai para as tabelas filhas, e a matriz do Passo 2 com a Opção A.
 
 ## Passo 3 — Migration
 
