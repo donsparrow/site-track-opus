@@ -68,9 +68,9 @@ export default function TabelaReceitas({
                     </TableCell>
                     <TableCell className="font-medium">{r.descricao}</TableCell>
                     <TableCell>{r.obras?.nome || '—'}</TableCell>
-                    <TableCell className="text-success font-medium">{fmt(Number(r.valor_total))}</TableCell>
+                    <TableCell className="data-tech text-success font-medium">{fmt(Number(r.valor_total))}</TableCell>
                     <TableCell className="capitalize">{r.forma_pagamento}</TableCell>
-                    <TableCell>{r.numero_parcelas}x</TableCell>
+                    <TableCell className="data-tech">{r.numero_parcelas}x</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <AnexosInline anexos={anexos} registroId={r.id} tipoRegistro="receita" onPreview={onPreviewAnexo} />
@@ -119,10 +119,10 @@ export default function TabelaReceitas({
                               const st = statusParcela(p);
                               return (
                                 <TableRow key={p.id} className={st === 'atrasado' ? 'bg-destructive/5' : ''}>
-                                  <TableCell>{p.numero_parcela}</TableCell>
-                                  <TableCell>{fmt(Number(p.valor))}</TableCell>
-                                  <TableCell>{fmtData(p.data_vencimento)}</TableCell>
-                                  <TableCell>{fmtData(p.data_recebimento)}</TableCell>
+                                  <TableCell className="data-tech">{p.numero_parcela}</TableCell>
+                                  <TableCell className="data-tech">{fmt(Number(p.valor))}</TableCell>
+                                  <TableCell className="data-tech">{fmtData(p.data_vencimento)}</TableCell>
+                                  <TableCell className="data-tech">{fmtData(p.data_recebimento)}</TableCell>
                                   <TableCell className="capitalize">{p.forma_pagamento || '—'}</TableCell>
                                   <TableCell>
                                     {st === 'recebido' && <Badge className="bg-success text-success-foreground">Recebido</Badge>}

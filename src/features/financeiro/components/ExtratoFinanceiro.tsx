@@ -258,14 +258,14 @@ export default function ExtratoFinanceiro({ parcelasRecebidas, despesas }: Extra
                     Saldo anterior ao período
                   </TableCell>
                   <TableCell className="text-right">—</TableCell>
-                  <TableCell className={`text-right font-bold ${saldoAnterior < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                  <TableCell className={`data-tech text-right font-bold ${saldoAnterior < 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
                     {fmt(saldoAnterior)}
                   </TableCell>
                 </TableRow>
               )}
               {extrato.map((item, idx) => (
                 <TableRow key={idx}>
-                  <TableCell className="text-sm">
+                  <TableCell className="data-tech text-sm">
                     {new Date(item.data + 'T00:00:00').toLocaleDateString('pt-BR')}
                   </TableCell>
                   <TableCell>
@@ -275,10 +275,10 @@ export default function ExtratoFinanceiro({ parcelasRecebidas, despesas }: Extra
                   </TableCell>
                   <TableCell className="font-medium text-sm">{item.descricao}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{item.obra}</TableCell>
-                  <TableCell className={`text-right font-medium ${item.tipo === 'receita' ? 'text-success' : 'text-destructive'}`}>
+                  <TableCell className={`data-tech text-right font-medium ${item.tipo === 'receita' ? 'text-success' : 'text-destructive'}`}>
                     {item.tipo === 'receita' ? '+' : '-'}{fmt(item.valor)}
                   </TableCell>
-                  <TableCell className={`text-right font-bold ${item.saldo < 0 ? 'text-destructive' : ''}`}>
+                  <TableCell className={`data-tech text-right font-bold ${item.saldo < 0 ? 'text-destructive' : ''}`}>
                     {fmt(item.saldo)}
                   </TableCell>
                 </TableRow>

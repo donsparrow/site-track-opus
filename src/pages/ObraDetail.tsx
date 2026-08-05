@@ -404,8 +404,8 @@ export default function ObraDetail() {
                   <TableRow key={p.id} className={p.status === 'atrasado' ? 'bg-destructive/5' : ''}>
                     <TableCell>{p.numero_parcela}</TableCell>
                     <TableCell className="font-medium">{fmt(Number(p.valor))}</TableCell>
-                    <TableCell>{new Date(p.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
-                    <TableCell>{p.data_recebimento ? new Date(p.data_recebimento + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
+                    <TableCell className="data-tech">{new Date(p.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
+                    <TableCell className="data-tech">{p.data_recebimento ? new Date(p.data_recebimento + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
                     <TableCell>{statusBadge(p.status)}</TableCell>
                     <TableCell className="capitalize">{p.forma_pagamento || '—'}</TableCell>
                   </TableRow>
@@ -436,7 +436,7 @@ export default function ObraDetail() {
               <TableBody>
                 {despesas.map((d) => (
                   <TableRow key={d.id}>
-                    <TableCell>{new Date(d.data + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
+                    <TableCell className="data-tech">{new Date(d.data + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
                     <TableCell><Badge variant="secondary">{tipoLabels[d.tipo] || d.tipo}</Badge></TableCell>
                     <TableCell>{d.descricao}</TableCell>
                     <TableCell className="font-medium text-destructive">{fmt(Number(d.valor))}</TableCell>

@@ -63,7 +63,7 @@ export default function TabelaFerramentas({
                 return (
                   <TableRow key={f.id}>
                     <TableCell className="font-medium">{f.nome}</TableCell>
-                    <TableCell>{f.numero_cadastro}</TableCell>
+                    <TableCell className="data-tech">{f.numero_cadastro}</TableCell>
                     <TableCell>
                       {(TIPO_LABELS[f.tipo] || f.tipo) + (f.tipo === 'eletrica' && f.voltagem ? ` · ${f.voltagem}` : '')}
                     </TableCell>
@@ -112,7 +112,7 @@ export default function TabelaFerramentas({
                         <span>{obraNome}</span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="data-tech">
                       {f.ultima_manutencao
                         ? new Date(f.ultima_manutencao + 'T00:00:00').toLocaleDateString('pt-BR')
                         : '—'}
