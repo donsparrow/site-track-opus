@@ -1833,6 +1833,13 @@ export type Database = {
         Args: { _cnpj?: string; _nome: string }
         Returns: string
       }
+      get_empresa_branding: {
+        Args: never
+        Returns: {
+          logo_url: string
+          nome_empresa: string
+        }[]
+      }
       get_user_empresa_id: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
@@ -1845,6 +1852,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_operacional: { Args: { _uid: string }; Returns: boolean }
       set_default_permissions: {
         Args: { _role: string; _user_id: string }
         Returns: undefined
