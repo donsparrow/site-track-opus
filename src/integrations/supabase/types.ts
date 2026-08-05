@@ -832,6 +832,7 @@ export type Database = {
           tamanho: number | null
           tipo: string
           url_arquivo: string
+          visivel_cliente: boolean
         }
         Insert: {
           created_at?: string
@@ -841,6 +842,7 @@ export type Database = {
           tamanho?: number | null
           tipo?: string
           url_arquivo: string
+          visivel_cliente?: boolean
         }
         Update: {
           created_at?: string
@@ -850,6 +852,7 @@ export type Database = {
           tamanho?: number | null
           tipo?: string
           url_arquivo?: string
+          visivel_cliente?: boolean
         }
         Relationships: [
           {
@@ -1829,17 +1832,26 @@ export type Database = {
         Args: { _obra_id: string; _target_user_id: string }
         Returns: boolean
       }
+      can_read_anexo: { Args: { _name: string }; Returns: boolean }
       create_empresa_and_link: {
         Args: { _cnpj?: string; _nome: string }
         Returns: string
       }
-      get_empresa_branding: {
-        Args: never
-        Returns: {
-          logo_url: string
-          nome_empresa: string
-        }[]
-      }
+      get_empresa_branding:
+        | {
+            Args: never
+            Returns: {
+              logo_url: string
+              nome_empresa: string
+            }[]
+          }
+        | {
+            Args: { _empresa_id: string }
+            Returns: {
+              logo_url: string
+              nome_empresa: string
+            }[]
+          }
       get_user_empresa_id: { Args: { _user_id: string }; Returns: string }
       get_user_role: {
         Args: { _user_id: string }

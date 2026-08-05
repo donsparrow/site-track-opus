@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchEmpresaConfigOrBranding } from '@/lib/empresaBranding';
 import { useAuth } from '@/contexts/AuthContext';
 import { useObrasFiltered } from '@/hooks/useObrasFiltered';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -194,7 +195,7 @@ export default function ObraDetail() {
     if (!obra) return;
     setExportingPdf(true);
     try {
-      const { data: empresaData } = await supabase.from('configuracoes_empresa').select('*').limit(1).single();
+      const empresaData = await fetchEmpresaConfigOrBranding<Record<string, unknown>>();
 
       let chartImage: string | null = null;
       if (chartRef.current) {

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchEmpresaConfigOrBranding } from '@/lib/empresaBranding';
 import { useAuth } from '@/contexts/AuthContext';
 import { useObrasFiltered } from '@/hooks/useObrasFiltered';
 import { relatoriosKeys } from '../queryKeys';
@@ -39,9 +40,8 @@ export function useEmpresaConfig() {
   const query = useQuery({
     queryKey: relatoriosKeys.empresa(empresaId),
     queryFn: async (): Promise<EmpresaConfig | null> => {
-      const { data, error } = await supabase.from('configuracoes_empresa').select('*').limit(1).maybeSingle();
-      if (error) throw error;
-      return (data as EmpresaConfig) ?? null;
+      return await fetchEmpresaConfigOrBranding<EmpresaConfig>();
+
     },
   });
 

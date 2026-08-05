@@ -3,6 +3,8 @@ import * as pdfjsLib from 'pdfjs-dist';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Upload, Trash2, Eye, FileText, Image, Download } from 'lucide-react';
 import { resolveAnexoUrl } from '@/lib/anexoUrl';
 import type { Arquivo, Pasta } from '../types';
@@ -20,6 +22,7 @@ interface Props {
   onUpload: (files: File[]) => void;
   onExcluirArquivo: (arquivo: Arquivo) => void;
   onPreview: (url: string, tipo: string) => void;
+  onToggleVisibilidade: (arquivo: Arquivo, visivel: boolean) => void;
 }
 
 const formatSize = (bytes: number) => {
@@ -37,6 +40,7 @@ export default function ArquivosPanel({
   onUpload,
   onExcluirArquivo,
   onPreview,
+  onToggleVisibilidade,
 }: Props) {
   const [hoverArquivo, setHoverArquivo] = useState<HoverArquivo | null>(null);
   const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
@@ -161,7 +165,19 @@ export default function ArquivosPanel({
                     <p className="text-xs text-muted-foreground">{formatSize(arq.tamanho)}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
+                  {canManage && (
+                    <div className="flex items-center gap-2 mr-2">
+                      <Switch
+                        id={`vis-${arq.id}`}
+                        checked={arq.visivel_cliente}
+                        onCheckedChange={(v) => onToggleVisibilidade(arq, v)}
+                      />
+                      <Label htmlFor={`vis-${arq.id}`} className="text-xs text-muted-foreground cursor-pointer">
+                        Visível ao cliente
+                      </Label>
+                    </div>
+                  )}
                   <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handlePreview(arq)}>
                     <Eye className="h-4 w-4" />
                   </Button>

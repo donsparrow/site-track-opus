@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchEmpresaConfigOrBranding } from '@/lib/empresaBranding';
 import { cronogramaKeys } from '../queryKeys';
 import type { EmpresaConfigPdf } from '../types';
 
@@ -8,10 +8,9 @@ export function useEmpresaConfigCronograma() {
   const query = useQuery({
     queryKey: cronogramaKeys.empresaConfig(),
     queryFn: async (): Promise<EmpresaConfigPdf | null> => {
-      const { data, error } = await supabase.from('configuracoes_empresa').select('*').limit(1).single();
-      if (error) throw error;
-      return data as EmpresaConfigPdf;
+      return await fetchEmpresaConfigOrBranding<EmpresaConfigPdf>();
     },
+
     enabled: false,
   });
 

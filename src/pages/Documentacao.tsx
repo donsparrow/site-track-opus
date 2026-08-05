@@ -73,6 +73,7 @@ export default function Documentacao() {
               onUpload={c.uploadSubmit}
               onExcluirArquivo={c.setDeleteArquivo}
               onPreview={c.abrirPreview}
+              onToggleVisibilidade={c.alternarVisibilidadeArquivo}
             />
           )}
         </div>
