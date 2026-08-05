@@ -192,8 +192,15 @@ export function useFinanceiroMutations() {
   /* ---------------- DESPESAS ---------------- */
 
   const criarDespesa = useMutation({
-    mutationFn: async (payload: TablesInsert<'despesas'>) => {
-      const { error } = await supabase.from('despesas').insert(payload);
+    mutationFn: async ({
+      payload,
+      anexoFile,
+    }: {
+      payload: TablesInsert<'despesas'>;
+      anexoFile?: File | null;
+    }) => {
+      const anexo = anexoFile ? await uploadArquivo(anexoFile, 'despesas') : null;
+      const { error } = await supabase.from('despesas').insert({ ...payload, anexo });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -202,6 +209,7 @@ export function useFinanceiroMutations() {
     },
     onError,
   });
+
 
   const editarDespesa = useMutation({
     mutationFn: async (input: EditarDespesaInput) => {
