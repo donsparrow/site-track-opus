@@ -53,10 +53,9 @@ export function installChunkErrorHandler(): void {
   if (typeof window === "undefined") return;
 
   window.addEventListener("vite:preloadError", (event) => {
-    const payload = (event as CustomEvent<{ payload?: unknown }>).detail;
     if (reloadOnce()) event.preventDefault();
-    void payload;
   });
+
 
   window.addEventListener("unhandledrejection", (event) => {
     if (isChunkLoadError(event.reason) && reloadOnce()) {
