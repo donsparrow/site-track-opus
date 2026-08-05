@@ -15,7 +15,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, Download, AlertTriangle, Upload } from 'lucide-react';
-import ImportarCronogramaDialog from '@/components/cronograma/ImportarCronogramaDialog';
+import ImportarCronogramaDialog from '@/features/cronograma/components/ImportarCronogramaDialog';
 import { toast } from 'sonner';
 import { format, differenceInDays, addDays, parseISO, isValid } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
