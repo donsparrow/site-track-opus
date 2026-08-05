@@ -68,37 +68,39 @@
 
 
   .dark {
-    --background: 220 30% 6%;
-    --foreground: 220 10% 92%;
-    --card: 220 30% 10%;
-    --card-foreground: 220 10% 92%;
-    --popover: 220 30% 10%;
-    --popover-foreground: 220 10% 92%;
-    --primary: 36 90% 50%;
-    --primary-foreground: 220 60% 10%;
-    --secondary: 220 25% 15%;
-    --secondary-foreground: 220 10% 85%;
-    --muted: 220 20% 14%;
-    --muted-foreground: 220 10% 55%;
-    --accent: 36 90% 50%;
-    --accent-foreground: 220 60% 10%;
-    --destructive: 0 62.8% 30.6%;
+    --background: 221 40% 7%;
+    --foreground: 220 16% 92%;
+    --card: 221 38% 11%;
+    --card-foreground: 220 16% 92%;
+    --popover: 221 38% 11%;
+    --popover-foreground: 220 16% 92%;
+    --primary: 222 37% 42%;
+    --primary-foreground: 0 0% 100%;
+    --primary-elevated: 221 48% 22%;
+    --primary-muted: 222 37% 32%;
+    --secondary: 221 30% 16%;
+    --secondary-foreground: 220 16% 88%;
+    --muted: 221 26% 15%;
+    --muted-foreground: 220 12% 60%;
+    --accent: 38 72% 46%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 6 63% 46%;
     --destructive-foreground: 0 0% 100%;
-    --success: 142 70% 40%;
+    --success: 152 67% 37%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 220 60% 10%;
-    --border: 220 20% 18%;
-    --input: 220 20% 18%;
-    --ring: 36 90% 50%;
-    --sidebar-background: 220 40% 8%;
-    --sidebar-foreground: 220 10% 85%;
-    --sidebar-primary: 36 90% 50%;
-    --sidebar-primary-foreground: 220 60% 10%;
-    --sidebar-accent: 220 30% 14%;
-    --sidebar-accent-foreground: 220 10% 90%;
-    --sidebar-border: 220 25% 15%;
-    --sidebar-ring: 36 90% 50%;
+    --warning: 38 72% 46%;
+    --warning-foreground: 0 0% 100%;
+    --border: 221 24% 20%;
+    --input: 221 24% 22%;
+    --ring: 38 72% 46%;
+    --sidebar-background: 221 45% 9%;
+    --sidebar-foreground: 220 16% 84%;
+    --sidebar-primary: 38 72% 46%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 221 38% 15%;
+    --sidebar-accent-foreground: 220 20% 92%;
+    --sidebar-border: 221 30% 18%;
+    --sidebar-ring: 38 72% 46%;
   }
 }
 
@@ -113,13 +115,31 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
   }
+  /* Foco de teclado sempre visível */
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
 }
 
 @layer utilities {
   .text-balance {
     text-wrap: balance;
   }
+  /* Dados técnicos: datas, valores, percentuais, CNPJ/CREA/ART, identificadores */
+  .data-tech {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+  .label-tech {
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.6875rem;
+  }
 }
+
 
 /* ===== MOBILE RESPONSIVENESS (max-width: 767px) ===== */
 @media (max-width: 767px) {
