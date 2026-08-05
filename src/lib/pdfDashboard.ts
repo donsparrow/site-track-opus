@@ -94,7 +94,8 @@ export async function gerarDashboardPDF(data: DashboardPDFData) {
 
   let logoDataUrl: string | null = null;
   if (emp.logo_url) {
-    logoDataUrl = await loadImageAsDataUrl(emp.logo_url);
+    const resolvedLogo = (await resolveLogoUrl(emp.logo_url)) || emp.logo_url;
+    logoDataUrl = await loadImageAsDataUrl(resolvedLogo);
   }
 
   // Helpers
