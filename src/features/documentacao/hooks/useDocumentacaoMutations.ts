@@ -201,8 +201,24 @@ export function useDocumentacaoMutations() {
     onError: () => toast.error('Erro ao excluir arquivo'),
   });
 
+  const alternarVisibilidade = useMutation({
+    mutationFn: async ({ id, visivel }: { id: string; pastaId: string; visivel: boolean }) => {
+      const { error } = await supabase
+        .from('documentos_arquivos')
+        .update({ visivel_cliente: visivel })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_data, { pastaId, visivel }) => {
+      toast.success(visivel ? 'Arquivo liberado para cliente/síndico' : 'Arquivo restrito à equipe');
+      invalidateArquivos(pastaId);
+    },
+    onError: () => toast.error('Erro ao alterar visibilidade do arquivo'),
+  });
+
   return {
     criarPasta,
+    alternarVisibilidade,
     renomearPasta,
     excluirPasta,
     uploadArquivos,

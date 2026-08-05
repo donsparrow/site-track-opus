@@ -38,7 +38,8 @@ export function useDocumentacaoController() {
     isError: arquivosError,
     refetch: refetchArquivos,
   } = useArquivos(pastaAberta);
-  const { criarPasta, renomearPasta, excluirPasta, uploadArquivos, excluirArquivo } = useDocumentacaoMutations();
+  const { criarPasta, renomearPasta, excluirPasta, uploadArquivos, excluirArquivo, alternarVisibilidade } =
+    useDocumentacaoMutations();
 
   const pastaAtual = pastas.find((p) => p.id === pastaAberta);
 
@@ -96,6 +97,11 @@ export function useDocumentacaoController() {
     setDeleteArquivo(null);
   };
 
+  const alternarVisibilidadeArquivo = (arquivo: Arquivo, visivel: boolean) => {
+    if (!pastaAberta) return;
+    alternarVisibilidade.mutate({ id: arquivo.id, pastaId: pastaAberta, visivel });
+  };
+
   const abrirPreview = (url: string, tipo: string) => {
     setPreviewUrl(url);
     setPreviewTipo(tipo);
@@ -137,6 +143,7 @@ export function useDocumentacaoController() {
     setDeleteArquivo,
     excluirArquivoSubmit,
     uploadSubmit,
+    alternarVisibilidadeArquivo,
     previewUrl,
     previewTipo,
     abrirPreview,
