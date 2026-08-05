@@ -47,6 +47,8 @@ Objetivo: devolver ao síndico/cliente apenas os acessos legítimos do portal, s
 3. Relatório **assinado**: abrir e baixar PDF → cabeçalho com **nome + logo**, **sem CNPJ/telefone/e-mail/endereço**.
 4. Relatório em rascunho: não aparece na lista.
 5. Documentação: só aparecem arquivos com `visivel_cliente = true` da obra vinculada; download abre o arquivo.
-6. Arquivo não liberado: não listado e signed URL não é gerada por não haver registro legível.
+6. Arquivo não liberado: não listado **e**, chamando `createSignedUrl` direto com o caminho conhecido, a geração falha.
+7. Teste de caminho conhecido: tentar assinar `financeiro/…` e `manutencao/…` como síndico → deve falhar; como admin → deve funcionar.
+8. Fotos do diário e assinatura do relatório assinado da obra vinculada continuam abrindo para o síndico.
 7. API direta: `select` em `despesas`, `receitas`, `parcelas`, `ferramentas`, `clientes`, `configuracoes_empresa` retorna vazio.
 8. Login como admin: PDF continua completo (CNPJ, telefone, e-mail, endereço) e toda a documentação visível.
