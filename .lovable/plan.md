@@ -23,6 +23,16 @@ Objetivo: devolver ao síndico/cliente apenas os acessos legítimos do portal, s
    - `documentos_arquivos`: síndico/cliente leem quando `visivel_cliente = true` e a pasta pertence a obra vinculada (`can_access_obra`).
    - `documentos_pastas`: síndico/cliente leem a pasta quando existe arquivo liberado nela.
 4. Escrita (INSERT/UPDATE/DELETE) permanece exclusiva de admin/trabalhador — inclusive o toggle de `visivel_cliente`.
+5. **Nova policy de SELECT do bucket `anexos`** (substitui `Empresa view anexos`), apoiada em `public.can_read_anexo(_name text)` (SECURITY DEFINER):
+   - operacional (admin/trabalhador/super_admin) da empresa: mantém o acesso atual;
+   - dono do arquivo: mantém;
+   - síndico/cliente: `true` somente quando o caminho corresponde a um registro que ele já pode ler pela RLS de tabela —
+     - `documentos_arquivos` com `visivel_cliente = true` em obra vinculada,
+     - `diario_imagens` / `imagens` de obra vinculada,
+     - `assinaturas` de relatório `assinado` de obra vinculada,
+     - logo da empresa (`empresa/{empresa_id}/…`);
+   - qualquer outro caminho (`financeiro/…`, `manutencao/…`, documentos não liberados) fica bloqueado para síndico/cliente, mesmo com o caminho conhecido.
+   A função casa o caminho com a coluna de URL/caminho já normalizada em cada tabela, sem expor colunas sensíveis.
 
 ## Mudanças no frontend (camada de dados apenas)
 
