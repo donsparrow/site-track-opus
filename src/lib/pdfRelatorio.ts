@@ -136,7 +136,8 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   let logoNatW = 0;
   let logoNatH = 0;
   if (emp.logo_url) {
-    logoDataUrl = await loadImageAsDataUrl(emp.logo_url);
+    const resolvedLogo = (await resolveAnexoUrl(emp.logo_url)) || emp.logo_url;
+    logoDataUrl = await loadImageAsDataUrl(resolvedLogo);
     if (logoDataUrl) {
       await new Promise<void>((resolve) => {
         const tmpImg = new Image();
