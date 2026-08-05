@@ -2,12 +2,28 @@ import { supabase } from "@/integrations/supabase/client";
 
 const FN = "google-calendar";
 
+export class NotAuthenticatedError extends Error {
+  constructor() {
+    super('Sessão expirada. Faça login novamente para usar a agenda.');
+    this.name = 'NotAuthenticatedError';
+  }
+}
+
 async function call<T = any>(action: string, body: Record<string, unknown> = {}): Promise<T> {
+  // Garante um token válido antes de invocar a função (evita 401 por sessão expirada).
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new NotAuthenticatedError();
+
   const { data, error } = await supabase.functions.invoke(FN, { body: { action, ...body } });
-  if (error) throw error;
+  if (error) {
+    const status = (error as { context?: { status?: number } })?.context?.status;
+    if (status === 401) throw new NotAuthenticatedError();
+    throw error;
+  }
   if ((data as any)?.error) throw new Error((data as any).error);
   return data as T;
 }
+
 
 export const googleCalendar = {
   authUrl: (redirect_uri: string) => call<{ url: string }>("auth-url", { redirect_uri }),
