@@ -19,7 +19,7 @@ export const roleBadgeVariant: Record<string, 'default' | 'secondary' | 'destruc
 };
 
 export const roleBadgeClassName: Record<string, string> = {
-  admin: 'border-transparent bg-green-600 text-white hover:bg-green-600/80',
+  admin: 'border-transparent bg-success text-success-foreground hover:bg-success/90',
 };
 
 export const DEFAULT_PERMISSIONS: Record<string, Record<Modulo, { v: boolean; c: boolean; e: boolean; x: boolean }>> = {

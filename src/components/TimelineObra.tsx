@@ -30,9 +30,9 @@ interface TimelineObraProps {
 }
 
 const typeConfig = {
-  diario: { label: 'Diário', icon: ClipboardList, color: 'bg-blue-500', badgeClass: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' },
-  atividade: { label: 'Atividade', icon: Activity, color: 'bg-green-500', badgeClass: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' },
-  ocorrencia: { label: 'Ocorrência', icon: AlertTriangle, color: 'bg-red-500', badgeClass: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' },
+  diario: { label: 'Diário', icon: ClipboardList, color: 'bg-primary-muted', badgeClass: 'bg-primary-muted text-primary-foreground' },
+  atividade: { label: 'Atividade', icon: Activity, color: 'bg-success', badgeClass: 'bg-success text-success-foreground' },
+  ocorrencia: { label: 'Ocorrência', icon: AlertTriangle, color: 'bg-destructive', badgeClass: 'bg-destructive text-destructive-foreground' },
   marco: { label: 'Marco', icon: Flag, color: 'bg-purple-500', badgeClass: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' },
 };
 

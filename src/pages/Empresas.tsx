@@ -215,7 +215,7 @@ export default function Empresas() {
                               onClick={() => handleToggleStatus(empresa)}
                               title={empresa.status === 'ativo' ? 'Desativar' : 'Ativar'}
                             >
-                              <Power className={`h-4 w-4 ${empresa.status === 'ativo' ? 'text-destructive' : 'text-green-600'}`} />
+                              <Power className={`h-4 w-4 ${empresa.status === 'ativo' ? 'text-destructive' : 'text-success'}`} />
                             </Button>
                           </div>
                         </TableCell>

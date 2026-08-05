@@ -38,7 +38,7 @@ export default function GanttCard({ ganttData }: Props) {
                   </div>
                   <div className="flex-1 relative h-7 bg-muted/30 rounded">
                     <div
-                      className="absolute top-0 h-full bg-blue-100 dark:bg-blue-900/40 rounded"
+                      className="absolute top-0 h-full bg-primary/15 rounded"
                       style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
                     >
                       <div

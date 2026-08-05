@@ -57,9 +57,9 @@ export default function TabelaDespesas({
                   <TableCell className="font-medium">{d.descricao}</TableCell>
                   <TableCell>{d.obras?.nome || '—'}</TableCell>
                   <TableCell><Badge variant="secondary">{tipoLabels[d.tipo] || d.tipo}</Badge></TableCell>
-                  <TableCell className="text-destructive font-medium">{fmt(Number(d.valor))}</TableCell>
-                  <TableCell>{fmtData(d.data)}</TableCell>
-                  <TableCell>{fmtData(d.data_vencimento)}</TableCell>
+                  <TableCell className="data-tech text-destructive font-medium">{fmt(Number(d.valor))}</TableCell>
+                  <TableCell className="data-tech">{fmtData(d.data)}</TableCell>
+                  <TableCell className="data-tech">{fmtData(d.data_vencimento)}</TableCell>
                   <TableCell>
                     <Badge variant={d.tipo_pagamento === 'prazo' ? 'outline' : 'secondary'}>
                       {d.tipo_pagamento === 'prazo' ? 'A Prazo' : 'À Vista'}

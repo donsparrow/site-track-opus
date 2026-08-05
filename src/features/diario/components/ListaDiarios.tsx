@@ -41,11 +41,11 @@ export function ListaDiarios({ diarios, loading, selectedId, canEditDelete, onSe
           >
             <div className="flex items-center gap-2">
               <Icon className="h-4 w-4 text-muted-foreground" />
-              <span className="font-medium text-sm">{fmtData(d.data)}</span>
+              <span className="data-tech font-medium text-sm">{fmtData(d.data)}</span>
               <Badge variant="secondary" className="text-xs ml-auto">{climaLabels[d.clima]}</Badge>
             </div>
             {d.horario_inicio && d.horario_fim && (
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="data-tech text-xs text-muted-foreground mt-1">
                 {d.horario_inicio.slice(0, 5)} - {d.horario_fim.slice(0, 5)}
               </p>
             )}
