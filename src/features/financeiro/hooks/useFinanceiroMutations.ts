@@ -62,11 +62,27 @@ export function useFinanceiroMutations() {
   const onError = (error: unknown) =>
     toast.error('Erro: ' + (error instanceof Error ? error.message : 'desconhecido'));
 
+  /** Faz upload de um anexo simples e devolve o caminho relativo no bucket. */
+  const uploadArquivo = async (file: File, pasta: 'receitas' | 'despesas') => {
+    const ext = file.name.split('.').pop();
+    const path = `${pasta}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const { error } = await supabase.storage.from('anexos').upload(path, file);
+    if (error) throw error;
+    return path;
+  };
+
   /* ---------------- RECEITAS ---------------- */
 
   const criarReceita = useMutation({
-    mutationFn: async (payload: TablesInsert<'receitas'>) => {
-      const { error } = await supabase.from('receitas').insert(payload);
+    mutationFn: async ({
+      payload,
+      anexoFile,
+    }: {
+      payload: TablesInsert<'receitas'>;
+      anexoFile?: File | null;
+    }) => {
+      const anexo = anexoFile ? await uploadArquivo(anexoFile, 'receitas') : null;
+      const { error } = await supabase.from('receitas').insert({ ...payload, anexo });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -75,6 +91,7 @@ export function useFinanceiroMutations() {
     },
     onError,
   });
+
 
   const editarReceita = useMutation({
     mutationFn: async ({ id, ...values }: EditarReceitaInput) => {
