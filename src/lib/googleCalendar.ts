@@ -10,19 +10,34 @@ export class NotAuthenticatedError extends Error {
 }
 
 async function call<T = any>(action: string, body: Record<string, unknown> = {}): Promise<T> {
-  // Garante um token válido antes de invocar a função (evita 401 por sessão expirada).
-  const { data: { session } } = await supabase.auth.getSession();
+  // Garante um token VÁLIDO antes de invocar a função (evita 401 por sessão expirada).
+  let { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new NotAuthenticatedError();
 
-  const { data, error } = await supabase.functions.invoke(FN, { body: { action, ...body } });
+  // Se o token está expirado (ou quase), tenta renovar; se falhar, sessão morreu.
+  const expMs = (session.expires_at ?? 0) * 1000;
+  if (expMs - Date.now() < 60_000) {
+    const { data, error } = await supabase.auth.refreshSession();
+    if (error || !data.session) throw new NotAuthenticatedError();
+    session = data.session;
+  }
+
+  const { data, error } = await supabase.functions.invoke(FN, {
+    body: { action, ...body },
+    headers: { Authorization: `Bearer ${session.access_token}` },
+  });
   if (error) {
     const status = (error as { context?: { status?: number } })?.context?.status;
-    if (status === 401) throw new NotAuthenticatedError();
+    if (status === 401 || status === 403) throw new NotAuthenticatedError();
     throw error;
   }
-  if ((data as any)?.error) throw new Error((data as any).error);
+  if ((data as any)?.error) {
+    if ((data as any).error === "unauthorized") throw new NotAuthenticatedError();
+    throw new Error((data as any).error);
+  }
   return data as T;
 }
+
 
 
 export const googleCalendar = {
