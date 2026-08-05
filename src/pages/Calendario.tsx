@@ -239,7 +239,9 @@ export default function Calendario() {
           setLoading(true);
           googleCalendar.listEvents(range.start.toISOString(), range.end.toISOString())
             .then(r => setEvents(r.items))
+            .catch(() => setEvents([]))
             .finally(() => setLoading(false));
+
         }}
       />
     </div>
