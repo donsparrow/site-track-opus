@@ -5,6 +5,7 @@ import { carregarDadosRelatorio } from '@/lib/relatorioDados';
 import type { Json } from '@/integrations/supabase/types';
 import { relatoriosPrefixes } from '../queryKeys';
 import { gerarPDFRelatorio } from '../pdf';
+import { aplicarIndicadoresCongelados, calcularIndicadores } from '../indicadores';
 import { buildSnapshot, detectChanges, revLabel } from '../utils';
 import type {
   Assinatura, DadosRelatorio, EmpresaConfig, ObraRelatorio, Relatorio,
