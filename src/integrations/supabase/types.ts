@@ -1678,51 +1678,75 @@ export type Database = {
           created_at: string
           data_fim: string | null
           data_inicio: string | null
+          desvio: number | null
+          diarios_registrados: number | null
           dias_parados: number | null
+          dias_parados_snapshot: number | null
           dias_trabalhados: number | null
+          dias_trabalhados_snapshot: number | null
           empresa_id: string | null
           id: string
+          indicadores_congelados_em: string | null
           obra_id: string
           observacoes: string | null
           prazo_ajustado: number | null
+          prazo_consumido: number | null
           prazo_contratual_dias_uteis: number | null
+          progresso_fisico: number | null
           revisao_pdf: number | null
           saldo_prazo: number | null
           status: string
+          status_obra: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           data_fim?: string | null
           data_inicio?: string | null
+          desvio?: number | null
+          diarios_registrados?: number | null
           dias_parados?: number | null
+          dias_parados_snapshot?: number | null
           dias_trabalhados?: number | null
+          dias_trabalhados_snapshot?: number | null
           empresa_id?: string | null
           id?: string
+          indicadores_congelados_em?: string | null
           obra_id: string
           observacoes?: string | null
           prazo_ajustado?: number | null
+          prazo_consumido?: number | null
           prazo_contratual_dias_uteis?: number | null
+          progresso_fisico?: number | null
           revisao_pdf?: number | null
           saldo_prazo?: number | null
           status?: string
+          status_obra?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           data_fim?: string | null
           data_inicio?: string | null
+          desvio?: number | null
+          diarios_registrados?: number | null
           dias_parados?: number | null
+          dias_parados_snapshot?: number | null
           dias_trabalhados?: number | null
+          dias_trabalhados_snapshot?: number | null
           empresa_id?: string | null
           id?: string
+          indicadores_congelados_em?: string | null
           obra_id?: string
           observacoes?: string | null
           prazo_ajustado?: number | null
+          prazo_consumido?: number | null
           prazo_contratual_dias_uteis?: number | null
+          progresso_fisico?: number | null
           revisao_pdf?: number | null
           saldo_prazo?: number | null
           status?: string
+          status_obra?: string | null
           updated_at?: string
         }
         Relationships: [
