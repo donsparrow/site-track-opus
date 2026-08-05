@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import { resolveLogoUrl } from '@/lib/logoUrl';
 import autoTable from 'jspdf-autotable';
 import { downloadPdf } from './pdfDownload';
 
