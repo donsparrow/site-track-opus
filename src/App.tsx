@@ -24,7 +24,17 @@ import Calendario from "./pages/Calendario";
 import CalendarioCallback from "./pages/CalendarioCallback";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,
+      gcTime: 10 * 60_000,
+      retry: 2,
+      refetchOnWindowFocus: true,
+    },
+  },
+});
+
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
