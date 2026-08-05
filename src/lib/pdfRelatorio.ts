@@ -12,7 +12,8 @@ interface RelatorioPDFData {
     logo_url?: string;
     site?: string;
     instagram?: string;
-    endereco?: string;
+    texto_rodape?: string;
+
   } | null;
   obra: {
     nome: string;
@@ -128,8 +129,11 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   const emp = data.empresa || {};
   const hasEmpresa = !!(emp.nome_empresa);
-  const siteTxt = emp.site || 'www.engenhariajf.com.br';
-  const instaTxt = emp.instagram || '@engenhariajf';
+  const rodapeTxt = [emp.site, emp.instagram, emp.texto_rodape]
+    .map((v) => (v || '').trim())
+    .filter(Boolean)
+    .join(' | ');
+
 
   // Pre-load logo
   let logoDataUrl: string | null = null;
@@ -190,8 +194,8 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
       emp.email || '',
     ].filter(Boolean);
     doc.text(infoParts.join('  |  '), hx, 19);
-    if (emp.endereco) doc.text(emp.endereco, hx, 23);
     doc.setTextColor(0);
+
     doc.setDrawColor(BLUE[0], BLUE[1], BLUE[2]);
     doc.setLineWidth(0.5);
     doc.line(MARGIN, 27, pageW - MARGIN, 27);
@@ -205,7 +209,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     doc.line(MARGIN, footerY - 4, pageW - MARGIN, footerY - 4);
     doc.setFontSize(7);
     doc.setTextColor(120);
-    doc.text(`${siteTxt} | ${instaTxt}`, MARGIN, footerY);
+    if (rodapeTxt) doc.text(rodapeTxt, MARGIN, footerY);
     if (pageNum) doc.text(`Página ${pageNum}`, pageW - MARGIN, footerY, { align: 'right' });
     doc.setTextColor(0);
   };

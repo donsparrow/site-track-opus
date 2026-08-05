@@ -67,8 +67,9 @@ export interface EmpresaPDFData {
   logo_url?: string;
   site?: string;
   instagram?: string;
-  endereco?: string;
+  texto_rodape?: string;
 }
+
 
 export interface PDFHelpers {
   addHeader: () => number;
@@ -84,8 +85,11 @@ export async function setupPDFHelpers(doc: jsPDF, empresa: EmpresaPDFData | null
   const pageH = doc.internal.pageSize.getHeight();
   const emp = empresa || {};
   const hasEmpresa = !!(emp.nome_empresa);
-  const siteTxt = emp.site || 'www.engenhariajf.com.br';
-  const instaTxt = emp.instagram || '@engenhariajf';
+  const rodapeTxt = [emp.site, emp.instagram, emp.texto_rodape]
+    .map((v) => (v || '').trim())
+    .filter(Boolean)
+    .join(' | ');
+
 
   let logoDataUrl: string | null = null;
   let logoNatW = 0;
@@ -166,9 +170,8 @@ export async function setupPDFHelpers(doc: jsPDF, empresa: EmpresaPDFData | null
       emp.email || '',
     ].filter(Boolean);
     doc.text(infoParts.join('  |  '), hx, 17);
-    if (emp.endereco) {
-      doc.text(emp.endereco, hx, 21);
-    }
+
+
     doc.setTextColor(0);
     doc.setDrawColor(BLUE[0], BLUE[1], BLUE[2]);
     doc.setLineWidth(0.5);
@@ -184,7 +187,7 @@ export async function setupPDFHelpers(doc: jsPDF, empresa: EmpresaPDFData | null
     doc.line(MARGIN, footerY - 4, pageW - MARGIN, footerY - 4);
     doc.setFontSize(7);
     doc.setTextColor(120);
-    doc.text(`${siteTxt} | ${instaTxt}`, MARGIN, footerY);
+    if (rodapeTxt) doc.text(rodapeTxt, MARGIN, footerY);
     if (pageNum) {
       doc.text(`Página ${pageNum}`, pageW - MARGIN, footerY, { align: 'right' });
     }
