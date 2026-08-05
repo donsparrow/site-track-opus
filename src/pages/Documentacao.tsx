@@ -243,18 +243,11 @@ export default function Documentacao() {
             throw new Error(resposta.error?.message || `Falha no upload do arquivo ${file.name}.`);
           }
 
-          const { data: urlData } = supabase.storage.from('anexos').getPublicUrl(resposta.data.path);
-
-          if (!urlData?.publicUrl) {
-            await supabase.storage.from('anexos').remove([resposta.data.path]);
-            throw new Error(`Não foi possível obter a URL do arquivo ${file.name}.`);
-          }
-
           const { error: insertErr } = await supabase.from('documentos_arquivos').insert({
             pasta_id: pastaAberta,
             nome_arquivo: file.name,
             tipo,
-            url_arquivo: urlData.publicUrl,
+            url_arquivo: resposta.data.path,
             tamanho: file.size,
           });
 
