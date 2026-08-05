@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import { useRelatorioMutations } from '../hooks/useRelatorioMutations';
 import { usePeriodoSugerido } from '../hooks/usePeriodoSugerido';
 import type { EmpresaConfig, ObraRelatorio, RelatorioComObra } from '../types';
 import { revLabel } from '../utils';
+import { aplicarIndicadoresCongelados } from '../indicadores';
 
 import IndicadoresPrazo from './IndicadoresPrazo';
 import ResumoTab from './ResumoTab';
@@ -63,6 +64,11 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
   const { dados } = dadosQuery;
   const detail = useRelatorioDetail(relatorioId);
   const historico = useRelatorioHistorico(relatorioId, tab === 'versoes');
+  /** Exibição e PDF usam os indicadores congelados no fechamento (documento imutável). */
+  const dadosExibicao = useMemo(
+    () => aplicarIndicadoresCongelados(dados, detail.relatorio),
+    [dados, detail.relatorio],
+  );
   const m = useRelatorioMutations();
 
   const carregando = dadosQuery.isPending && !!obraId && !!inicio && !!fim;
@@ -83,7 +89,7 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
     if (!obraData) { toast.error('Selecione uma obra e consolide os dados'); return; }
     if (!empresa) toast.info('Dados da empresa não configurados. O PDF será gerado sem cabeçalho/logo.');
     m.gerarPdf.mutate(
-      { relatorioId, empresa, obra: obraData, periodo: { inicio, fim }, dados, revisaoPdf },
+      { relatorioId, empresa, obra: obraData, periodo: { inicio, fim }, dados: dadosExibicao, revisaoPdf },
       { onSuccess: (res) => setRevisaoPdf(res.novaRevisao) },
     );
   };
@@ -146,7 +152,7 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
             </Card>
           )}
 
-          {carregando ? <RelatorioSkeleton rows={6} /> : <IndicadoresPrazo prazos={dados.prazos} />}
+          {carregando ? <RelatorioSkeleton rows={6} /> : <IndicadoresPrazo prazos={dadosExibicao.prazos} />}
 
           <div className="flex gap-3 mb-6 flex-wrap">
             {podeEditar && !readOnly && (
@@ -171,7 +177,7 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
             </TabsList>
 
             <TabsContent value="resumo">
-              {carregando ? <RelatorioSkeleton rows={6} /> : <ResumoTab dados={dados} />}
+              {carregando ? <RelatorioSkeleton rows={6} /> : <ResumoTab dados={dadosExibicao} />}
             </TabsContent>
             <TabsContent value="evolucao">
               {carregando ? <RelatorioSkeleton rows={6} /> : <EvolucaoTab dados={dados} />}
