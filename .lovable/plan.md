@@ -103,25 +103,27 @@ Aprovado também: função `is_operacional`, uso de `EXISTS` na tabela pai para 
 
 ## Passo 3 — Migration
 
-Uma única migration, sem tocar em código de aplicação:
+Uma única migration:
 
 1. Criar função auxiliar SECURITY DEFINER `public.is_operacional(_uid uuid)` = `has_role(_uid,'admin') OR has_role(_uid,'trabalhador') OR has_role(_uid,'super_admin')`, para evitar repetição e recursão.
-2. `DROP POLICY` + `CREATE POLICY` de SELECT em: despesas, receitas, parcelas, mao_de_obra, financeiro_anexos, ferramentas, ferramentas_historico, compras_ferramentas, compras_materiais, manutencao_ferramentas, clientes, documentos_pastas, documentos_arquivos, relatorio_logs, configuracoes_empresa — todas passando a exigir `empresa_id = get_user_empresa_id(auth.uid()) AND public.is_operacional(auth.uid())`.
-3. SELECT das tabelas de obra (atividades_obra, cronograma, cronograma_atividades, diario_obra e filhas, relatorios, relatorio_versoes, assinaturas, imagens, obra_aditivos): substituir o filtro puro de empresa por
-   `(empresa_da_linha = get_user_empresa_id(auth.uid()) AND is_operacional(auth.uid())) OR can_access_obra(obra_id)` — usando a função `can_access_obra` já existente (SECURITY DEFINER, sem recursão). Em `relatorios`, `relatorio_versoes` e `assinaturas` a via síndico/cliente exige também `status = 'assinado'` no relatório.
-4. Para as tabelas filhas (diario_*, cronograma_atividades, relatorio_versoes, assinaturas) a checagem usa `EXISTS` na tabela pai — nunca na própria tabela protegida.
-5. Adicionar DELETE explícito onde hoje falta e é esperado (atividades_obra, compras_materiais, mao_de_obra, manutencao_ferramentas, relatorios): restrito a admin/trabalhador da empresa.
-6. Rodar o linter de segurança ao final.
+2. Criar `public.get_empresa_branding()` (SECURITY DEFINER, STABLE) → `nome_empresa`, `logo_url` da empresa do usuário logado; `GRANT EXECUTE TO authenticated`.
+3. `DROP POLICY` + `CREATE POLICY` de SELECT em: despesas, receitas, parcelas, mao_de_obra, financeiro_anexos, ferramentas, ferramentas_historico, compras_ferramentas, compras_materiais, manutencao_ferramentas, clientes, documentos_pastas, documentos_arquivos, relatorio_logs, configuracoes_empresa — todas passando a exigir `empresa_id = get_user_empresa_id(auth.uid()) AND public.is_operacional(auth.uid())`.
+4. SELECT das tabelas de obra (atividades_obra, cronograma, cronograma_atividades, diario_obra e filhas, relatorios, relatorio_versoes, assinaturas, imagens, obra_aditivos): substituir o filtro puro de empresa por
+   `(empresa_da_linha = get_user_empresa_id(auth.uid()) AND is_operacional(auth.uid())) OR can_access_obra(obra_id)` — usando `can_access_obra`, já existente e SECURITY DEFINER. Em `relatorios`, `relatorio_versoes` e `assinaturas` a via síndico/cliente exige também `status = 'assinado'`.
+5. Tabelas filhas (diario_*, cronograma_atividades, relatorio_versoes, assinaturas): checagem por `EXISTS` na tabela pai — nunca na própria tabela protegida.
+6. DELETE explícito onde hoje falta e é esperado (atividades_obra, compras_materiais, mao_de_obra, manutencao_ferramentas, relatorios): restrito a admin/trabalhador da empresa.
+7. Rodar o linter de segurança ao final.
 
+Ajuste mínimo de front (só branding): `useEmpresaLogo.ts` e `useEmpresaNome.ts` passam a usar a RPC `get_empresa_branding()`.
 
-## Passo 4 — Como validar (fornecerei os comandos prontos)
+## Passo 4 — Validação (eu executo, não só documento)
 
-1. Criar usuário de teste `sindico.teste@…` no painel de usuários, papel Síndico, vinculado a **uma** obra.
-2. Obter um token via API de auth (`/auth/v1/token?grant_type=password`).
-3. Com esse token, `curl` no PostgREST para cada tabela:
-   - Deve retornar `[]`: `despesas`, `receitas`, `parcelas`, `mao_de_obra`, `ferramentas`, `compras_ferramentas`, `compras_materiais`, `manutencao_ferramentas`, `clientes`, `documentos_arquivos`, `financeiro_anexos`.
-   - Deve retornar dados: `obras` (só a vinculada), `cronograma_atividades` dessa obra, `relatorios` assinados dessa obra.
-   - `POST`/`PATCH` em qualquer uma delas deve falhar com erro de RLS (401/403).
-4. Repetir com um usuário `trabalhador` para confirmar que nada operacional quebrou, e com o admin para confirmar acesso total.
+1. Consultar as políticas resultantes no banco e conferir tabela a tabela contra a matriz do Passo 2.
+2. Simular o papel síndico direto no Postgres (`SET LOCAL role authenticated` + `request.jwt.claims` com o `sub` de um usuário síndico vinculado a uma obra) e rodar `SELECT` em cada tabela:
+   - esperado vazio: despesas, receitas, parcelas, mao_de_obra, financeiro_anexos, ferramentas, ferramentas_historico, compras_ferramentas, compras_materiais, manutencao_ferramentas, clientes, documentos_pastas, documentos_arquivos, relatorio_logs, configuracoes_empresa;
+   - esperado com dados: obras vinculada, cronograma/atividades e diário dessa obra, relatórios `assinado` dessa obra;
+   - esperado bloqueado: qualquer INSERT/UPDATE.
+3. Repetir a simulação com um usuário `trabalhador` e com o `admin` para provar que nada operacional quebrou.
+4. Reportar a tabela de resultados (esperado × obtido) e a saída do linter.
 
-Os comandos `curl` exatos, com o token e as URLs preenchidas, entrego junto da migration.
+Se não houver hoje um usuário com papel síndico no banco, crio um usuário de teste temporário para a validação e removo ao final.
