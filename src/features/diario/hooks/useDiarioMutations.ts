@@ -280,16 +280,57 @@ export function useDiarioMutations({ obraId, diarioId }: Options) {
 
   const excluirAtividade = useMutation({
     mutationFn: async (id: string) => {
+      // Guarda o vínculo antes de apagar para poder recalcular o cronograma
+      const { data: alvo } = await supabase
+        .from('diario_atividades')
+        .select('cronograma_atividade_id')
+        .eq('id', id)
+        .maybeSingle();
+      const cronAtivId = alvo?.cronograma_atividade_id ?? null;
+
       const { error } = await supabase.from('diario_atividades').delete().eq('id', id);
       if (error) throw error;
+
+      if (!cronAtivId) return { recalculado: false, semLancamento: false };
+
+      // Lançamento restante mais recente POR DATA DO DIÁRIO
+      const { data: restantes } = await supabase
+        .from('diario_atividades')
+        .select('percentual, diario_obra!inner(data)')
+        .eq('cronograma_atividade_id', cronAtivId);
+
+      const maisRecente = (restantes ?? [])
+        .slice()
+        .sort((a, b) =>
+          String((b as { diario_obra: { data: string } }).diario_obra.data).localeCompare(
+            String((a as { diario_obra: { data: string } }).diario_obra.data),
+          ),
+        )[0];
+
+      if (!maisRecente) {
+        // NÃO zera: o valor pode vir de edição manual no Cronograma.
+        console.warn(
+          `[cronograma] Atividade ${cronAtivId} ficou sem lançamentos no diário. Percentual mantido (possível edição manual).`,
+        );
+        return { recalculado: false, semLancamento: true };
+      }
+
+      await syncCronograma(cronAtivId, maisRecente.percentual || 0);
+      return { recalculado: true, semLancamento: false };
     },
-    onSuccess: () => {
+    onSuccess: (r) => {
       toast.success('Atividade removida!');
+      if (r?.semLancamento) {
+        toast.warning(
+          'Sem lançamentos restantes para este serviço: o percentual do cronograma foi mantido e deve ser ajustado manualmente, se necessário.',
+        );
+      }
       invalidateDetail();
       invalidateCronograma();
     },
     onError: fail,
   });
+
 
   /* ---------------- Materiais ---------------- */
 
