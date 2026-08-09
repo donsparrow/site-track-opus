@@ -21,10 +21,12 @@ Hoje `totalDiasParalisacao` conta dias corridos e é exclusiva no fim (paralisa�
 ## 4. Rótulos
 
 - `src/lib/pdfRelatorio.ts`: head `'Dias'` → `'Dias Úteis'`; foot `${total} dias` → `${total} dias úteis`; nota em itálico passa a dizer "dias úteis de paralisação".
+- `src/lib/pdfRelatorio.ts` — Controle de Prazo (`prazoItems` e `prazoItems2`):
+  - 'Prazo Contratual', 'Prazo Ajustado', 'Saldo de Prazo': valor passa a "N dias úteis";
+  - 'Dias Parados' → 'Dias Úteis Parados'; 'Dias Trabalhados' → 'Dias Úteis Trabalhados'.
+  - Se "N dias úteis" estourar a largura do card (`contentW/4`, fonte 11 bold), manter o valor como "N dias" e levar a unidade para o rótulo em fonte 7: "Prazo Contratual (dias úteis)". Assim tabela e cards falam a mesma unidade.
 - `src/features/relatorios/components/RegistrosTab.tsx`: coluna "Dias" → "Dias Úteis" (card "Dias Parados" mantém o texto atual).
 - `src/features/diario/components/ParalisacoesTab.tsx`: coluna "Dias" → "Dias Úteis".
-
-## 5. Formulário inline de paralisação
 
 Em `ParalisacoesTab.tsx`, quando início e fim estiverem preenchidos, exibir o total calculado em tempo real (`calcBusinessDays`) ao lado dos campos.
 
