@@ -5,7 +5,8 @@ Hoje `totalDiasParalisacao` conta dias corridos e é exclusiva no fim (paralisa�
 ## 1. Novo `src/lib/dias.ts`
 
 - `calcBusinessDays(inicio, fim)` — implementação movida de `src/lib/relatorioDados.ts`, com guardas: retorna 0 se alguma data for vazia/inválida ou se `fim < inicio`.
-- Em `relatorioDados.ts`: remover a definição local, `import { calcBusinessDays } from './dias'` e reexportar (`export { calcBusinessDays }`) para não quebrar imports existentes (`src/pages/Obras.tsx`).
+- Em `relatorioDados.ts`: remover a definição local, `import { calcBusinessDays } from './dias'` e reexportar (`export { calcBusinessDays }`) para não quebrar imports existentes.
+- Em `src/pages/Obras.tsx`: apagar a cópia local da função (linha 18) e importar de `@/lib/dias`. As implementações são idênticas hoje, então não há mudança de comportamento — é eliminação de duplicação, garantindo que `prazo_contratual_dias` (linha 109) e `total_dias` usem a MESMA função (importante quando entrarem feriados). Ao final, `calcBusinessDays` tem uma única implementação no sistema, em `src/lib/dias.ts`.
 
 ## 2. `src/features/diario/utils.ts`
 
