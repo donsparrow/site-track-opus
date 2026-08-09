@@ -724,7 +724,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
       doc.setFont('helvetica', 'italic');
       doc.setTextColor(100);
       doc.text(
-        `Os ${totalDiasParados} dia(s) de paralisação compõem o total de dias parados apresentado no Controle de Prazo.`,
+        `Os ${totalDiasParados} dia(s) útil(eis) de paralisação compõem o total de dias parados apresentado no Controle de Prazo.`,
         MARGIN, y, { maxWidth: contentW },
       );
       doc.setTextColor(0);
