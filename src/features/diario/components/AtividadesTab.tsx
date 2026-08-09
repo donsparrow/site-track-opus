@@ -1,16 +1,15 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { mapLegacyStatus, percentualToStatus, statusLabels } from '../utils';
 import { useDebouncedValue } from '../hooks/useDebouncedValue';
+import { SelecaoServico } from './SelecaoServico';
 import type { CronogramaAtividadeOption, DiarioAtividade } from '../types';
 
 interface UpdatePayload {
