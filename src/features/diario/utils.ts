@@ -1,5 +1,6 @@
 import { Cloud, CloudRain, Sun } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { calcBusinessDays } from '@/lib/dias';
 
 /** Status derivado do percentual informado no diário. */
 export function percentualToStatus(p: number): string {
