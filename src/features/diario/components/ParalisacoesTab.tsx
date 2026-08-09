@@ -42,7 +42,7 @@ export function ParalisacoesTab({ paralisacoes, canEdit, canEditDelete, onAdd, o
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Motivo</TableHead><TableHead>Início</TableHead><TableHead>Fim</TableHead><TableHead>Dias</TableHead>
+                <TableHead>Motivo</TableHead><TableHead>Início</TableHead><TableHead>Fim</TableHead><TableHead>Dias Úteis</TableHead>
                 {canEditDelete && <TableHead className="w-20" />}
               </TableRow>
             </TableHeader>
