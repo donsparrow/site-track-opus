@@ -10,11 +10,9 @@ import logoSistema from '@/assets/logo-sistema.jpeg';
 import GlobalFooter from '@/components/GlobalFooter';
 
 export default function Auth() {
-  const { user, loading, signIn, signUp } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
+  const { user, loading, signIn } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [nome, setNome] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-background"><div className="animate-spin h-8 w-8 border-4 border-accent border-t-transparent rounded-full" /></div>;
@@ -24,14 +22,8 @@ export default function Auth() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      if (isLogin) {
-        const { error } = await signIn(email, password);
-        if (error) toast.error(error.message);
-      } else {
-        const { error } = await signUp(email, password, nome);
-        if (error) toast.error(error.message);
-        else toast.success('Conta criada! Verifique seu e-mail.');
-      }
+      const { error } = await signIn(email, password);
+      if (error) toast.error(error.message);
     } finally {
       setSubmitting(false);
     }
@@ -47,20 +39,12 @@ export default function Auth() {
             <img src={logoSistema} alt="J&A GestãoPro" className="h-full w-auto object-contain" />
           </div>
           <CardTitle className="leading-none tracking-tight text-base text-center font-medium mx-[63px] px-0 rounded-none shadow-none">
-            {isLogin ? 'Entrar' : 'Criar conta'}
+            Entrar
           </CardTitle>
           <p className="text-muted-foreground mt-1 font-sans text-left text-xs font-extralight">Identifique-se para acesso ao sistema</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <Input
-                placeholder="Seu nome"
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                required
-              />
-            )}
             <Input
               type="email"
               placeholder="E-mail"
@@ -77,18 +61,9 @@ export default function Auth() {
               minLength={6}
             />
             <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={submitting}>
-              {submitting ? 'Aguarde...' : isLogin ? 'Entrar' : 'Criar conta'}
+              {submitting ? 'Aguarde...' : 'Entrar'}
             </Button>
           </form>
-          <div className="mt-4 text-center">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {isLogin ? 'Não tem conta? Criar conta' : 'Já tem conta? Entrar'}
-            </button>
-          </div>
         </CardContent>
       </Card>
       <div className="absolute bottom-0 left-0 right-0 z-10">
