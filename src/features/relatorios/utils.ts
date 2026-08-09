@@ -27,6 +27,7 @@ export function buildSnapshot(dados: DadosRelatorio, periodo: { inicio: string; 
     atividades_count: dados.atividades.length,
     materiais_count: dados.materiais.length,
     ocorrencias_count: dados.ocorrencias.length,
+    paralisacoes_count: dados.paralisacoes.length,
     imagens_count: dados.imagens.length,
   };
 }
@@ -37,15 +38,20 @@ type SnapshotParcial = Partial<SnapshotDados> | null | undefined;
 export function detectChanges(prev: SnapshotParcial, curr: SnapshotDados): { hasChanges: boolean; summary: string } {
   if (!prev) return { hasChanges: true, summary: 'Criação do relatório' };
   const changes: string[] = [];
+  /** Campo ausente em snapshot antigo não conta como alteração (evita revisão falsa). */
+  const diffCount = (before: number | undefined, after: number, label: string) => {
+    if ((before ?? after) !== after) changes.push(`${label}: ${before ?? 0} → ${after}`);
+  };
   if (prev.prazos?.contratual !== curr.prazos?.contratual) changes.push(`Prazo alterado de ${prev.prazos?.contratual || 0} para ${curr.prazos?.contratual || 0} dias`);
   if (prev.prazos?.parados !== curr.prazos?.parados) changes.push(`Dias parados: ${prev.prazos?.parados || 0} → ${curr.prazos?.parados || 0}`);
   if (prev.prazos?.trabalhados !== curr.prazos?.trabalhados) changes.push(`Dias trabalhados: ${prev.prazos?.trabalhados || 0} → ${curr.prazos?.trabalhados || 0}`);
   if (prev.periodo?.inicio !== curr.periodo?.inicio || prev.periodo?.fim !== curr.periodo?.fim) changes.push('Alteração no período');
-  if (prev.imagens_count !== curr.imagens_count) changes.push(`Imagens: ${prev.imagens_count || 0} → ${curr.imagens_count}`);
-  if (prev.atividades_count !== curr.atividades_count) changes.push(`Atividades: ${prev.atividades_count || 0} → ${curr.atividades_count}`);
-  if (prev.equipe_count !== curr.equipe_count) changes.push(`Equipe: ${prev.equipe_count || 0} → ${curr.equipe_count}`);
-  if (prev.materiais_count !== curr.materiais_count) changes.push(`Materiais: ${prev.materiais_count || 0} → ${curr.materiais_count}`);
-  if (prev.ocorrencias_count !== curr.ocorrencias_count) changes.push(`Ocorrências: ${prev.ocorrencias_count || 0} → ${curr.ocorrencias_count}`);
+  diffCount(prev.imagens_count, curr.imagens_count, 'Imagens');
+  diffCount(prev.atividades_count, curr.atividades_count, 'Atividades');
+  diffCount(prev.equipe_count, curr.equipe_count, 'Equipe');
+  diffCount(prev.materiais_count, curr.materiais_count, 'Materiais');
+  diffCount(prev.ocorrencias_count, curr.ocorrencias_count, 'Ocorrências');
+  diffCount(prev.paralisacoes_count, curr.paralisacoes_count, 'Paralisações');
   return { hasChanges: changes.length > 0, summary: changes.length > 0 ? changes.join('; ') : '' };
 }
 

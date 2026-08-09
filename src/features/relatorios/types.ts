@@ -42,6 +42,7 @@ export interface SnapshotDados {
   atividades_count: number;
   materiais_count: number;
   ocorrencias_count: number;
+  paralisacoes_count: number;
   imagens_count: number;
 }
 

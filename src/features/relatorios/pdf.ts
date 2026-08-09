@@ -46,6 +46,7 @@ export async function gerarPDFRelatorio({ empresa, obra, periodo, dados, assinat
     atividades: dados.atividades,
     materiais: dados.materiais,
     ocorrencias: dados.ocorrencias,
+    paralisacoes: dados.paralisacoes,
     imagens: dados.imagens,
     cronograma: dados.cronograma,
     aditivos: dados.aditivos,
