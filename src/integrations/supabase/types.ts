@@ -1769,6 +1769,36 @@ export type Database = {
           },
         ]
       }
+      rollback_cronograma_backfill_20260809: {
+        Row: {
+          created_at: string
+          cronograma_atividade_id: string
+          id: string
+          nome_atividade: string | null
+          obra_id: string | null
+          percentual_concluido_antes: number | null
+          status_antes: string | null
+        }
+        Insert: {
+          created_at?: string
+          cronograma_atividade_id: string
+          id?: string
+          nome_atividade?: string | null
+          obra_id?: string | null
+          percentual_concluido_antes?: number | null
+          status_antes?: string | null
+        }
+        Update: {
+          created_at?: string
+          cronograma_atividade_id?: string
+          id?: string
+          nome_atividade?: string | null
+          obra_id?: string | null
+          percentual_concluido_antes?: number | null
+          status_antes?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
