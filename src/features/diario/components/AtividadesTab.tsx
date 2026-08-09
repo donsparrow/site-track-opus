@@ -201,17 +201,12 @@ function InlineAtividadeForm({ cronogramaAtividades, onSave, onCancel }: {
 
   return (
     <div className="flex flex-col gap-2 mb-3 p-3 bg-muted rounded">
-      <Label className="text-xs">Selecionar atividade do Cronograma *</Label>
-      <Select value={cronId} onValueChange={setCronId}>
-        <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="▼ Escolha uma atividade" /></SelectTrigger>
-        <SelectContent>
-          {cronogramaAtividades.map((a) => (
-            <SelectItem key={a.id} value={a.id}>
-              {a.nome_atividade} — atual {a.percentual_concluido || 0}% (peso {a.peso || 0}%)
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <SelecaoServico
+        atividades={cronogramaAtividades}
+        lancadasIds={lancadasIds}
+        value={cronId}
+        onChange={setCronId}
+      />
       <div className="flex items-center gap-2">
         <span className="flex-1 text-sm font-medium">
           {descricao || <span className="text-muted-foreground italic">Selecione uma atividade</span>}
