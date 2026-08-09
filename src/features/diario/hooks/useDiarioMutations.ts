@@ -60,6 +60,7 @@ export function useDiarioMutations({ obraId, diarioId }: Options) {
           descricao: a.descricao,
           status: mapLegacyStatus(a.status),
           percentual: a.percentual || 0,
+          cronograma_atividade_id: a.cronograma_atividade_id ?? null,
         })),
       );
     }
