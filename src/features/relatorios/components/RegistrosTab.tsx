@@ -60,7 +60,7 @@ export default function RegistrosTab({ dados }: { dados: DadosRelatorio }) {
                     <TableHead>Motivo</TableHead>
                     <TableHead className="w-28">Início</TableHead>
                     <TableHead className="w-32">Término</TableHead>
-                    <TableHead className="w-16 text-right">Dias</TableHead>
+                    <TableHead className="w-20 text-right">Dias Úteis</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
