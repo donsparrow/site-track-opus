@@ -5,7 +5,8 @@ Hoje `totalDiasParalisacao` conta dias corridos e é exclusiva no fim (paralisa�
 ## 1. Novo `src/lib/dias.ts`
 
 - `calcBusinessDays(inicio, fim)` — implementação movida de `src/lib/relatorioDados.ts`, com guardas: retorna 0 se alguma data for vazia/inválida ou se `fim < inicio`.
-- Em `relatorioDados.ts`: remover a definição local, `import { calcBusinessDays } from './dias'` e reexportar (`export { calcBusinessDays }`) para não quebrar imports existentes (`src/pages/Obras.tsx`).
+- Em `relatorioDados.ts`: remover a definição local, `import { calcBusinessDays } from './dias'` e reexportar (`export { calcBusinessDays }`) para não quebrar imports existentes.
+- Em `src/pages/Obras.tsx`: apagar a cópia local da função (linha 18) e importar de `@/lib/dias`. As implementações são idênticas hoje, então não há mudança de comportamento — é eliminação de duplicação, garantindo que `prazo_contratual_dias` (linha 109) e `total_dias` usem a MESMA função (importante quando entrarem feriados). Ao final, `calcBusinessDays` tem uma única implementação no sistema, em `src/lib/dias.ts`.
 
 ## 2. `src/features/diario/utils.ts`
 
@@ -20,6 +21,10 @@ Hoje `totalDiasParalisacao` conta dias corridos e é exclusiva no fim (paralisa�
 ## 4. Rótulos
 
 - `src/lib/pdfRelatorio.ts`: head `'Dias'` → `'Dias Úteis'`; foot `${total} dias` → `${total} dias úteis`; nota em itálico passa a dizer "dias úteis de paralisação".
+- `src/lib/pdfRelatorio.ts` — Controle de Prazo (`prazoItems` e `prazoItems2`):
+  - 'Prazo Contratual', 'Prazo Ajustado', 'Saldo de Prazo': valor passa a "N dias úteis";
+  - 'Dias Parados' → 'Dias Úteis Parados'; 'Dias Trabalhados' → 'Dias Úteis Trabalhados'.
+  - Se "N dias úteis" estourar a largura do card (`contentW/4`, fonte 11 bold), manter o valor como "N dias" e levar a unidade para o rótulo em fonte 7: "Prazo Contratual (dias úteis)". Assim tabela e cards falam a mesma unidade.
 - `src/features/relatorios/components/RegistrosTab.tsx`: coluna "Dias" → "Dias Úteis" (card "Dias Parados" mantém o texto atual).
 - `src/features/diario/components/ParalisacoesTab.tsx`: coluna "Dias" → "Dias Úteis".
 
