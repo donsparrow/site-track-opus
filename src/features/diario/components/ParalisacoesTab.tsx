@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Pencil, Plus, Save, Trash2, X } from 'lucide-react';
-import { fmtData } from '../utils';
+import { fmtData, totalDiasParalisacao } from '../utils';
 import type { DiarioParalisacao } from '../types';
 
 interface Props {
