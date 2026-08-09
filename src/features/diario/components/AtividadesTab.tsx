@@ -128,9 +128,10 @@ function AtividadeRow({ atividade, canEdit, onEdit, onDelete, onUpdate }: {
   );
 }
 
-function AtividadeEditRow({ atividade, cronogramaAtividades, onCancel, onSave }: {
+function AtividadeEditRow({ atividade, cronogramaAtividades, lancadasIds, onCancel, onSave }: {
   atividade: DiarioAtividade;
   cronogramaAtividades: CronogramaAtividadeOption[];
+  lancadasIds: string[];
   onCancel: () => void;
   onSave: (payload: UpdatePayload) => void;
 }) {
@@ -142,14 +143,15 @@ function AtividadeEditRow({ atividade, cronogramaAtividades, onCancel, onSave }:
   return (
     <div className="flex flex-col gap-2 p-3 rounded border border-accent bg-accent/5">
       {cronogramaAtividades.length > 0 && (
-        <Select value={cronId || ''} onValueChange={(v) => setCronId(v || null)}>
-          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Vincular ao Cronograma (opcional)" /></SelectTrigger>
-          <SelectContent>
-            {cronogramaAtividades.map((ca) => (
-              <SelectItem key={ca.id} value={ca.id}>{ca.nome_atividade} — {ca.percentual_concluido || 0}%</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SelecaoServico
+          atividades={cronogramaAtividades}
+          lancadasIds={lancadasIds}
+          value={cronId || ''}
+          onChange={(v) => setCronId(v || null)}
+          selecionadoId={atividade.cronograma_atividade_id}
+          label=""
+          placeholder="Vincular ao Cronograma (opcional)"
+        />
       )}
       <div className="flex items-center gap-2">
         <Input value={descricao} onChange={(e) => setDescricao(e.target.value)} className="flex-1" />
