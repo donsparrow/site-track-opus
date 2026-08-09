@@ -34,6 +34,11 @@ export function AtividadesTab({ atividades, cronogramaAtividades, canEdit, onAdd
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  const lancadasIds = useMemo(
+    () => atividades.map((a) => a.cronograma_atividade_id).filter((id): id is string => !!id),
+    [atividades],
+  );
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between py-3">
@@ -44,6 +49,7 @@ export function AtividadesTab({ atividades, cronogramaAtividades, canEdit, onAdd
         {adding && (
           <InlineAtividadeForm
             cronogramaAtividades={cronogramaAtividades}
+            lancadasIds={lancadasIds}
             onSave={(descricao, percentual, cronId) => { onAdd({ descricao, percentual, cronogramaAtividadeId: cronId }); setAdding(false); }}
             onCancel={() => setAdding(false)}
           />
@@ -58,6 +64,7 @@ export function AtividadesTab({ atividades, cronogramaAtividades, canEdit, onAdd
                   key={a.id}
                   atividade={a}
                   cronogramaAtividades={cronogramaAtividades}
+                  lancadasIds={lancadasIds}
                   onCancel={() => setEditingId(null)}
                   onSave={(payload) => { onUpdate(payload); setEditingId(null); }}
                 />
