@@ -41,6 +41,7 @@ interface RelatorioPDFData {
   atividades: any[];
   materiais: any[];
   ocorrencias: any[];
+  paralisacoes?: { motivo: string; data_inicio: string; data_fim: string | null; total_dias: number | null; diario_id?: string }[];
   imagens: any[];
   cronograma: { nome_atividade: string; data_inicio: string | null; data_fim: string | null; percentual_concluido: number; status: string; peso?: number; tipo_atividade?: string }[];
   aditivos?: { descricao: string; dias_adicionais: number; data_aprovacao?: string | null; justificativa?: string | null; responsavel_aprovacao?: string | null }[];
@@ -245,6 +246,18 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     doc.setFontSize(9);
   };
 
+  /** Numeração automática: seções condicionais que não renderizam não consomem número. */
+  let secCount = 0;
+  const sec = (title: string) => {
+    secCount++;
+    sectionTitle(`${secCount}. ${title}`);
+  };
+  let subCount = 0;
+  const subSec = (title: string) => {
+    subCount++;
+    sectionTitle(`${secCount}.${subCount} ${title}`);
+  };
+
   const infoRow = (label: string, value: string) => {
     checkPage(6);
     doc.setFont('helvetica', 'bold');
@@ -327,7 +340,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   // =========== PAGE 2: EXECUTIVE SUMMARY ===========
   newPage();
-  sectionTitle('1. RESUMO EXECUTIVO');
+  sec('RESUMO EXECUTIVO');
 
   // Smart status: progresso físico vs prazo consumido (tolerância ±5%)
   const pExec = data.prazos.percentualExecutado;
@@ -450,7 +463,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   }
 
   // =========== IDENTIFICATION ===========
-  sectionTitle('2. IDENTIFICAÇÃO');
+  sec('IDENTIFICAÇÃO');
   infoRow('Obra', data.obra.nome);
   infoRow('Endereço', data.obra.endereco);
   infoRow('Responsável Técnico', `${data.obra.responsavel || '—'}${data.obra.crea_cau ? ' — ' + data.obra.crea_cau : ''}`);
@@ -458,7 +471,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   // CLIENT DATA
   if (data.obra.cliente_nome) {
-    sectionTitle('3. DADOS DO CLIENTE');
+    sec('DADOS DO CLIENTE');
     infoRow('Nome', data.obra.cliente_nome);
     infoRow('CNPJ/CPF', data.obra.cliente_cpf_cnpj || '—');
     infoRow('E-mail', data.obra.cliente_email || '—');
@@ -467,13 +480,13 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   }
 
   // PERIOD
-  sectionTitle('4. PERÍODO DO RELATÓRIO');
+  sec('PERÍODO DO RELATÓRIO');
   infoRow('Data Inicial', fmt(data.periodo.inicio));
   infoRow('Data Final', fmt(data.periodo.fim));
   y += 3;
 
   // =========== DEADLINE CONTROL (VISUAL) ===========
-  sectionTitle('5. CONTROLE DE PRAZO');
+  sec('CONTROLE DE PRAZO');
 
   // Visual status indicator
   checkPage(25);
@@ -546,7 +559,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   // =========== SERVICES (SIMPLIFIED) ===========
   if (data.atividades.length > 0) {
-    sectionTitle('6. DESCRIÇÃO DOS SERVIÇOS');
+    sec('DESCRIÇÃO DOS SERVIÇOS');
 
     // Group by day, simplified format
     const daysWithActivities = data.diarios
@@ -586,7 +599,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   // =========== TEAM (IMPROVED) ===========
   if (data.equipe.length > 0) {
-    sectionTitle('7. EQUIPE');
+    sec('EQUIPE');
 
     const diasComEquipe = data.diarios.map(d => ({
       data: d.data,
@@ -648,7 +661,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   // MATERIALS
   if (data.materiais.length > 0) {
-    sectionTitle('8. MATERIAIS UTILIZADOS');
+    sec('MATERIAIS UTILIZADOS');
     checkPage(20);
     autoTable(doc, {
       startY: y,
@@ -665,7 +678,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   // OCCURRENCES
   if (data.ocorrencias.length > 0) {
-    sectionTitle('9. OCORRÊNCIAS');
+    sec('OCORRÊNCIAS');
     checkPage(20);
     autoTable(doc, {
       startY: y,
@@ -680,10 +693,60 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     y = (doc as any).lastAutoTable.finalY + 8;
   }
 
+  // =========== PARALISAÇÕES ===========
+  {
+    const paralisacoes = data.paralisacoes || [];
+    checkPage(30);
+    sec('PARALISAÇÕES');
+    if (paralisacoes.length > 0) {
+      const totalDiasParados = paralisacoes.reduce((s, p) => s + (p.total_dias || 0), 0);
+      autoTable(doc, {
+        startY: y,
+        head: [['Motivo', 'Início', 'Término', 'Dias']],
+        body: paralisacoes.map(p => [
+          p.motivo || '—',
+          p.data_inicio ? fmt(p.data_inicio) : '—',
+          p.data_fim ? fmt(p.data_fim) : 'Em aberto',
+          String(p.total_dias ?? 0),
+        ]),
+        foot: [['TOTAL', '', '', `${totalDiasParados} dias`]],
+        margin: { left: MARGIN, right: MARGIN },
+        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: [BLUE[0], BLUE[1], BLUE[2]], textColor: 255 },
+        footStyles: { fillColor: [230, 234, 240], textColor: 0, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [245, 247, 250] },
+        columnStyles: { 1: { cellWidth: 26, halign: 'center' }, 2: { cellWidth: 26, halign: 'center' }, 3: { cellWidth: 18, halign: 'center' } },
+        theme: 'striped',
+      });
+      y = (doc as any).lastAutoTable.finalY + 6;
+      checkPage(12);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(100);
+      doc.text(
+        `Os ${totalDiasParados} dia(s) de paralisação compõem o total de dias parados apresentado no Controle de Prazo.`,
+        MARGIN, y, { maxWidth: contentW },
+      );
+      doc.setTextColor(0);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      y += 8;
+    } else {
+      checkPage(12);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(120);
+      doc.text('Não houve paralisações registradas no período.', MARGIN, y);
+      doc.setTextColor(0);
+      doc.setFont('helvetica', 'normal');
+      y += 8;
+    }
+  }
+
   // =========== CRONOGRAMA ===========
   if (data.cronograma.length > 0) {
     newPage();
-    sectionTitle('10. CRONOGRAMA DA OBRA');
+    sec('CRONOGRAMA DA OBRA');
 
     // Overall progress
     checkPage(12);
@@ -770,7 +833,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     }
   } else if (data.planejamentoConfigurado === false) {
     newPage();
-    sectionTitle('10. CRONOGRAMA DA OBRA');
+    sec('CRONOGRAMA DA OBRA');
     checkPage(20);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'italic');
@@ -785,7 +848,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   if (data.aditivos && data.aditivos.length > 0) {
     checkPage(30);
     y += 4;
-    sectionTitle('10.1 ADITIVOS DA OBRA');
+    subSec('ADITIVOS DA OBRA');
     autoTable(doc, {
       startY: y,
       head: [['Descrição', 'Dias Adicionais', 'Aprovação', 'Responsável']],
@@ -814,7 +877,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   // =========== PHOTO SECTION ===========
   if (data.imagens.length > 0) {
     newPage();
-    sectionTitle('11. REGISTRO FOTOGRÁFICO');
+    sec('REGISTRO FOTOGRÁFICO');
 
     const imgW = (contentW - 8) / 2;
     const imgH = imgW * 0.75;
@@ -863,7 +926,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   // =========== REVISION HISTORY (SIMPLIFIED) ===========
   if (data.versoes && data.versoes.length > 0) {
     checkPage(30);
-    sectionTitle('12. HISTÓRICO DE REVISÕES');
+    sec('HISTÓRICO DE REVISÕES');
 
     // Simplified format
     data.versoes.forEach(v => {
@@ -883,7 +946,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   // =========== SIGNATURES ===========
   newPage();
-  sectionTitle('13. ASSINATURAS');
+  sec('ASSINATURAS');
   y += 5;
 
   if (data.assinaturas.length > 0) {

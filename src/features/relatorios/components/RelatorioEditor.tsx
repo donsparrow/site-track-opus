@@ -20,6 +20,7 @@ import { aplicarIndicadoresCongelados } from '../indicadores';
 import IndicadoresPrazo from './IndicadoresPrazo';
 import ResumoTab from './ResumoTab';
 import EvolucaoTab from './EvolucaoTab';
+import RegistrosTab from './RegistrosTab';
 import AssinaturasTab from './AssinaturasTab';
 import HistoricoVersoes from './HistoricoVersoes';
 import AssinarDialog from './AssinarDialog';
@@ -172,6 +173,7 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
             <TabsList className="flex-wrap">
               <TabsTrigger value="resumo">Resumo</TabsTrigger>
               <TabsTrigger value="evolucao">Evolução Diária</TabsTrigger>
+              <TabsTrigger value="registros">Paralisações e Ocorrências</TabsTrigger>
               <TabsTrigger value="assinaturas">Assinaturas ({detail.assinaturas.length})</TabsTrigger>
               <TabsTrigger value="versoes"><History className="h-3 w-3 mr-1" />Histórico</TabsTrigger>
             </TabsList>
@@ -181,6 +183,9 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
             </TabsContent>
             <TabsContent value="evolucao">
               {carregando ? <RelatorioSkeleton rows={6} /> : <EvolucaoTab dados={dados} />}
+            </TabsContent>
+            <TabsContent value="registros">
+              {carregando ? <RelatorioSkeleton rows={6} /> : <RegistrosTab dados={dadosExibicao} />}
             </TabsContent>
             <TabsContent value="assinaturas">
               <AssinaturasTab assinaturas={detail.assinaturas} assinaturaUrls={detail.assinaturaUrls} />
