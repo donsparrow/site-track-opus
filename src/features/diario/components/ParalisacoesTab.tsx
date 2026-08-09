@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Pencil, Plus, Save, Trash2, X } from 'lucide-react';
-import { fmtData } from '../utils';
+import { fmtData, totalDiasParalisacao } from '../utils';
 import type { DiarioParalisacao } from '../types';
 
 interface Props {
@@ -42,7 +42,7 @@ export function ParalisacoesTab({ paralisacoes, canEdit, canEditDelete, onAdd, o
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Motivo</TableHead><TableHead>Início</TableHead><TableHead>Fim</TableHead><TableHead>Dias</TableHead>
+                <TableHead>Motivo</TableHead><TableHead>Início</TableHead><TableHead>Fim</TableHead><TableHead>Dias Úteis</TableHead>
                 {canEditDelete && <TableHead className="w-20" />}
               </TableRow>
             </TableHeader>
@@ -95,11 +95,15 @@ function InlineParalisacaoForm({ onSave, onCancel }: { onSave: (m: string, di: s
   const [m, setM] = useState('');
   const [di, setDi] = useState(new Date().toISOString().split('T')[0]);
   const [df, setDf] = useState('');
+  const total = di && df ? totalDiasParalisacao(di, df) : null;
   return (
-    <div className="flex gap-2 mb-3 p-2 bg-muted rounded flex-wrap">
+    <div className="flex gap-2 mb-3 p-2 bg-muted rounded flex-wrap items-center">
       <Input placeholder="Motivo" value={m} onChange={(e) => setM(e.target.value)} className="flex-1 min-w-[150px]" />
       <Input type="date" value={di} onChange={(e) => setDi(e.target.value)} className="w-36" />
       <Input type="date" value={df} onChange={(e) => setDf(e.target.value)} className="w-36" />
+      {total !== null && (
+        <span className="text-xs text-muted-foreground whitespace-nowrap">{total} dia(s) útil(eis)</span>
+      )}
       <Button size="sm" onClick={() => m && onSave(m, di, df)}>OK</Button>
       <Button size="sm" variant="ghost" onClick={onCancel}>✕</Button>
     </div>

@@ -1867,6 +1867,10 @@ export type Database = {
         Args: { _cnpj?: string; _nome: string }
         Returns: string
       }
+      dias_uteis_entre: {
+        Args: { _fim: string; _inicio: string }
+        Returns: number
+      }
       get_empresa_branding:
         | {
             Args: never

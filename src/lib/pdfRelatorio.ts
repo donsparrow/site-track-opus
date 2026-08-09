@@ -509,9 +509,9 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   const fmtDate = (d: string) => { try { return new Date(d + 'T00:00:00').toLocaleDateString('pt-BR'); } catch { return d; } };
   const prazoItems = [
     { label: 'Início Real', value: data.prazos.dataInicioReal ? fmtDate(data.prazos.dataInicioReal) : 'Não iniciada' },
-    { label: 'Prazo Contratual', value: `${data.prazos.contratual} dias` },
-    { label: 'Prazo Ajustado', value: `${data.prazos.ajustado} dias` },
-    { label: 'Saldo de Prazo', value: `${data.prazos.saldo} dias` },
+    { label: 'Prazo Contratual', value: `${data.prazos.contratual} dias úteis` },
+    { label: 'Prazo Ajustado', value: `${data.prazos.ajustado} dias úteis` },
+    { label: 'Saldo de Prazo', value: `${data.prazos.saldo} dias úteis` },
   ];
 
   prazoItems.forEach((item, i) => {
@@ -531,8 +531,8 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   // Second row
   const prazoItems2 = [
-    { label: 'Dias Parados', value: `${data.prazos.parados}` },
-    { label: 'Dias Trabalhados', value: `${data.prazos.trabalhados}` },
+    { label: 'Dias Úteis Parados', value: `${data.prazos.parados}` },
+    { label: 'Dias Úteis Trabalhados', value: `${data.prazos.trabalhados}` },
     { label: 'Prazo Consumido', value: `${data.prazos.percentualTempo}%`, highlight: true },
     { label: 'Progresso Físico', value: `${data.prazos.percentualExecutado}%`, highlight: true },
   ];
@@ -702,14 +702,14 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
       const totalDiasParados = paralisacoes.reduce((s, p) => s + (p.total_dias || 0), 0);
       autoTable(doc, {
         startY: y,
-        head: [['Motivo', 'Início', 'Término', 'Dias']],
+        head: [['Motivo', 'Início', 'Término', 'Dias Úteis']],
         body: paralisacoes.map(p => [
           p.motivo || '—',
           p.data_inicio ? fmt(p.data_inicio) : '—',
           p.data_fim ? fmt(p.data_fim) : 'Em aberto',
           String(p.total_dias ?? 0),
         ]),
-        foot: [['TOTAL', '', '', `${totalDiasParados} dias`]],
+        foot: [['TOTAL', '', '', `${totalDiasParados} dias úteis`]],
         margin: { left: MARGIN, right: MARGIN },
         styles: { fontSize: 9, cellPadding: 3 },
         headStyles: { fillColor: [BLUE[0], BLUE[1], BLUE[2]], textColor: 255 },
@@ -724,7 +724,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
       doc.setFont('helvetica', 'italic');
       doc.setTextColor(100);
       doc.text(
-        `Os ${totalDiasParados} dia(s) de paralisação compõem o total de dias parados apresentado no Controle de Prazo.`,
+        `Os ${totalDiasParados} dia(s) útil(eis) de paralisação compõem o total de dias parados apresentado no Controle de Prazo.`,
         MARGIN, y, { maxWidth: contentW },
       );
       doc.setTextColor(0);

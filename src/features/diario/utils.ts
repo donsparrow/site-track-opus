@@ -1,5 +1,6 @@
 import { Cloud, CloudRain, Sun } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { calcBusinessDays } from '@/lib/dias';
 
 /** Status derivado do percentual informado no diário. */
 export function percentualToStatus(p: number): string {
@@ -29,10 +30,10 @@ export function cronogramaStatus(percentual: number) {
   return percentual >= 100 ? 'concluido' : percentual > 0 ? 'em_andamento' : 'nao_iniciado';
 }
 
-/** Total de dias entre início e fim de uma paralisação (0 quando sem fim). */
+/** Total de dias úteis (seg–sex, inclusivo) entre início e fim (0 quando sem fim). */
 export function totalDiasParalisacao(inicio: string, fim?: string | null) {
   if (!fim) return 0;
-  return Math.ceil((new Date(fim).getTime() - new Date(inicio).getTime()) / 86400000);
+  return calcBusinessDays(inicio, fim);
 }
 
 export const fmtData = (data: string) => new Date(data + 'T00:00:00').toLocaleDateString('pt-BR');
