@@ -16,7 +16,8 @@ Novo arquivo `src/features/diario/servicoDisponibilidade.ts`:
 
 - `classificarServicos({ atividades, lancadasIds, selecionadoId, permitirRetrabalho })`
 - Estados: `disponivel` (`percentual_concluido < 100` e não lançado), `concluido` (`= 100`), `ja_lancado`.
-- O `selecionadoId` sempre volta como `disponivel` (regra de edição).
+- O `selecionadoId` permanece sempre selecionável (regra de edição), mas conserva o badge "100% concluído" quando for o caso.
+- `percentual_concluido` nulo, `undefined` ou não numérico é normalizado explicitamente para 0 via `Number.isFinite`, sem depender de coerção do JS.
 - Ordena: disponíveis primeiro na ordem original, depois indisponíveis.
 - Retorna também `totalDisponiveis` e `total` para o contador.
 
@@ -33,14 +34,24 @@ Novo `src/features/diario/components/SelecaoServico.tsx`:
 - `AtividadesTab` recebe as atividades já lançadas (já tem) e repassa os `cronograma_atividade_id` para o form.
 - `InlineAtividadeForm` e `AtividadeEditRow` passam a usar `SelecaoServico`; o edit row informa o `selecionadoId` para preservar o vínculo atual.
 
+### 4. Cache (estado atual verificado)
+
+`useDiarioMutations` já atende ao requisito: `adicionarAtividade` invalida `['diario', diarioId]` e `['cronograma-atividades', obraId]`; `excluirAtividade` invalida `['diario', diarioId]`. Como a lista de "já lançados" é derivada de `diario.diario_atividades` (a mesma query do detalhe), ela se atualiza imediatamente após inserir ou excluir. Único ajuste: invalidar também o cronograma na exclusão, por consistência.
+
+### 5. Testes
+
+Novo `src/features/diario/servicoDisponibilidade.test.ts` (Vitest) cobrindo: disponível, concluído (100%), já lançado no diário, `selecionadoId` concluído em edição (selecionável + badge), `percentual_concluido` nulo/inválido tratado como 0, e lista totalmente indisponível.
+
 ## Fora de escopo
 
-Checkbox de retrabalho (Etapa 5) não será implementado — a função pura já aceita a flag `permitirRetrabalho` para ativação futura sem refatoração.
+Checkbox de retrabalho (Etapa 5 do pedido) não será implementado — a função pura já aceita a flag `permitirRetrabalho` para ativação futura sem refatoração.
 
 ## Arquivos
 
 - Novo: `src/features/diario/servicoDisponibilidade.ts`
+- Novo: `src/features/diario/servicoDisponibilidade.test.ts`
 - Novo: `src/features/diario/components/SelecaoServico.tsx`
 - Alterado: `src/features/diario/components/AtividadesTab.tsx`
+- Alterado: `src/features/diario/hooks/useDiarioMutations.ts`
 
 Nenhum outro módulo, nenhum registro histórico e nenhuma regra de salvamento são tocados.
