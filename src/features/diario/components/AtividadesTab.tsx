@@ -179,8 +179,9 @@ function AtividadeEditRow({ atividade, cronogramaAtividades, lancadasIds, onCanc
   );
 }
 
-function InlineAtividadeForm({ cronogramaAtividades, onSave, onCancel }: {
+function InlineAtividadeForm({ cronogramaAtividades, lancadasIds, onSave, onCancel }: {
   cronogramaAtividades: CronogramaAtividadeOption[];
+  lancadasIds: string[];
   onSave: (descricao: string, percentual: number, cronId: string | null) => void;
   onCancel: () => void;
 }) {
