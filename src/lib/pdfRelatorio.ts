@@ -509,9 +509,9 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   const fmtDate = (d: string) => { try { return new Date(d + 'T00:00:00').toLocaleDateString('pt-BR'); } catch { return d; } };
   const prazoItems = [
     { label: 'Início Real', value: data.prazos.dataInicioReal ? fmtDate(data.prazos.dataInicioReal) : 'Não iniciada' },
-    { label: 'Prazo Contratual', value: `${data.prazos.contratual} dias` },
-    { label: 'Prazo Ajustado', value: `${data.prazos.ajustado} dias` },
-    { label: 'Saldo de Prazo', value: `${data.prazos.saldo} dias` },
+    { label: 'Prazo Contratual', value: `${data.prazos.contratual} dias úteis` },
+    { label: 'Prazo Ajustado', value: `${data.prazos.ajustado} dias úteis` },
+    { label: 'Saldo de Prazo', value: `${data.prazos.saldo} dias úteis` },
   ];
 
   prazoItems.forEach((item, i) => {
