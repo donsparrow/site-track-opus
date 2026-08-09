@@ -282,6 +282,7 @@ export function useDiarioMutations({ obraId, diarioId }: Options) {
     onSuccess: () => {
       toast.success('Atividade removida!');
       invalidateDetail();
+      invalidateCronograma();
     },
     onError: fail,
   });
