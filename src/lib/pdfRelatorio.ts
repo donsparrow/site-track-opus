@@ -709,7 +709,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
           p.data_fim ? fmt(p.data_fim) : 'Em aberto',
           String(p.total_dias ?? 0),
         ]),
-        foot: [['TOTAL', '', '', `${totalDiasParados} dias`]],
+        foot: [['TOTAL', '', '', `${totalDiasParados} dias úteis`]],
         margin: { left: MARGIN, right: MARGIN },
         styles: { fontSize: 9, cellPadding: 3 },
         headStyles: { fillColor: [BLUE[0], BLUE[1], BLUE[2]], textColor: 255 },
