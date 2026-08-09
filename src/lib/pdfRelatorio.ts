@@ -702,7 +702,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
       const totalDiasParados = paralisacoes.reduce((s, p) => s + (p.total_dias || 0), 0);
       autoTable(doc, {
         startY: y,
-        head: [['Motivo', 'Início', 'Término', 'Dias']],
+        head: [['Motivo', 'Início', 'Término', 'Dias Úteis']],
         body: paralisacoes.map(p => [
           p.motivo || '—',
           p.data_inicio ? fmt(p.data_inicio) : '—',
