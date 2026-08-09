@@ -12,8 +12,8 @@ Passar `paralisacoes: dados.paralisacoes` para `gerarRelatorioPDF`, logo após `
 
 - Interface `RelatorioPDFData`: novo campo opcional
   `paralisacoes?: { motivo, data_inicio, data_fim | null, total_dias | null, diario_id? }[]`.
-- Numeração automática: após `sectionTitle`, criar contadores `sec` / `subSec` e trocar todos os títulos hardcoded (1..13 e 10.1) por títulos numerados dinamicamente, mantendo exatamente a ordem atual. Seções condicionais que não renderizam não consomem número.
-- Nova seção **PARALISAÇÕES**, entre Ocorrências e Cronograma:
+- Numeração automática: declarar `let secCount = 0` no escopo da função geradora, junto de `sectionTitle`, e criar `sec()` / `subSec()`. Trocar TODOS os títulos hardcoded (1..13 e 10.1) por títulos numerados dinamicamente, mantendo exatamente a ordem atual. Seções condicionais que não renderizam não consomem número. Inclui os **dois** `'10. CRONOGRAMA DA OBRA'` (ramos `if` / `else if` mutuamente exclusivos, ~linhas 686 e 773): ambos viram `sec('CRONOGRAMA DA OBRA')`. Nenhum título hardcoded permanece.
+- Nova seção **PARALISAÇÕES**, após Ocorrências e **antes do `newPage()`** que abre o bloco de Cronograma, com `checkPage(30)` antes de `sec('PARALISAÇÕES')`:
   - `autoTable` com colunas Motivo / Início / Término / Dias, datas em pt-BR e "Em aberto" quando `data_fim` é nulo;
   - linha de rodapé com o total de dias parados;
   - nota em itálico amarrando o total ao item de Controle de Prazo;
@@ -37,9 +37,12 @@ Nova aba `value="registros"` — "Paralisações e Ocorrências" — entre "Evol
 - `SnapshotDados`: novo campo `paralisacoes_count`.
 - `buildSnapshot`: preenche com `dados.paralisacoes.length`.
 - `detectChanges`: compara o campo e gera a linha `Paralisações: X → Y`, para que alterações em paralisações produzam nova revisão.
+- `detectChanges` — fallback **na comparação**, não só na mensagem:
+  `if ((prev.paralisacoes_count ?? curr.paralisacoes_count) !== curr.paralisacoes_count)`.
+  Sem isso, snapshots antigos (sem o campo) gerariam a revisão falsa "Paralisações: 0 → 0" em todo relatório existente.
+  Aplicar o **mesmo padrão** aos 5 contadores já existentes — `imagens_count`, `atividades_count`, `equipe_count`, `materiais_count`, `ocorrencias_count` — que hoje têm o mesmo defeito latente.
 
 ## Observações técnicas
 
 - `dadosVazios` em `utils.ts` já contém `paralisacoes: []`, então nenhum ajuste extra é necessário nos estados vazios.
-- Snapshots antigos não têm `paralisacoes_count`; `detectChanges` já trata campos ausentes com fallback `0`, evitando revisões falsas.
 - Nenhuma alteração no layout de cabeçalho/rodapé (`pdfShared.ts`).
