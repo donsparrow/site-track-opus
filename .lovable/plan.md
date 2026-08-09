@@ -28,6 +28,8 @@ Hoje `totalDiasParalisacao` conta dias corridos e é exclusiva no fim (paralisa�
 - `src/features/relatorios/components/RegistrosTab.tsx`: coluna "Dias" → "Dias Úteis" (card "Dias Parados" mantém o texto atual).
 - `src/features/diario/components/ParalisacoesTab.tsx`: coluna "Dias" → "Dias Úteis".
 
+## 5. Formulário inline de paralisação
+
 Em `ParalisacoesTab.tsx`, quando início e fim estiverem preenchidos, exibir o total calculado em tempo real (`calcBusinessDays`) ao lado dos campos.
 
 ## Fora de escopo
