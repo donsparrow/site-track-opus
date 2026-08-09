@@ -16,7 +16,8 @@ Novo arquivo `src/features/diario/servicoDisponibilidade.ts`:
 
 - `classificarServicos({ atividades, lancadasIds, selecionadoId, permitirRetrabalho })`
 - Estados: `disponivel` (`percentual_concluido < 100` e não lançado), `concluido` (`= 100`), `ja_lancado`.
-- O `selecionadoId` sempre volta como `disponivel` (regra de edição).
+- O `selecionadoId` permanece sempre selecionável (regra de edição), mas conserva o badge "100% concluído" quando for o caso.
+- `percentual_concluido` nulo, `undefined` ou não numérico é normalizado explicitamente para 0 via `Number.isFinite`, sem depender de coerção do JS.
 - Ordena: disponíveis primeiro na ordem original, depois indisponíveis.
 - Retorna também `totalDisponiveis` e `total` para o contador.
 
