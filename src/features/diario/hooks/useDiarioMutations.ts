@@ -42,7 +42,10 @@ export function useDiarioMutations({ obraId, diarioId }: Options) {
         .from('diario_equipe')
         .select('nome_funcionario, funcao, horas_trabalhadas')
         .eq('diario_id', lastId),
-      supabase.from('diario_atividades').select('descricao, status, percentual').eq('diario_id', lastId),
+      supabase
+        .from('diario_atividades')
+        .select('descricao, status, percentual, cronograma_atividade_id')
+        .eq('diario_id', lastId),
     ]);
 
     if (eqRes.data?.length) {
