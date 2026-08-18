@@ -147,6 +147,7 @@ export function useDiarioMutations({ obraId, diarioId }: Options) {
     onSuccess: (dias) => {
       toast.success(`Prazo contratual atualizado: ${dias} dias`);
       qc.invalidateQueries({ queryKey: ['obras-diario'] });
+      qc.invalidateQueries({ queryKey: ['obra-prazo-cronograma', obraId] });
     },
     onError: fail,
   });
