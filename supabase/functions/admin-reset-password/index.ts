@@ -90,8 +90,15 @@ serve(async (req) => {
     });
 
     if (error) {
-      return new Response(JSON.stringify({ error: error.message }), {
-        status: 500,
+      const msg = error.message?.toLowerCase() || "";
+      const isWeakPassword = msg.includes("weak") || msg.includes("easy to guess");
+      const message = isWeakPassword
+        ? "Senha muito fraca. Use pelo menos 8 caracteres com letras maiúsculas, minúsculas, números e símbolos."
+        : error.message;
+      const status = isWeakPassword ? 400 : 500;
+
+      return new Response(JSON.stringify({ error: message }), {
+        status,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
