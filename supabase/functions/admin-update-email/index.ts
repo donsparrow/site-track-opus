@@ -19,7 +19,7 @@ serve(async (req) => {
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return json({ error: "Não autorizado" });
+    if (!authHeader) return json({ error: "Não autorizado: header ausente" });
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -29,7 +29,7 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user: caller } } = await callerClient.auth.getUser();
-    if (!caller) return json({ error: "Não autorizado" });
+    if (!caller) return json({ error: "Não autorizado: token inválido" });
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const { data: roleData } = await adminClient
@@ -39,7 +39,7 @@ serve(async (req) => {
       .single();
 
     if (!roleData || !["admin", "super_admin"].includes(roleData.role)) {
-      return json({ error: "Apenas administradores podem alterar e-mails" });
+      return json({ error: "Não autorizado: role insuficiente (" + (roleData?.role || "nenhum") + ")" });
     }
 
     const { user_id, new_email } = await req.json();
