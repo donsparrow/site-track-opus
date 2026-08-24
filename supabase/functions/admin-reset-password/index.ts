@@ -45,7 +45,7 @@ serve(async (req) => {
       .eq("user_id", caller.id)
       .single();
 
-    if (!roleData || roleData.role !== "admin") {
+    if (!roleData || !["admin", "super_admin"].includes(roleData.role)) {
       return new Response(JSON.stringify({ error: "Apenas administradores podem redefinir senhas" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
