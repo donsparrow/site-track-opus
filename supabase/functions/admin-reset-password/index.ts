@@ -68,18 +68,20 @@ serve(async (req) => {
       });
     }
 
-    // Empresa isolation: caller and target must belong to the same empresa
-    const { data: callerProfile } = await adminClient
-      .from("profiles").select("empresa_id").eq("user_id", caller.id).maybeSingle();
-    const { data: targetProfile } = await adminClient
-      .from("profiles").select("empresa_id").eq("user_id", user_id).maybeSingle();
+    // Empresa isolation: skip for super_admin, enforce for admin
+    if (roleData.role !== "super_admin") {
+      const { data: callerProfile } = await adminClient
+        .from("profiles").select("empresa_id").eq("user_id", caller.id).maybeSingle();
+      const { data: targetProfile } = await adminClient
+        .from("profiles").select("empresa_id").eq("user_id", user_id).maybeSingle();
 
-    if (!callerProfile?.empresa_id || !targetProfile?.empresa_id ||
-        callerProfile.empresa_id !== targetProfile.empresa_id) {
-      return new Response(JSON.stringify({ error: "Usuário não pertence à sua empresa" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      if (!callerProfile?.empresa_id || !targetProfile?.empresa_id ||
+          callerProfile.empresa_id !== targetProfile.empresa_id) {
+        return new Response(JSON.stringify({ error: "Usuário não pertence à sua empresa" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Update password using admin client
