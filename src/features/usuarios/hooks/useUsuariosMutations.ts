@@ -169,8 +169,8 @@ export function useUsuariosMutations() {
       const response = await supabase.functions.invoke('admin-delete-user', {
         body: { user_id: userId },
       });
-      if (response.error) throw new Error(response.error.message);
       if (response.data?.error) throw new Error(response.data.error);
+      if (response.error) throw new Error(response.error.message);
     },
     onSuccess: () => {
       toast.success('Usuário excluído com sucesso!');
