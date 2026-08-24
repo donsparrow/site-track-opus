@@ -166,11 +166,11 @@ export function useUsuariosMutations() {
 
   const excluirUsuario = useMutation({
     mutationFn: async (userId: string) => {
-      const response = await supabase.functions.invoke('admin-delete-user', {
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
         body: { user_id: userId },
       });
-      if (response.data?.error) throw new Error(response.data.error);
-      if (response.error) throw new Error(response.error.message);
+      if (data?.error) throw new Error(data.error);
+      if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       toast.success('Usuário excluído com sucesso!');
@@ -181,11 +181,11 @@ export function useUsuariosMutations() {
 
   const resetSenha = useMutation({
     mutationFn: async ({ userId, novaSenha }: ResetSenhaInput) => {
-      const response = await supabase.functions.invoke('admin-reset-password', {
+      const { data, error } = await supabase.functions.invoke('admin-reset-password', {
         body: { user_id: userId, new_password: novaSenha },
       });
-      if (response.data?.error) throw new Error(response.data.error);
-      if (response.error) throw new Error(response.error.message);
+      if (data?.error) throw new Error(data.error);
+      if (error) throw new Error(error.message);
     },
     onSuccess: () => {
       toast.success('Senha redefinida com sucesso!');
