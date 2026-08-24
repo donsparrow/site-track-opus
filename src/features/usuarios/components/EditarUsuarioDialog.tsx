@@ -12,6 +12,7 @@ import { getDefaultPermsForRole, isFullAccessRole } from '../constants';
 import { useUsuariosMutations } from '../hooks/useUsuariosMutations';
 import { usePermissoesUsuario } from '../hooks/usePermissoesUsuario';
 import { podeAlterarRole } from '../utils';
+import { useAuth } from '@/contexts/AuthContext';
 import type { ObraOption, PermissaoState, UsuarioMerged } from '../types';
 
 interface Props {
@@ -25,6 +26,8 @@ interface Props {
 
 export default function EditarUsuarioDialog({ usuario, users, open, onOpenChange, obras, isSuperAdmin }: Props) {
   const { editarUsuario } = useUsuariosMutations();
+  const { user: currentUser } = useAuth();
+  const isEditingSelf = !!usuario && usuario.user_id === currentUser?.id;
 
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
@@ -84,7 +87,22 @@ export default function EditarUsuarioDialog({ usuario, users, open, onOpenChange
           </div>
           <div>
             <Label>E-mail</Label>
-            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email@exemplo.com" />
+            <Input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="email@exemplo.com"
+              disabled={isEditingSelf}
+            />
+            {isEditingSelf ? (
+              <p className="text-xs text-muted-foreground mt-1">
+                Não é possível alterar o próprio e-mail por aqui.
+              </p>
+            ) : email !== (usuario?.email || '') ? (
+              <p className="text-xs text-amber-600 mt-1">
+                ⚠ O e-mail de login do usuário também será atualizado.
+              </p>
+            ) : null}
           </div>
           <div>
             <Label>Tipo de Usuário</Label>
