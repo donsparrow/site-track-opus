@@ -95,7 +95,7 @@ serve(async (req) => {
       const message = isWeakPassword
         ? "Senha muito fraca. Use pelo menos 8 caracteres com letras maiúsculas, minúsculas, números e símbolos."
         : error.message;
-      const status = isWeakPassword ? 400 : 500;
+      const status = isWeakPassword ? 200 : 500;
 
       return new Response(JSON.stringify({ error: message }), {
         status,
