@@ -1,12 +1,17 @@
+import { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { ArrowUp, ArrowDown, Pencil, Trash2 } from 'lucide-react';
+import { ArrowUp, ArrowDown, ArrowUpDown, Pencil, Trash2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
+import { cn } from '@/lib/utils';
 import type { Atividade } from '../types';
 import { statusColors, statusLabels } from '../types';
+
+type SortColumn = 'ordem' | 'nome_atividade' | 'peso' | 'data_inicio' | 'data_fim' | 'percentual_concluido' | 'status';
+type SortDirection = 'asc' | 'desc';
 
 interface Props {
   atividades: Atividade[];
@@ -19,9 +24,76 @@ interface Props {
 }
 
 export default function AtividadesCard({ atividades, totalPeso, pesoValido, canEdit, onMove, onEdit, onDelete }: Props) {
+  const [sortColumn, setSortColumn] = useState<SortColumn>('ordem');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+  const isDefaultOrder = sortColumn === 'ordem' && sortDirection === 'asc';
+
+  const sortedAtividades = useMemo(() => {
+    const sorted = [...atividades].sort((a, b) => {
+      let valA: any, valB: any;
+      switch (sortColumn) {
+        case 'ordem': valA = a.ordem; valB = b.ordem; break;
+        case 'nome_atividade': valA = (a.nome_atividade || '').toLowerCase(); valB = (b.nome_atividade || '').toLowerCase(); break;
+        case 'peso': valA = a.peso || 0; valB = b.peso || 0; break;
+        case 'data_inicio': valA = a.data_inicio || ''; valB = b.data_inicio || ''; break;
+        case 'data_fim': valA = a.data_fim || ''; valB = b.data_fim || ''; break;
+        case 'percentual_concluido': valA = a.percentual_concluido; valB = b.percentual_concluido; break;
+        case 'status': valA = a.status; valB = b.status; break;
+        default: valA = a.ordem; valB = b.ordem;
+      }
+      if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+      if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [atividades, sortColumn, sortDirection]);
+
+  const handleSort = (column: SortColumn) => {
+    if (sortColumn === column) {
+      if (sortDirection === 'asc') {
+        setSortDirection('desc');
+      } else {
+        setSortColumn('ordem');
+        setSortDirection('asc');
+      }
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const SortableHeader = ({ column, label, className }: { column: SortColumn; label: string; className?: string }) => (
+    <TableHead
+      className={cn('cursor-pointer hover:bg-muted/50 select-none', className)}
+      onClick={() => handleSort(column)}
+    >
+      <div className="flex items-center gap-1">
+        {label}
+        {sortColumn === column ? (
+          sortDirection === 'asc' ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />
+        ) : (
+          <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground/40" />
+        )}
+      </div>
+    </TableHead>
+  );
+
   return (
     <Card>
-      <CardHeader><CardTitle>Atividades</CardTitle></CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>Atividades</CardTitle>
+        {!isDefaultOrder && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => { setSortColumn('ordem'); setSortDirection('asc'); }}
+          >
+            <ArrowUpDown className="h-4 w-4 mr-1" />
+            Voltar à ordem padrão
+          </Button>
+        )}
+      </CardHeader>
       <CardContent>
         {atividades.length === 0 ? (
           <p className="text-muted-foreground text-sm text-center py-8">Nenhuma atividade cadastrada. Clique em "Atividade" para começar.</p>
@@ -30,20 +102,20 @@ export default function AtividadesCard({ atividades, totalPeso, pesoValido, canE
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-12">#</TableHead>
-                  <TableHead>Atividade</TableHead>
-                  <TableHead className="w-20">Peso</TableHead>
-                  <TableHead>Início</TableHead>
-                  <TableHead>Fim</TableHead>
-                  <TableHead>Progresso</TableHead>
-                  <TableHead>Status</TableHead>
+                  <SortableHeader column="ordem" label="#" className="w-12" />
+                  <SortableHeader column="nome_atividade" label="Atividade" />
+                  <SortableHeader column="peso" label="Peso" className="w-20" />
+                  <SortableHeader column="data_inicio" label="Início" />
+                  <SortableHeader column="data_fim" label="Fim" />
+                  <SortableHeader column="percentual_concluido" label="Progresso" />
+                  <SortableHeader column="status" label="Status" />
                   {canEdit && <TableHead className="w-32">Ações</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {atividades.map((a, i) => (
+                {sortedAtividades.map((a, i) => (
                   <TableRow key={a.id}>
-                    <TableCell className="font-mono text-xs">{i + 1}</TableCell>
+                    <TableCell className="font-mono text-xs">{isDefaultOrder ? i + 1 : a.ordem}</TableCell>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         <span>{a.nome_atividade}</span>
@@ -67,8 +139,24 @@ export default function AtividadesCard({ atividades, totalPeso, pesoValido, canE
                     {canEdit && (
                       <TableCell>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => onMove(a.id, 'up')} disabled={i === 0}><ArrowUp className="h-3 w-3" /></Button>
-                          <Button variant="ghost" size="icon" onClick={() => onMove(a.id, 'down')} disabled={i === atividades.length - 1}><ArrowDown className="h-3 w-3" /></Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onMove(a.id, 'up')}
+                            disabled={i === 0 || !isDefaultOrder}
+                            title={isDefaultOrder ? undefined : 'Volte à ordem padrão para reordenar'}
+                          >
+                            <ArrowUp className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => onMove(a.id, 'down')}
+                            disabled={i === sortedAtividades.length - 1 || !isDefaultOrder}
+                            title={isDefaultOrder ? undefined : 'Volte à ordem padrão para reordenar'}
+                          >
+                            <ArrowDown className="h-3 w-3" />
+                          </Button>
                           <Button variant="ghost" size="icon" onClick={() => onEdit(a)}><Pencil className="h-3 w-3" /></Button>
                           <Button variant="ghost" size="icon" onClick={() => onDelete(a.id)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
                         </div>
