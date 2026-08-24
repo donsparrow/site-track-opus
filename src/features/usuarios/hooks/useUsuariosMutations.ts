@@ -116,6 +116,22 @@ export function useUsuariosMutations() {
 
   const editarUsuario = useMutation({
     mutationFn: async ({ userId, nome, email, tipo, obraIds, perms }: EditarUsuarioInput) => {
+      const { data: currentProfile } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      const emailChanged = (currentProfile?.email ?? '') !== email;
+
+      if (emailChanged) {
+        const { data, error } = await supabase.functions.invoke('admin-update-email', {
+          body: { user_id: userId, new_email: email },
+        });
+        if (data?.error) throw new Error(data.error);
+        if (error) throw new Error(error.message);
+      }
+
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ nome, email })
