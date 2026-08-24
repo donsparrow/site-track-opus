@@ -56,14 +56,14 @@ serve(async (req) => {
 
     if (!user_id || !new_password) {
       return new Response(JSON.stringify({ error: "user_id e new_password são obrigatórios" }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     if (new_password.length < 6) {
       return new Response(JSON.stringify({ error: "Senha deve ter no mínimo 6 caracteres" }), {
-        status: 400,
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -78,7 +78,7 @@ serve(async (req) => {
       if (!callerProfile?.empresa_id || !targetProfile?.empresa_id ||
           callerProfile.empresa_id !== targetProfile.empresa_id) {
         return new Response(JSON.stringify({ error: "Usuário não pertence à sua empresa" }), {
-          status: 403,
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
