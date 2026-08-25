@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -60,12 +60,7 @@ export default function FotosManager({ tipo, titulo, fotos, editable, uploading,
                   <div className="h-40 w-full bg-muted" />
                 )}
                 <div className="p-2 space-y-2">
-                  <Input
-                    value={foto.legenda || ''}
-                    placeholder={`Legenda da foto ${i + 1}`}
-                    disabled={!editable}
-                    onChange={(e) => onLegenda(foto.id, e.target.value)}
-                  />
+                  <FotoLegendaInput foto={foto} index={i} editable={editable} onLegenda={onLegenda} />
                   {editable && (
                     <div className="flex items-center gap-1">
                       <Button size="sm" variant="ghost" disabled={i === 0} onClick={() => onMover(foto.id, -1)}><ArrowUp className="h-4 w-4" /></Button>
