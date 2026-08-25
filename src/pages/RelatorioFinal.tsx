@@ -75,7 +75,7 @@ export default function RelatorioFinalPage() {
     if (!relatorio || !obra) return;
     setGerando(true);
     try {
-      const empresa = await fetchEmpresaConfigOrBranding<EmpresaPDFData>();
+      const empresa = (await fetchEmpresaConfigOrBranding()) as EmpresaPDFData | null;
       await gerarPdfRelatorioFinal({ relatorio, fotos, obraNome: obra.nome, empresa });
     } catch (e) {
       toast.error(`Erro ao gerar PDF: ${e instanceof Error ? e.message : 'desconhecido'}`);
