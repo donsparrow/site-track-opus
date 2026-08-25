@@ -1593,6 +1593,44 @@ export type Database = {
           },
         ]
       }
+      relatorio_final_fotos: {
+        Row: {
+          created_at: string
+          foto_url: string
+          id: string
+          legenda: string | null
+          ordem: number
+          relatorio_id: string
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          foto_url: string
+          id?: string
+          legenda?: string | null
+          ordem?: number
+          relatorio_id: string
+          tipo?: string
+        }
+        Update: {
+          created_at?: string
+          foto_url?: string
+          id?: string
+          legenda?: string | null
+          ordem?: number
+          relatorio_id?: string
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "relatorio_final_fotos_relatorio_id_fkey"
+            columns: ["relatorio_id"]
+            isOneToOne: false
+            referencedRelation: "relatorios_finais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       relatorio_logs: {
         Row: {
           acao: string
@@ -1764,6 +1802,129 @@ export type Database = {
             foreignKeyName: "relatorios_obra_id_fkey"
             columns: ["obra_id"]
             isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      relatorios_finais: {
+        Row: {
+          assinatura_empresa_cargo: string | null
+          assinatura_empresa_data: string | null
+          assinatura_empresa_nome: string | null
+          assinatura_empresa_url: string | null
+          assinatura_sindico_cargo: string | null
+          assinatura_sindico_data: string | null
+          assinatura_sindico_nome: string | null
+          assinatura_sindico_url: string | null
+          cliente_cpf_cnpj: string | null
+          cliente_nome: string | null
+          conteudo_aditivo: string | null
+          conteudo_conclusao: string | null
+          conteudo_garantia: string | null
+          conteudo_introducao: string | null
+          created_at: string
+          data_conclusao: string | null
+          data_fim_prevista: string | null
+          data_inicio: string | null
+          empresa_id: string | null
+          endereco: string | null
+          foto_capa_url: string | null
+          id: string
+          link_externo: string | null
+          link_externo_label: string | null
+          obra_id: string
+          responsavel: string | null
+          status: string
+          tipo_relatorio: string
+          titulo_aditivo: string | null
+          titulo_conclusao: string | null
+          titulo_garantia: string | null
+          titulo_introducao: string | null
+          updated_at: string
+        }
+        Insert: {
+          assinatura_empresa_cargo?: string | null
+          assinatura_empresa_data?: string | null
+          assinatura_empresa_nome?: string | null
+          assinatura_empresa_url?: string | null
+          assinatura_sindico_cargo?: string | null
+          assinatura_sindico_data?: string | null
+          assinatura_sindico_nome?: string | null
+          assinatura_sindico_url?: string | null
+          cliente_cpf_cnpj?: string | null
+          cliente_nome?: string | null
+          conteudo_aditivo?: string | null
+          conteudo_conclusao?: string | null
+          conteudo_garantia?: string | null
+          conteudo_introducao?: string | null
+          created_at?: string
+          data_conclusao?: string | null
+          data_fim_prevista?: string | null
+          data_inicio?: string | null
+          empresa_id?: string | null
+          endereco?: string | null
+          foto_capa_url?: string | null
+          id?: string
+          link_externo?: string | null
+          link_externo_label?: string | null
+          obra_id: string
+          responsavel?: string | null
+          status?: string
+          tipo_relatorio?: string
+          titulo_aditivo?: string | null
+          titulo_conclusao?: string | null
+          titulo_garantia?: string | null
+          titulo_introducao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assinatura_empresa_cargo?: string | null
+          assinatura_empresa_data?: string | null
+          assinatura_empresa_nome?: string | null
+          assinatura_empresa_url?: string | null
+          assinatura_sindico_cargo?: string | null
+          assinatura_sindico_data?: string | null
+          assinatura_sindico_nome?: string | null
+          assinatura_sindico_url?: string | null
+          cliente_cpf_cnpj?: string | null
+          cliente_nome?: string | null
+          conteudo_aditivo?: string | null
+          conteudo_conclusao?: string | null
+          conteudo_garantia?: string | null
+          conteudo_introducao?: string | null
+          created_at?: string
+          data_conclusao?: string | null
+          data_fim_prevista?: string | null
+          data_inicio?: string | null
+          empresa_id?: string | null
+          endereco?: string | null
+          foto_capa_url?: string | null
+          id?: string
+          link_externo?: string | null
+          link_externo_label?: string | null
+          obra_id?: string
+          responsavel?: string | null
+          status?: string
+          tipo_relatorio?: string
+          titulo_aditivo?: string | null
+          titulo_conclusao?: string | null
+          titulo_garantia?: string | null
+          titulo_introducao?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "relatorios_finais_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "relatorios_finais_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: true
             referencedRelation: "obras"
             referencedColumns: ["id"]
           },
