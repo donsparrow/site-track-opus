@@ -23,6 +23,16 @@ export function htmlToParagraphs(html?: string | null): string[] {
     .filter(Boolean);
 }
 
+/** Mede as dimensões naturais de um dataURL (para manter proporção na capa). */
+function measureImage(dataUrl: string): Promise<{ w: number; h: number } | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve({ w: img.naturalWidth || 0, h: img.naturalHeight || 0 });
+    img.onerror = () => resolve(null);
+    img.src = dataUrl;
+  });
+}
+
 async function loadStorageImage(path?: string | null): Promise<string | null> {
   if (!path) return null;
   const url = await resolveAnexoUrl(path);
@@ -46,13 +56,17 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
 
   // ---------- CAPA ----------
   const capa = await loadStorageImage(relatorio.foto_capa_url);
+
+  // Barra superior
   doc.setFillColor(BLUE[0], BLUE[1], BLUE[2]);
-  doc.rect(0, 0, pageW, 70, 'F');
+  doc.rect(0, 0, pageW, 45, 'F');
+  doc.setFillColor(70, 110, 160);
+  doc.rect(0, 45, pageW, 1.5, 'F');
 
   if (helpers.logoDataUrl) {
     try {
-      const boxW = 50;
-      const boxH = 30;
+      const boxW = 45;
+      const boxH = 28;
       const ratio = helpers.logoNatW && helpers.logoNatH ? helpers.logoNatW / helpers.logoNatH : boxW / boxH;
       let drawW = boxW;
       let drawH = boxW / ratio;
@@ -60,28 +74,36 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
         drawH = boxH;
         drawW = boxH * ratio;
       }
-      doc.addImage(helpers.logoDataUrl, 'PNG', MARGIN + 5, 10, drawW, drawH, undefined, 'FAST');
+      doc.addImage(helpers.logoDataUrl, 'PNG', MARGIN + 2, 8, drawW, drawH, undefined, 'FAST');
     } catch { /* ignore */ }
   }
 
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(22);
-  doc.text('RELATÓRIO FINAL DE OBRA', pageW - MARGIN, 46, { align: 'right' });
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.text(obraNome, pageW - MARGIN, 56, { align: 'right' });
+  doc.setFontSize(20);
+  doc.text('RELATÓRIO FINAL DE OBRA', pageW - MARGIN, 24, { align: 'right' });
+  doc.setFontSize(14);
+  doc.setTextColor(220, 225, 235);
+  doc.text(doc.splitTextToSize(obraNome, contentW - 50) as string[], pageW - MARGIN, 34, { align: 'right' });
 
-  let y = 82;
+  let y = 54;
   if (capa) {
     try {
-      doc.addImage(capa, 'PNG', MARGIN, y, contentW, 95, undefined, 'FAST');
-      y += 103;
+      const dims = await measureImage(capa);
+      const ratio = dims ? dims.w / dims.h : 4 / 3;
+      const imgH = Math.min(115, contentW / (ratio || 4 / 3));
+      doc.setDrawColor(180);
+      doc.rect(MARGIN - 0.5, y - 0.5, contentW + 1, imgH + 1);
+      doc.addImage(capa, 'PNG', MARGIN, y, contentW, imgH, undefined, 'FAST');
+      y += imgH + 8;
     } catch { /* ignore */ }
   }
 
-  doc.setTextColor(30, 30, 30);
-  doc.setFontSize(11);
+  // Faixa de dados
+  const BOX_H = 60;
+  doc.setFillColor(240, 242, 245);
+  doc.roundedRect(MARGIN, y, contentW, BOX_H, 2, 2, 'F');
+
   const info: [string, string][] = [
     ['Cliente', relatorio.cliente_nome || '—'],
     ['CPF/CNPJ', relatorio.cliente_cpf_cnpj || '—'],
@@ -90,13 +112,36 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
     ['Início', fmtDate(relatorio.data_inicio)],
     ['Conclusão', fmtDate(relatorio.data_conclusao || relatorio.data_fim_prevista)],
   ];
+  let ly = y + 10;
+  doc.setFontSize(10);
   info.forEach(([label, value]) => {
     doc.setFont('helvetica', 'bold');
-    doc.text(`${label}:`, MARGIN, y);
+    doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
+    doc.text(`${label}:`, MARGIN + 5, ly);
     doc.setFont('helvetica', 'normal');
-    doc.text(doc.splitTextToSize(value, contentW - 40) as string[], MARGIN + 34, y);
-    y += 8;
+    doc.setTextColor(30, 30, 30);
+    const lines = doc.splitTextToSize(value, contentW - 45) as string[];
+    doc.text(lines[0] || '', MARGIN + 33, ly);
+    ly += 8;
   });
+  y += BOX_H + 8;
+
+  // Barra inferior
+  doc.setFillColor(70, 110, 160);
+  doc.rect(0, pageH - 19.5, pageW, 1.5, 'F');
+  doc.setFillColor(BLUE[0], BLUE[1], BLUE[2]);
+  doc.rect(0, pageH - 18, pageW, 18, 'F');
+  const rodapeCapa = [empresa?.site, empresa?.instagram]
+    .map((v) => (v || '').trim())
+    .filter(Boolean)
+    .join(' | ');
+  if (rodapeCapa) {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(255, 255, 255);
+    doc.text(rodapeCapa, pageW / 2, pageH - 8, { align: 'center' });
+  }
+  doc.setTextColor(30, 30, 30);
 
   // ---------- SEÇÕES ----------
   const secoes = [
@@ -247,7 +292,12 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
     });
   }
 
-  helpers.addAllFooters();
+  // Rodapé padrão a partir da página 2 (a capa tem barra própria).
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 2; i <= totalPages; i++) {
+    doc.setPage(i);
+    helpers.addFooter(i);
+  }
   const safe = obraNome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w-]+/g, '-');
   downloadPdf(doc, `relatorio-final-${safe}.pdf`);
 }

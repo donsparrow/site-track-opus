@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,39 @@ interface Props {
   onLegenda: (id: string, legenda: string) => void;
   onMover: (id: string, direcao: -1 | 1) => void;
   onExcluir: (foto: RelatorioFinalFoto) => void;
+}
+
+function FotoLegendaInput({
+  foto,
+  index,
+  editable,
+  onLegenda,
+}: {
+  foto: RelatorioFinalFoto;
+  index: number;
+  editable: boolean;
+  onLegenda: (id: string, legenda: string) => void;
+}) {
+  const [local, setLocal] = useState(foto.legenda || '');
+  const focused = useRef(false);
+
+  useEffect(() => {
+    if (!focused.current) setLocal(foto.legenda || '');
+  }, [foto.legenda]);
+
+  return (
+    <Input
+      value={local}
+      placeholder={`Legenda da foto ${index + 1}`}
+      disabled={!editable}
+      onChange={(e) => setLocal(e.target.value)}
+      onFocus={() => { focused.current = true; }}
+      onBlur={() => {
+        focused.current = false;
+        if (local !== (foto.legenda || '')) onLegenda(foto.id, local);
+      }}
+    />
+  );
 }
 
 export default function FotosManager({ tipo, titulo, fotos, editable, uploading, onUpload, onLegenda, onMover, onExcluir }: Props) {
@@ -60,12 +93,7 @@ export default function FotosManager({ tipo, titulo, fotos, editable, uploading,
                   <div className="h-40 w-full bg-muted" />
                 )}
                 <div className="p-2 space-y-2">
-                  <Input
-                    value={foto.legenda || ''}
-                    placeholder={`Legenda da foto ${i + 1}`}
-                    disabled={!editable}
-                    onChange={(e) => onLegenda(foto.id, e.target.value)}
-                  />
+                  <FotoLegendaInput foto={foto} index={i} editable={editable} onLegenda={onLegenda} />
                   {editable && (
                     <div className="flex items-center gap-1">
                       <Button size="sm" variant="ghost" disabled={i === 0} onClick={() => onMover(foto.id, -1)}><ArrowUp className="h-4 w-4" /></Button>
