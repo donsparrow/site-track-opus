@@ -37,6 +37,7 @@ export default function RichTextEditor({ value, onChange, editable = true, minHe
       TextStyle,
       Color,
       Highlight.configure({ multicolor: true }),
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
     ],
     content: value || '',
     editorProps: {
