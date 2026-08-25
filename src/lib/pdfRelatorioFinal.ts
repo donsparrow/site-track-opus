@@ -23,6 +23,16 @@ export function htmlToParagraphs(html?: string | null): string[] {
     .filter(Boolean);
 }
 
+/** Mede as dimensões naturais de um dataURL (para manter proporção na capa). */
+function measureImage(dataUrl: string): Promise<{ w: number; h: number } | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve({ w: img.naturalWidth || 0, h: img.naturalHeight || 0 });
+    img.onerror = () => resolve(null);
+    img.src = dataUrl;
+  });
+}
+
 async function loadStorageImage(path?: string | null): Promise<string | null> {
   if (!path) return null;
   const url = await resolveAnexoUrl(path);
