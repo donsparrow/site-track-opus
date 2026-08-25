@@ -108,7 +108,18 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
 
   const newPage = () => {
     doc.addPage();
-    return helpers.addHeader() + 6;
+    let ny = helpers.addHeader();
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(120, 120, 120);
+    doc.text(
+      `Relatório Final de Obra — Engenheiro Responsável: ${relatorio.responsavel || '—'}`,
+      MARGIN,
+      ny,
+    );
+    doc.setTextColor(30, 30, 30);
+    ny += 6;
+    return ny + 6;
   };
 
   if (secoes.length) {
