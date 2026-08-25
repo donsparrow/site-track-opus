@@ -50,15 +50,26 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
   doc.rect(0, 0, pageW, 70, 'F');
 
   if (helpers.logoDataUrl) {
-    try { doc.addImage(helpers.logoDataUrl, 'PNG', MARGIN, 14, 40, 24, undefined, 'FAST'); } catch { /* ignore */ }
+    try {
+      const boxW = 50;
+      const boxH = 30;
+      const ratio = helpers.logoNatW && helpers.logoNatH ? helpers.logoNatW / helpers.logoNatH : boxW / boxH;
+      let drawW = boxW;
+      let drawH = boxW / ratio;
+      if (drawH > boxH) {
+        drawH = boxH;
+        drawW = boxH * ratio;
+      }
+      doc.addImage(helpers.logoDataUrl, 'PNG', MARGIN + 5, 10, drawW, drawH, undefined, 'FAST');
+    } catch { /* ignore */ }
   }
 
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(22);
   doc.text('RELATÓRIO FINAL DE OBRA', pageW - MARGIN, 46, { align: 'right' });
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
   doc.text(obraNome, pageW - MARGIN, 56, { align: 'right' });
 
   let y = 82;
