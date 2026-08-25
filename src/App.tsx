@@ -15,6 +15,7 @@ const Dashboard = lazyWithReload(() => import("./pages/Dashboard"));
 const ObraDetail = lazyWithReload(() => import("./pages/ObraDetail"));
 const Financeiro = lazyWithReload(() => import("./pages/Financeiro"));
 const Relatorios = lazyWithReload(() => import("./pages/Relatorios"));
+const RelatorioFinal = lazyWithReload(() => import("./pages/RelatorioFinal"));
 const DiarioObra = lazyWithReload(() => import("./pages/DiarioObra"));
 const Configuracoes = lazyWithReload(() => import("./pages/Configuracoes"));
 const Cronograma = lazyWithReload(() => import("./pages/Cronograma"));
@@ -57,6 +58,7 @@ const App = () => (
                 <Route path="/financeiro" element={<ProtectedRoute modulo="financeiro"><Financeiro /></ProtectedRoute>} />
                 <Route path="/diario" element={<ProtectedRoute modulo="diario_obra"><DiarioObra /></ProtectedRoute>} />
                 <Route path="/relatorios" element={<ProtectedRoute modulo="relatorios"><Relatorios /></ProtectedRoute>} />
+                <Route path="/relatorio-final" element={<ProtectedRoute modulo="relatorio_final"><RelatorioFinal /></ProtectedRoute>} />
                 <Route path="/configuracoes" element={<ProtectedRoute modulo="configuracoes"><Configuracoes /></ProtectedRoute>} />
                 <Route path="/cronograma" element={<ProtectedRoute modulo="cronograma"><Cronograma /></ProtectedRoute>} />
                 <Route path="/clientes" element={<ProtectedRoute modulo="clientes"><Clientes /></ProtectedRoute>} />
