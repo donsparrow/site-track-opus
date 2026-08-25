@@ -50,15 +50,26 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
   doc.rect(0, 0, pageW, 70, 'F');
 
   if (helpers.logoDataUrl) {
-    try { doc.addImage(helpers.logoDataUrl, 'PNG', MARGIN, 14, 40, 24, undefined, 'FAST'); } catch { /* ignore */ }
+    try {
+      const boxW = 50;
+      const boxH = 30;
+      const ratio = helpers.logoNatW && helpers.logoNatH ? helpers.logoNatW / helpers.logoNatH : boxW / boxH;
+      let drawW = boxW;
+      let drawH = boxW / ratio;
+      if (drawH > boxH) {
+        drawH = boxH;
+        drawW = boxH * ratio;
+      }
+      doc.addImage(helpers.logoDataUrl, 'PNG', MARGIN + 5, 10, drawW, drawH, undefined, 'FAST');
+    } catch { /* ignore */ }
   }
 
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(22);
   doc.text('RELATÓRIO FINAL DE OBRA', pageW - MARGIN, 46, { align: 'right' });
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
   doc.text(obraNome, pageW - MARGIN, 56, { align: 'right' });
 
   let y = 82;
@@ -97,7 +108,18 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
 
   const newPage = () => {
     doc.addPage();
-    return helpers.addHeader() + 6;
+    let ny = helpers.addHeader();
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(120, 120, 120);
+    doc.text(
+      `Relatório Final de Obra — Engenheiro Responsável: ${relatorio.responsavel || '—'}`,
+      MARGIN,
+      ny,
+    );
+    doc.setTextColor(30, 30, 30);
+    ny += 6;
+    return ny + 6;
   };
 
   if (secoes.length) {
@@ -124,6 +146,26 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
         y += 2;
       }
       y += 6;
+    }
+
+    if (relatorio.link_externo) {
+      y += 8;
+      if (y > pageH - 30) y = newPage();
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10.5);
+      doc.setTextColor(30, 30, 30);
+      doc.text(relatorio.link_externo_label || 'Link de acesso', MARGIN, y);
+      y += 6;
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(49, 130, 206);
+      const linkLines = doc.splitTextToSize(relatorio.link_externo, contentW) as string[];
+      for (const line of linkLines) {
+        if (y > pageH - 25) y = newPage();
+        doc.text(line, MARGIN, y);
+        y += 5.5;
+      }
+      doc.setTextColor(30, 30, 30);
+      doc.setFont('helvetica', 'normal');
     }
   }
 

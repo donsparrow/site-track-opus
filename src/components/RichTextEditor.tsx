@@ -6,11 +6,17 @@ import Link from '@tiptap/extension-link';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
+import TextAlign from '@tiptap/extension-text-align';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Bold, Italic, Underline as UnderlineIcon, Heading2, Heading3,
   List, ListOrdered, Link as LinkIcon,
+  AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter,
 } from 'lucide-react';
+
+const TEXT_COLORS = ['#000000', '#e53e3e', '#3182ce', '#38a169', '#dd6b20', '#805ad5', '#d53f8c', '#718096'];
+const HIGHLIGHT_COLORS = ['#fefcbf', '#c6f6d5', '#bee3f8', '#fed7e2', '#feebc8', '#e9d8fd'];
 
 interface Props {
   value: string | null | undefined;
@@ -31,6 +37,7 @@ export default function RichTextEditor({ value, onChange, editable = true, minHe
       TextStyle,
       Color,
       Highlight.configure({ multicolor: true }),
+      TextAlign.configure({ types: ['heading', 'paragraph'] }),
     ],
     content: value || '',
     editorProps: {
@@ -86,6 +93,54 @@ export default function RichTextEditor({ value, onChange, editable = true, minHe
           >
             <LinkIcon className="h-4 w-4" />
           </Btn>
+          <div className="w-px bg-border mx-1" />
+          <Btn onClick={() => editor.chain().focus().setTextAlign('left').run()} active={editor.isActive({ textAlign: 'left' })} title="Alinhar à esquerda"><AlignLeft className="h-4 w-4" /></Btn>
+          <Btn onClick={() => editor.chain().focus().setTextAlign('center').run()} active={editor.isActive({ textAlign: 'center' })} title="Centralizar"><AlignCenter className="h-4 w-4" /></Btn>
+          <Btn onClick={() => editor.chain().focus().setTextAlign('right').run()} active={editor.isActive({ textAlign: 'right' })} title="Alinhar à direita"><AlignRight className="h-4 w-4" /></Btn>
+          <Btn onClick={() => editor.chain().focus().setTextAlign('justify').run()} active={editor.isActive({ textAlign: 'justify' })} title="Justificar"><AlignJustify className="h-4 w-4" /></Btn>
+          <div className="w-px bg-border mx-1" />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button type="button" variant="outline" size="sm" className="h-8 w-8 p-0" title="Cor do texto">
+                <Palette className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2">
+              <div className="grid grid-cols-4 gap-1">
+                {TEXT_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    title={c}
+                    className="h-6 w-6 rounded border border-border"
+                    style={{ backgroundColor: c }}
+                    onClick={() => editor.chain().focus().setColor(c).run()}
+                  />
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button type="button" variant="outline" size="sm" className="h-8 w-8 p-0" title="Cor de destaque">
+                <Highlighter className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2">
+              <div className="grid grid-cols-3 gap-1">
+                {HIGHLIGHT_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    title={c}
+                    className="h-6 w-6 rounded border border-border"
+                    style={{ backgroundColor: c }}
+                    onClick={() => editor.chain().focus().toggleHighlight({ color: c }).run()}
+                  />
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       )}
       <EditorContent editor={editor} />
