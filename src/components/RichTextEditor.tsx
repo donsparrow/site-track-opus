@@ -93,6 +93,54 @@ export default function RichTextEditor({ value, onChange, editable = true, minHe
           >
             <LinkIcon className="h-4 w-4" />
           </Btn>
+          <div className="w-px bg-border mx-1" />
+          <Btn onClick={() => editor.chain().focus().setTextAlign('left').run()} active={editor.isActive({ textAlign: 'left' })} title="Alinhar à esquerda"><AlignLeft className="h-4 w-4" /></Btn>
+          <Btn onClick={() => editor.chain().focus().setTextAlign('center').run()} active={editor.isActive({ textAlign: 'center' })} title="Centralizar"><AlignCenter className="h-4 w-4" /></Btn>
+          <Btn onClick={() => editor.chain().focus().setTextAlign('right').run()} active={editor.isActive({ textAlign: 'right' })} title="Alinhar à direita"><AlignRight className="h-4 w-4" /></Btn>
+          <Btn onClick={() => editor.chain().focus().setTextAlign('justify').run()} active={editor.isActive({ textAlign: 'justify' })} title="Justificar"><AlignJustify className="h-4 w-4" /></Btn>
+          <div className="w-px bg-border mx-1" />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button type="button" variant="outline" size="sm" className="h-8 w-8 p-0" title="Cor do texto">
+                <Palette className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2">
+              <div className="grid grid-cols-4 gap-1">
+                {TEXT_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    title={c}
+                    className="h-6 w-6 rounded border border-border"
+                    style={{ backgroundColor: c }}
+                    onClick={() => editor.chain().focus().setColor(c).run()}
+                  />
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button type="button" variant="outline" size="sm" className="h-8 w-8 p-0" title="Cor de destaque">
+                <Highlighter className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2">
+              <div className="grid grid-cols-3 gap-1">
+                {HIGHLIGHT_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    title={c}
+                    className="h-6 w-6 rounded border border-border"
+                    style={{ backgroundColor: c }}
+                    onClick={() => editor.chain().focus().toggleHighlight({ color: c }).run()}
+                  />
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       )}
       <EditorContent editor={editor} />
