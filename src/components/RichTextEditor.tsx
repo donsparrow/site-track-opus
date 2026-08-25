@@ -6,11 +6,17 @@ import Link from '@tiptap/extension-link';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import Highlight from '@tiptap/extension-highlight';
+import TextAlign from '@tiptap/extension-text-align';
 import { Button } from '@/components/ui/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Bold, Italic, Underline as UnderlineIcon, Heading2, Heading3,
   List, ListOrdered, Link as LinkIcon,
+  AlignLeft, AlignCenter, AlignRight, AlignJustify, Palette, Highlighter,
 } from 'lucide-react';
+
+const TEXT_COLORS = ['#000000', '#e53e3e', '#3182ce', '#38a169', '#dd6b20', '#805ad5', '#d53f8c', '#718096'];
+const HIGHLIGHT_COLORS = ['#fefcbf', '#c6f6d5', '#bee3f8', '#fed7e2', '#feebc8', '#e9d8fd'];
 
 interface Props {
   value: string | null | undefined;
