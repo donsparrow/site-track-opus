@@ -292,7 +292,12 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
     });
   }
 
-  helpers.addAllFooters();
+  // Rodapé padrão a partir da página 2 (a capa tem barra própria).
+  const totalPages = doc.getNumberOfPages();
+  for (let i = 2; i <= totalPages; i++) {
+    doc.setPage(i);
+    helpers.addFooter(i);
+  }
   const safe = obraNome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w-]+/g, '-');
   downloadPdf(doc, `relatorio-final-${safe}.pdf`);
 }
