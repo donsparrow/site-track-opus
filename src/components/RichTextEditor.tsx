@@ -50,7 +50,7 @@ export default function RichTextEditor({ value, onChange, editable = true, minHe
   useEffect(() => {
     if (!editor) return;
     const incoming = value || '';
-    if (incoming !== editor.getHTML()) editor.commands.setContent(incoming, false);
+    if (incoming !== editor.getHTML()) editor.commands.setContent(incoming);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, editor]);
 
