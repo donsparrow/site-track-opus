@@ -18,6 +18,39 @@ interface Props {
   onExcluir: (foto: RelatorioFinalFoto) => void;
 }
 
+function FotoLegendaInput({
+  foto,
+  index,
+  editable,
+  onLegenda,
+}: {
+  foto: RelatorioFinalFoto;
+  index: number;
+  editable: boolean;
+  onLegenda: (id: string, legenda: string) => void;
+}) {
+  const [local, setLocal] = useState(foto.legenda || '');
+  const focused = useRef(false);
+
+  useEffect(() => {
+    if (!focused.current) setLocal(foto.legenda || '');
+  }, [foto.legenda]);
+
+  return (
+    <Input
+      value={local}
+      placeholder={`Legenda da foto ${index + 1}`}
+      disabled={!editable}
+      onChange={(e) => setLocal(e.target.value)}
+      onFocus={() => { focused.current = true; }}
+      onBlur={() => {
+        focused.current = false;
+        if (local !== (foto.legenda || '')) onLegenda(foto.id, local);
+      }}
+    />
+  );
+}
+
 export default function FotosManager({ tipo, titulo, fotos, editable, uploading, onUpload, onLegenda, onMover, onExcluir }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const lista = fotos.filter((f) => f.tipo === tipo);
