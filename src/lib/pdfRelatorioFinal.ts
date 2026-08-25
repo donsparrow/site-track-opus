@@ -147,6 +147,26 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
       }
       y += 6;
     }
+
+    if (relatorio.link_externo) {
+      y += 8;
+      if (y > pageH - 30) y = newPage();
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10.5);
+      doc.setTextColor(30, 30, 30);
+      doc.text(relatorio.link_externo_label || 'Link de acesso', MARGIN, y);
+      y += 6;
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(49, 130, 206);
+      const linkLines = doc.splitTextToSize(relatorio.link_externo, contentW) as string[];
+      for (const line of linkLines) {
+        if (y > pageH - 25) y = newPage();
+        doc.text(line, MARGIN, y);
+        y += 5.5;
+      }
+      doc.setTextColor(30, 30, 30);
+      doc.setFont('helvetica', 'normal');
+    }
   }
 
   // ---------- FOTOS ----------
