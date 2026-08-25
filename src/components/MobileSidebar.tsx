@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions, ROUTE_MODULE_MAP } from '@/hooks/usePermissions';
 import {
   Building2, LayoutDashboard, Wallet, FileText,
-  Users, LogOut, HardHat, UserCircle, ClipboardList, Settings, FolderOpen, CalendarRange, Menu, X, Wrench
+  Users, LogOut, HardHat, UserCircle, ClipboardList, Settings, FolderOpen, CalendarRange, Menu, X, Wrench, FileCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -20,6 +20,7 @@ const navItemsAll = [
   { to: '/diario', label: 'Diário de Obra', icon: ClipboardList, roles: ['admin', 'trabalhador', 'super_admin'] },
   { to: '/cronograma', label: 'Cronograma', icon: CalendarRange, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
   { to: '/relatorios', label: 'Relatórios', icon: FileText, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
+  { to: '/relatorio-final', label: 'Relatório Final', icon: FileCheck, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
   { to: '/documentacao', label: 'Documentação', icon: FolderOpen, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
   { to: '/ferramentas', label: 'Ferramentas', icon: Wrench, roles: ['admin', 'trabalhador', 'super_admin'] },
   { to: '/calendario', label: 'Calendário', icon: CalendarRange, roles: ['admin', 'trabalhador', 'cliente', 'sindico', 'super_admin'] },
