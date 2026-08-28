@@ -44,7 +44,15 @@ export default function RelatorioFinalPage() {
   const criarRelatorio = async () => {
     if (!obra) return;
     setCriando(true);
+    const { data: comTemplate } = await supabase
+      .from('relatorios_finais')
+      .select('template_capa_url')
+      .not('template_capa_url', 'is', null)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
     const { error } = await supabase.from('relatorios_finais').insert({
+      template_capa_url: comTemplate?.template_capa_url ?? null,
       obra_id: obra.id,
       empresa_id: empresaId,
       cliente_nome: obra.clientes?.nome ?? null,
