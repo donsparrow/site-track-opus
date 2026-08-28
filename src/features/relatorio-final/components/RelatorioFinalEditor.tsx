@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
 import { ImagePlus, Save, X } from 'lucide-react';
 import RichTextEditor from '@/components/RichTextEditor';
 import { useSignedUrls } from '../hooks/useSignedUrls';
@@ -138,6 +139,25 @@ export default function RelatorioFinalEditor({ relatorio, editable, saving, uplo
                 </>
               )}
             </div>
+            {editable && relatorio.foto_capa_url && (
+              <div className="mt-3 max-w-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>Escala da foto na capa</Label>
+                  <span className="text-xs text-muted-foreground">{form.foto_capa_escala ?? 100}%</span>
+                </div>
+                <Slider
+                  min={30}
+                  max={150}
+                  step={5}
+                  value={[form.foto_capa_escala ?? 100]}
+                  onValueChange={([v]) => setForm((f) => ({ ...f, foto_capa_escala: v }))}
+                  onValueCommit={([v]) => onSalvar({ ...form, foto_capa_escala: v })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  100% = preencher área. Menor = foto mais distante. Maior = foto mais próxima.
+                </p>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
