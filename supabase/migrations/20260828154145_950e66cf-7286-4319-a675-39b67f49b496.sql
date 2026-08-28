@@ -1,0 +1,1 @@
+ALTER TABLE public.relatorios_finais ADD COLUMN IF NOT EXISTS foto_capa_escala INTEGER NOT NULL DEFAULT 100;

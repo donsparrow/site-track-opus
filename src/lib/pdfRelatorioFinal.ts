@@ -72,13 +72,19 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
     doc.setTextColor(30, 30, 30);
     doc.text('RELATÓRIO DE VISTORIA PÓS-OBRA', pageW / 2, 15, { align: 'center' });
 
-    // Foto de capa — área central, lógica "cover" (crop para preencher)
+    // Foto de capa com escala controlável e borda azul
     if (capa) {
       try {
         const targetX = 15;
         const targetY = 40;
         const targetW = 180;
         const targetH = 145;
+        const escala = ((relatorio as RelatorioFinal & { foto_capa_escala?: number }).foto_capa_escala ?? 100) / 100;
+
+        // Dimensões da foto na página baseadas na escala
+        // escala 1.0 (100%) = cover (preencher toda a área)
+        // escala < 1.0 = foto menor, centralizada, com espaço ao redor
+        // escala > 1.0 = mais zoom/crop
 
         // Obter dimensões reais da imagem
         const imgDims = await new Promise<{ w: number; h: number }>((resolve) => {
@@ -88,41 +94,86 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
           img.src = capa;
         });
 
-        // Recortar via canvas para preencher a área alvo (object-fit: cover)
-        const targetRatio = targetW / targetH;
         const imgRatio = imgDims.w / imgDims.h;
-        let srcX = 0, srcY = 0, srcW = imgDims.w, srcH = imgDims.h;
+        const targetRatio = targetW / targetH;
 
-        if (imgRatio > targetRatio) {
-          // Imagem mais larga: cortar laterais
-          srcW = Math.round(imgDims.h * targetRatio);
-          srcX = Math.round((imgDims.w - srcW) / 2);
+        let drawW: number, drawH: number;
+
+        if (escala >= 1) {
+          // Cover mode: preencher + zoom extra
+          // Recortar imagem via canvas
+          let srcW = imgDims.w, srcH = imgDims.h;
+          // Aplicar zoom: quanto maior a escala, mais recortamos
+          const zoomFactor = escala;
+          srcW = Math.round(imgDims.w / zoomFactor);
+          srcH = Math.round(imgDims.h / zoomFactor);
+
+          // Ajustar para manter o targetRatio
+          const croppedRatio = srcW / srcH;
+          if (croppedRatio > targetRatio) {
+            srcW = Math.round(srcH * targetRatio);
+          } else {
+            srcH = Math.round(srcW / targetRatio);
+          }
+
+          const srcX = Math.round((imgDims.w - srcW) / 2);
+          const srcY = Math.round((imgDims.h - srcH) / 2);
+
+          const canvas = document.createElement('canvas');
+          canvas.width = srcW;
+          canvas.height = srcH;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            const tmpImg = new Image();
+            tmpImg.crossOrigin = 'Anonymous';
+            const croppedDataUrl = await new Promise<string>((resolve, reject) => {
+              tmpImg.onload = () => {
+                ctx.drawImage(tmpImg, srcX, srcY, srcW, srcH, 0, 0, srcW, srcH);
+                resolve(canvas.toDataURL('image/jpeg', 0.92));
+              };
+              tmpImg.onerror = () => reject(new Error('crop failed'));
+              tmpImg.src = capa;
+            });
+            doc.addImage(croppedDataUrl, 'JPEG', targetX, targetY, targetW, targetH, undefined, 'FAST');
+          }
+          drawW = targetW;
+          drawH = targetH;
         } else {
-          // Imagem mais alta: cortar topo/base
-          srcH = Math.round(imgDims.w / targetRatio);
-          srcY = Math.round((imgDims.h - srcH) / 2);
+          // Contain mode: foto inteira, menor que a área
+          const scaledW = targetW * escala;
+          const scaledH = targetH * escala;
+
+          // Fit dentro da área reduzida mantendo proporção
+          if (imgRatio > targetRatio) {
+            drawW = scaledW;
+            drawH = scaledW / imgRatio;
+          } else {
+            drawH = scaledH;
+            drawW = scaledH * imgRatio;
+          }
+
+          // Centralizar dentro da área alvo
+          const drawX = targetX + (targetW - drawW) / 2;
+          const drawY = targetY + (targetH - drawH) / 2;
+
+          doc.addImage(capa, 'JPEG', drawX, drawY, drawW, drawH, undefined, 'FAST');
         }
 
-        const canvas = document.createElement('canvas');
-        canvas.width = srcW;
-        canvas.height = srcH;
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          const tmpImg = new Image();
-          tmpImg.crossOrigin = 'Anonymous';
-          const croppedDataUrl = await new Promise<string>((resolve, reject) => {
-            tmpImg.onload = () => {
-              ctx.drawImage(tmpImg, srcX, srcY, srcW, srcH, 0, 0, srcW, srcH);
-              resolve(canvas.toDataURL('image/jpeg', 0.92));
-            };
-            tmpImg.onerror = () => reject(new Error('crop failed'));
-            tmpImg.src = capa;
-          });
-          doc.addImage(croppedDataUrl, 'JPEG', targetX, targetY, targetW, targetH, undefined, 'FAST');
-        }
+        // Borda azul ao redor da área da foto
+        doc.setDrawColor(30, 58, 95);
+        doc.setLineWidth(1);
+        doc.rect(targetX - 1, targetY - 1, targetW + 2, targetH + 2);
+        doc.setLineWidth(0.2); // resetar
+
       } catch {
         // Fallback sem crop
-        try { doc.addImage(capa, 'JPEG', 15, 40, 180, 145, undefined, 'FAST'); } catch { /* ignore */ }
+        try {
+          doc.addImage(capa, 'JPEG', 15, 40, 180, 145, undefined, 'FAST');
+          doc.setDrawColor(30, 58, 95);
+          doc.setLineWidth(1);
+          doc.rect(14, 39, 182, 147);
+          doc.setLineWidth(0.2);
+        } catch { /* ignore */ }
       }
     }
 
