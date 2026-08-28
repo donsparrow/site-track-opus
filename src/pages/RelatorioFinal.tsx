@@ -17,11 +17,13 @@ import { useRelatorioFinalMutations } from '@/features/relatorio-final/hooks/use
 import RelatorioFinalEditor from '@/features/relatorio-final/components/RelatorioFinalEditor';
 import FotosManager from '@/features/relatorio-final/components/FotosManager';
 import AssinaturasCard from '@/features/relatorio-final/components/AssinaturasCard';
+import RelatorioFinalViewer from '@/features/relatorio-final/components/RelatorioFinalViewer';
 import type { EmpresaPDFData } from '@/lib/pdfShared';
 import type { RelatorioFinalFoto, TipoFoto } from '@/features/relatorio-final/types';
 
 export default function RelatorioFinalPage() {
-  const { empresaId } = useAuth();
+  const { empresaId, role } = useAuth();
+  const isSindico = role === 'sindico';
   const { pode } = usePermissions();
   const qc = useQueryClient();
   const [obraId, setObraId] = useState<string | null>(null);
@@ -129,6 +131,14 @@ export default function RelatorioFinalPage() {
             )}
           </CardContent>
         </Card>
+      ) : isSindico ? (
+        <RelatorioFinalViewer
+          relatorio={relatorio}
+          fotos={fotos}
+          obraNome={obra.nome}
+          onAssinar={(tipo, values) => m.assinar.mutate({ tipo, ...values })}
+          assinarPending={m.assinar.isPending}
+        />
       ) : (
         <div className="space-y-6">
           <RelatorioFinalEditor
