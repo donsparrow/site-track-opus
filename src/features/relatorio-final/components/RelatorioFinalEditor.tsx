@@ -14,14 +14,18 @@ interface Props {
   editable: boolean;
   saving: boolean;
   uploadingCapa: boolean;
+  uploadingTemplate?: boolean;
   onSalvar: (values: Partial<RelatorioFinal>) => void;
   onUploadCapa: (file: File) => void;
+  onUploadTemplate: (file: File) => void;
+  onRemoverTemplate: () => void;
 }
 
-export default function RelatorioFinalEditor({ relatorio, editable, saving, uploadingCapa, onSalvar, onUploadCapa }: Props) {
+export default function RelatorioFinalEditor({ relatorio, editable, saving, uploadingCapa, uploadingTemplate, onSalvar, onUploadCapa, onUploadTemplate, onRemoverTemplate }: Props) {
   const [form, setForm] = useState<Partial<RelatorioFinal>>(relatorio);
   const capaInput = useRef<HTMLInputElement>(null);
-  const urls = useSignedUrls([relatorio.foto_capa_url]);
+  const templateInput = useRef<HTMLInputElement>(null);
+  const urls = useSignedUrls([relatorio.foto_capa_url, relatorio.template_capa_url]);
 
   useEffect(() => { setForm(relatorio); }, [relatorio]);
 
