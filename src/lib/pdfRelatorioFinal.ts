@@ -58,6 +58,7 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
   const capa = await loadStorageImage(relatorio.foto_capa_url);
   const templateCapa = await loadStorageImage(relatorio.template_capa_url);
   const hasTemplate = !!templateCapa;
+  let y = 54;
 
   if (templateCapa) {
     // Fundo: template cobrindo toda a página A4
