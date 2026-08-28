@@ -344,7 +344,9 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
 
   // Rodapé padrão a partir da página 2 (a capa tem barra própria).
   const totalPages = doc.getNumberOfPages();
-  for (let i = hasTemplate ? 2 : 1; i <= totalPages; i++) {
+  // A capa (com template ou com a barra própria do fallback) nunca recebe o rodapé padrão.
+  void hasTemplate;
+  for (let i = 2; i <= totalPages; i++) {
     doc.setPage(i);
     helpers.addFooter(i);
   }
