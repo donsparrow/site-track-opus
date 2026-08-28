@@ -1,0 +1,1 @@
+ALTER TABLE public.relatorios_finais ADD COLUMN IF NOT EXISTS data_vistoria DATE;
