@@ -71,25 +71,61 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
     doc.setTextColor(30, 30, 30);
     doc.text('RELATÓRIO DE VISTORIA PÓS-OBRA', pageW / 2, 18, { align: 'center' });
 
+    // Foto de capa: preencher toda a área do chevron (lógica "cover"/crop)
     if (capa) {
       try {
-        // Área do chevron azul mapeada: y=53mm a y=155mm, largura 118-153mm
-        // Foto retangular preenchendo a maior área possível dentro do chevron
-        const fotoMaxW = 145;
-        const fotoMaxH = 93;
-        const dims = await measureImage(capa);
-        const ratio = dims && dims.h ? dims.w / dims.h : fotoMaxW / fotoMaxH;
-        let drawW = fotoMaxW;
-        let drawH = fotoMaxW / ratio;
-        if (drawH > fotoMaxH) {
-          drawH = fotoMaxH;
-          drawW = fotoMaxH * ratio;
+        const targetX = 5;
+        const targetY = 57;
+        const targetW = 140;
+        const targetH = 93;
+
+        // Obter dimensões reais da imagem
+        const imgDims = await new Promise<{ w: number; h: number }>((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+          img.onerror = () => resolve({ w: targetW, h: targetH });
+          img.src = capa;
+        });
+
+        // Recortar a imagem via canvas para preencher a área alvo (object-fit: cover)
+        const targetRatio = targetW / targetH;
+        const imgRatio = imgDims.w / imgDims.h;
+
+        let srcX = 0, srcY = 0, srcW = imgDims.w, srcH = imgDims.h;
+
+        if (imgRatio > targetRatio) {
+          // Imagem mais larga que o alvo: cortar nas laterais
+          srcW = Math.round(imgDims.h * targetRatio);
+          srcX = Math.round((imgDims.w - srcW) / 2);
+        } else {
+          // Imagem mais alta que o alvo: cortar em cima e embaixo
+          srcH = Math.round(imgDims.w / targetRatio);
+          srcY = Math.round((imgDims.h - srcH) / 2);
         }
-        // Centralizar a foto dentro da área do chevron
-        const fotoX = 5 + (fotoMaxW - drawW) / 2;
-        const fotoY = 57 + (fotoMaxH - drawH) / 2;
-        doc.addImage(capa, 'JPEG', fotoX, fotoY, drawW, drawH, undefined, 'FAST');
-      } catch { /* ignore */ }
+
+        // Criar canvas com a região recortada
+        const canvas = document.createElement('canvas');
+        canvas.width = srcW;
+        canvas.height = srcH;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          const tmpImg = new Image();
+          tmpImg.crossOrigin = 'Anonymous';
+          const croppedDataUrl = await new Promise<string>((resolve, reject) => {
+            tmpImg.onload = () => {
+              ctx.drawImage(tmpImg, srcX, srcY, srcW, srcH, 0, 0, srcW, srcH);
+              resolve(canvas.toDataURL('image/jpeg', 0.92));
+            };
+            tmpImg.onerror = () => reject(new Error('crop failed'));
+            tmpImg.src = capa;
+          });
+
+          doc.addImage(croppedDataUrl, 'JPEG', targetX, targetY, targetW, targetH, undefined, 'FAST');
+        }
+      } catch {
+        // Fallback: colocar sem crop
+        try { doc.addImage(capa, 'JPEG', 5, 57, 140, 93, undefined, 'FAST'); } catch { /* ignore */ }
+      }
     }
 
     doc.setFont('helvetica', 'bold');
