@@ -128,8 +128,11 @@ export default function RelatorioFinalPage() {
             editable={canEdit}
             saving={m.salvar.isPending}
             uploadingCapa={m.uploadCapa.isPending}
+            uploadingTemplate={m.uploadTemplateCapa.isPending}
             onSalvar={(values) => m.salvar.mutate(values)}
             onUploadCapa={(file) => m.uploadCapa.mutate(file)}
+            onUploadTemplate={(file) => m.uploadTemplateCapa.mutate(file)}
+            onRemoverTemplate={() => m.removerTemplateCapa.mutate(relatorio.template_capa_url)}
           />
 
           {(['pre_obra', 'pos_obra'] as TipoFoto[]).map((tipo) => (
