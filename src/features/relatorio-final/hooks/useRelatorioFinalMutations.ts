@@ -43,6 +43,29 @@ export function useRelatorioFinalMutations(obraId: string | null, relatorioId: s
     onError: (e) => toast.error(`Erro no upload: ${e instanceof Error ? e.message : 'desconhecido'}`),
   });
 
+  const uploadTemplateCapa = useMutation({
+    mutationFn: async (file: File) => {
+      if (!obraId || !relatorioId) throw new Error('Relatório não encontrado');
+      const path = await uploadRelatorioFinalArquivo(obraId, file, file.name);
+      const { error } = await supabase.from('relatorios_finais').update({ template_capa_url: path }).eq('id', relatorioId);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success('Template da capa atualizado'); invalidate(); },
+    onError: (e) => toast.error(`Erro no upload: ${e instanceof Error ? e.message : 'desconhecido'}`),
+  });
+
+  const removerTemplateCapa = useMutation({
+    mutationFn: async (templateUrl: string | null) => {
+      if (!relatorioId) throw new Error('Relatório não encontrado');
+      const { error } = await supabase.from('relatorios_finais').update({ template_capa_url: null }).eq('id', relatorioId);
+      if (error) throw error;
+      const path = extractAnexoPath(templateUrl || '');
+      if (path) await supabase.storage.from('anexos').remove([path]);
+    },
+    onSuccess: () => { toast.success('Template removido'); invalidate(); },
+    onError: (e) => toast.error(`Erro ao remover template: ${e instanceof Error ? e.message : 'desconhecido'}`),
+  });
+
   const adicionarFotos = useMutation({
     mutationFn: async ({ files, tipo, ordemInicial }: { files: File[]; tipo: TipoFoto; ordemInicial: number }) => {
       if (!obraId || !relatorioId) throw new Error('Relatório não encontrado');
