@@ -1827,6 +1827,7 @@ export type Database = {
           data_conclusao: string | null
           data_fim_prevista: string | null
           data_inicio: string | null
+          data_vistoria: string | null
           empresa_id: string | null
           endereco: string | null
           foto_capa_escala: number
@@ -1864,6 +1865,7 @@ export type Database = {
           data_conclusao?: string | null
           data_fim_prevista?: string | null
           data_inicio?: string | null
+          data_vistoria?: string | null
           empresa_id?: string | null
           endereco?: string | null
           foto_capa_escala?: number
@@ -1901,6 +1903,7 @@ export type Database = {
           data_conclusao?: string | null
           data_fim_prevista?: string | null
           data_inicio?: string | null
+          data_vistoria?: string | null
           empresa_id?: string | null
           endereco?: string | null
           foto_capa_escala?: number
