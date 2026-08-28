@@ -136,7 +136,7 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
     doc.setTextColor(220, 225, 235);
     doc.text(doc.splitTextToSize(obraNome, contentW - 50) as string[], pageW - MARGIN, 34, { align: 'right' });
 
-    let y = 54;
+    y = 54;
     if (capa) {
       try {
         const dims = await measureImage(capa);
