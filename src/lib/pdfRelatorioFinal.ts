@@ -73,8 +73,10 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
 
     if (capa) {
       try {
-        const fotoMaxW = 120;
-        const fotoMaxH = 94;
+        // Área do chevron azul mapeada: y=53mm a y=155mm, largura 118-153mm
+        // Foto retangular preenchendo a maior área possível dentro do chevron
+        const fotoMaxW = 145;
+        const fotoMaxH = 93;
         const dims = await measureImage(capa);
         const ratio = dims && dims.h ? dims.w / dims.h : fotoMaxW / fotoMaxH;
         let drawW = fotoMaxW;
@@ -83,8 +85,9 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
           drawH = fotoMaxH;
           drawW = fotoMaxH * ratio;
         }
-        const fotoX = 13 + (fotoMaxW - drawW) / 2;
-        const fotoY = 48 + (fotoMaxH - drawH) / 2;
+        // Centralizar a foto dentro da área do chevron
+        const fotoX = 5 + (fotoMaxW - drawW) / 2;
+        const fotoY = 57 + (fotoMaxH - drawH) / 2;
         doc.addImage(capa, 'JPEG', fotoX, fotoY, drawW, drawH, undefined, 'FAST');
       } catch { /* ignore */ }
     }
