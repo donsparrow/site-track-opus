@@ -131,6 +131,14 @@ export default function RelatorioFinalPage() {
             )}
           </CardContent>
         </Card>
+      ) : isSindico ? (
+        <RelatorioFinalViewer
+          relatorio={relatorio}
+          fotos={fotos}
+          obraNome={obra.nome}
+          onAssinar={(tipo, values) => m.assinar.mutate({ tipo, ...values })}
+          assinarPending={m.assinar.isPending}
+        />
       ) : (
         <div className="space-y-6">
           <RelatorioFinalEditor
