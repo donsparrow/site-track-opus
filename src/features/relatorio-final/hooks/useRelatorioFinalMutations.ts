@@ -130,5 +130,5 @@ export function useRelatorioFinalMutations(obraId: string | null, relatorioId: s
     onError: (e) => toast.error(`Erro ao remover assinatura: ${e instanceof Error ? e.message : 'desconhecido'}`),
   });
 
-  return { salvar, uploadCapa, adicionarFotos, atualizarFoto, excluirFoto, assinar, removerAssinatura };
+  return { salvar, uploadCapa, uploadTemplateCapa, removerTemplateCapa, adicionarFotos, atualizarFoto, excluirFoto, assinar, removerAssinatura };
 }
