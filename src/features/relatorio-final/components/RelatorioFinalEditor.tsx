@@ -39,6 +39,7 @@ export default function RelatorioFinalEditor({ relatorio, editable, saving, uplo
     ['responsavel', 'Responsável'],
     ['data_inicio', 'Data de início', 'date'],
     ['data_conclusao', 'Data de conclusão', 'date'],
+    ['data_vistoria', 'Data da vistoria', 'date'],
     ['link_externo_label', 'Rótulo do link externo'],
     ['link_externo', 'Link externo'],
   ];

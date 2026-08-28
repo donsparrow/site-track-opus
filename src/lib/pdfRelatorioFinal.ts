@@ -145,8 +145,8 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
     doc.text(`DATA DE EMISSÃO: ${new Date().toLocaleDateString('pt-BR')}`, 8, yCliente + 4);
 
     // Data da vistoria/conclusão
-    if (relatorio.data_conclusao) {
-      doc.text(`DATA DA VISTORIA: ${fmtDate(relatorio.data_conclusao)}`, 8, yCliente + 12);
+    if (relatorio.data_vistoria) {
+      doc.text(`DATA DA VISTORIA: ${fmtDate(relatorio.data_vistoria)}`, 8, yCliente + 12);
     }
   } else {
     // Barra superior
