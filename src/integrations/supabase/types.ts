@@ -1836,6 +1836,7 @@ export type Database = {
           obra_id: string
           responsavel: string | null
           status: string
+          template_capa_url: string | null
           tipo_relatorio: string
           titulo_aditivo: string | null
           titulo_conclusao: string | null
@@ -1871,6 +1872,7 @@ export type Database = {
           obra_id: string
           responsavel?: string | null
           status?: string
+          template_capa_url?: string | null
           tipo_relatorio?: string
           titulo_aditivo?: string | null
           titulo_conclusao?: string | null
@@ -1906,6 +1908,7 @@ export type Database = {
           obra_id?: string
           responsavel?: string | null
           status?: string
+          template_capa_url?: string | null
           tipo_relatorio?: string
           titulo_aditivo?: string | null
           titulo_conclusao?: string | null
