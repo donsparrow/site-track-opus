@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ImagePlus, Save } from 'lucide-react';
+import { ImagePlus, Save, X } from 'lucide-react';
 import RichTextEditor from '@/components/RichTextEditor';
 import { useSignedUrls } from '../hooks/useSignedUrls';
 import { SECOES } from '../types';
@@ -14,14 +14,18 @@ interface Props {
   editable: boolean;
   saving: boolean;
   uploadingCapa: boolean;
+  uploadingTemplate?: boolean;
   onSalvar: (values: Partial<RelatorioFinal>) => void;
   onUploadCapa: (file: File) => void;
+  onUploadTemplate: (file: File) => void;
+  onRemoverTemplate: () => void;
 }
 
-export default function RelatorioFinalEditor({ relatorio, editable, saving, uploadingCapa, onSalvar, onUploadCapa }: Props) {
+export default function RelatorioFinalEditor({ relatorio, editable, saving, uploadingCapa, uploadingTemplate, onSalvar, onUploadCapa, onUploadTemplate, onRemoverTemplate }: Props) {
   const [form, setForm] = useState<Partial<RelatorioFinal>>(relatorio);
   const capaInput = useRef<HTMLInputElement>(null);
-  const urls = useSignedUrls([relatorio.foto_capa_url]);
+  const templateInput = useRef<HTMLInputElement>(null);
+  const urls = useSignedUrls([relatorio.foto_capa_url, relatorio.template_capa_url]);
 
   useEffect(() => { setForm(relatorio); }, [relatorio]);
 
@@ -62,6 +66,47 @@ export default function RelatorioFinalEditor({ relatorio, editable, saving, uplo
                 />
               </div>
             ))}
+          </div>
+
+          <div>
+            <Label>Template da Capa</Label>
+            <div className="flex items-start gap-4 mt-1">
+              {relatorio.template_capa_url && urls[relatorio.template_capa_url] ? (
+                <img src={urls[relatorio.template_capa_url]} alt="Template da capa" className="h-32 w-24 object-cover rounded-lg border" />
+              ) : (
+                <div className="h-32 w-24 rounded-lg border bg-muted flex items-center justify-center text-center text-xs text-muted-foreground px-1">
+                  Sem template
+                </div>
+              )}
+              {editable && (
+                <div className="space-y-2">
+                  <input
+                    ref={templateInput}
+                    type="file"
+                    accept="image/png,image/jpeg"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) onUploadTemplate(file);
+                      e.target.value = '';
+                    }}
+                  />
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" disabled={uploadingTemplate} onClick={() => templateInput.current?.click()}>
+                      <ImagePlus className="h-4 w-4 mr-1" /> {uploadingTemplate ? 'Enviando...' : 'Enviar template'}
+                    </Button>
+                    {relatorio.template_capa_url && (
+                      <Button variant="ghost" size="sm" className="text-destructive" onClick={onRemoverTemplate}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground max-w-xs">
+                    Imagem de fundo da capa do PDF. Recomendado: PNG 1414x2000px (A4).
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           <div>
