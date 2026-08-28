@@ -61,23 +61,24 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
   let y = 54;
 
   if (templateCapa) {
-    // Fundo: template cobrindo toda a página A4
+    // Fundo: template Canva cobrindo toda a página A4
     try {
       doc.addImage(templateCapa, 'PNG', 0, 0, pageW, pageH, undefined, 'FAST');
     } catch { /* ignore */ }
 
+    // Título do relatório — topo centralizado
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
+    doc.setFontSize(20);
     doc.setTextColor(30, 30, 30);
-    doc.text('RELATÓRIO DE VISTORIA PÓS-OBRA', pageW / 2, 18, { align: 'center' });
+    doc.text('RELATÓRIO DE VISTORIA PÓS-OBRA', pageW / 2, 15, { align: 'center' });
 
-    // Foto de capa: preencher toda a área do chevron (lógica "cover"/crop)
+    // Foto de capa — área central, lógica "cover" (crop para preencher)
     if (capa) {
       try {
-        const targetX = 5;
-        const targetY = 57;
-        const targetW = 140;
-        const targetH = 93;
+        const targetX = 15;
+        const targetY = 40;
+        const targetW = 180;
+        const targetH = 145;
 
         // Obter dimensões reais da imagem
         const imgDims = await new Promise<{ w: number; h: number }>((resolve) => {
@@ -87,23 +88,21 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
           img.src = capa;
         });
 
-        // Recortar a imagem via canvas para preencher a área alvo (object-fit: cover)
+        // Recortar via canvas para preencher a área alvo (object-fit: cover)
         const targetRatio = targetW / targetH;
         const imgRatio = imgDims.w / imgDims.h;
-
         let srcX = 0, srcY = 0, srcW = imgDims.w, srcH = imgDims.h;
 
         if (imgRatio > targetRatio) {
-          // Imagem mais larga que o alvo: cortar nas laterais
+          // Imagem mais larga: cortar laterais
           srcW = Math.round(imgDims.h * targetRatio);
           srcX = Math.round((imgDims.w - srcW) / 2);
         } else {
-          // Imagem mais alta que o alvo: cortar em cima e embaixo
+          // Imagem mais alta: cortar topo/base
           srcH = Math.round(imgDims.w / targetRatio);
           srcY = Math.round((imgDims.h - srcH) / 2);
         }
 
-        // Criar canvas com a região recortada
         const canvas = document.createElement('canvas');
         canvas.width = srcW;
         canvas.height = srcH;
@@ -119,32 +118,34 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
             tmpImg.onerror = () => reject(new Error('crop failed'));
             tmpImg.src = capa;
           });
-
           doc.addImage(croppedDataUrl, 'JPEG', targetX, targetY, targetW, targetH, undefined, 'FAST');
         }
       } catch {
-        // Fallback: colocar sem crop
-        try { doc.addImage(capa, 'JPEG', 5, 57, 140, 93, undefined, 'FAST'); } catch { /* ignore */ }
+        // Fallback sem crop
+        try { doc.addImage(capa, 'JPEG', 15, 40, 180, 145, undefined, 'FAST'); } catch { /* ignore */ }
       }
     }
 
+    // Identificação do cliente
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(13);
     doc.setTextColor(30, 30, 30);
     const clienteTexto = `CLIENTE: ${relatorio.cliente_nome || ''}${relatorio.endereco ? ' — ' + relatorio.endereco : ''}`;
     const clienteLines = doc.splitTextToSize(clienteTexto, 140) as string[];
-    let yCliente = 190;
+    let yCliente = 205;
     clienteLines.forEach((line: string) => {
       doc.text(line, 8, yCliente);
       yCliente += 7;
     });
 
-    doc.setFontSize(12);
-    doc.text(`DATA DE EMISSÃO: ${new Date().toLocaleDateString('pt-BR')}`, 8, yCliente + 5);
+    // Data de emissão
+    doc.setFontSize(11);
+    doc.text(`DATA DE EMISSÃO: ${new Date().toLocaleDateString('pt-BR')}`, 8, yCliente + 4);
+
+    // Data da vistoria/conclusão
     if (relatorio.data_conclusao) {
-      doc.text(`DATA DA VISTORIA: ${fmtDate(relatorio.data_conclusao)}`, 8, yCliente + 14);
+      doc.text(`DATA DA VISTORIA: ${fmtDate(relatorio.data_conclusao)}`, 8, yCliente + 12);
     }
-    doc.setTextColor(30, 30, 30);
   } else {
     // Barra superior
     doc.setFillColor(BLUE[0], BLUE[1], BLUE[2]);
