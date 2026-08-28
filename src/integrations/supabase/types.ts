@@ -1829,6 +1829,7 @@ export type Database = {
           data_inicio: string | null
           empresa_id: string | null
           endereco: string | null
+          foto_capa_escala: number
           foto_capa_url: string | null
           id: string
           link_externo: string | null
@@ -1865,6 +1866,7 @@ export type Database = {
           data_inicio?: string | null
           empresa_id?: string | null
           endereco?: string | null
+          foto_capa_escala?: number
           foto_capa_url?: string | null
           id?: string
           link_externo?: string | null
@@ -1901,6 +1903,7 @@ export type Database = {
           data_inicio?: string | null
           empresa_id?: string | null
           endereco?: string | null
+          foto_capa_escala?: number
           foto_capa_url?: string | null
           id?: string
           link_externo?: string | null
