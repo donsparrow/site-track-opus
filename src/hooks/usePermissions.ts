@@ -25,7 +25,7 @@ const MODULO_LABELS: Record<Modulo, string> = {
   configuracoes: 'Configurações',
   clientes: 'Clientes',
   ferramentas: 'Ferramentas',
-  relatorio_final: 'Relatório Final',
+  relatorio_final: 'Laudos Técnicos',
 };
 
 // Map route paths to module names
