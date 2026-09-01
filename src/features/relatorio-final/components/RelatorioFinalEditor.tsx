@@ -8,10 +8,12 @@ import { ImagePlus, Save, X } from 'lucide-react';
 import RichTextEditor from '@/components/RichTextEditor';
 import { useSignedUrls } from '../hooks/useSignedUrls';
 import { SECOES } from '../types';
-import type { RelatorioFinal } from '../types';
+import type { RelatorioFinal, SecaoExtra } from '../types';
+import SecoesExtrasEditor from './SecoesExtrasEditor';
 
 interface Props {
   relatorio: RelatorioFinal;
+  tipoRelatorio?: string;
   editable: boolean;
   saving: boolean;
   uploadingCapa: boolean;
@@ -22,7 +24,7 @@ interface Props {
   onRemoverTemplate: () => void;
 }
 
-export default function RelatorioFinalEditor({ relatorio, editable, saving, uploadingCapa, uploadingTemplate, onSalvar, onUploadCapa, onUploadTemplate, onRemoverTemplate }: Props) {
+export default function RelatorioFinalEditor({ relatorio, tipoRelatorio = 'entrega_obra', editable, saving, uploadingCapa, uploadingTemplate, onSalvar, onUploadCapa, onUploadTemplate, onRemoverTemplate }: Props) {
   const [form, setForm] = useState<Partial<RelatorioFinal>>(relatorio);
   const capaInput = useRef<HTMLInputElement>(null);
   const templateInput = useRef<HTMLInputElement>(null);
