@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import type { RelatorioFinalFoto, TipoFoto } from '../types';
 
 interface Props {
   tipo: TipoFoto;
-  titulo: string;
+  titulo: ReactNode;
   fotos: RelatorioFinalFoto[];
   editable: boolean;
   uploading?: boolean;
@@ -59,7 +59,7 @@ export default function FotosManager({ tipo, titulo, fotos, editable, uploading,
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="font-display text-base">{titulo} ({lista.length})</CardTitle>
+        <CardTitle className="font-display text-base">{typeof titulo === 'string' ? `${titulo} (${lista.length})` : titulo}</CardTitle>
         {editable && (
           <>
             <input
