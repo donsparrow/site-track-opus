@@ -41,36 +41,47 @@ async function loadStorageImage(path?: string | null): Promise<string | null> {
 }
 
 /**
- * Carrega uma imagem via canvas para obter dimensões corretas (com EXIF aplicado)
- * e retorna um dataURL normalizado.
- * O canvas do browser aplica automaticamente a rotação EXIF.
+ * Carrega uma foto do Storage aplicando rotação EXIF corretamente.
+ * Usa createImageBitmap que garante orientação correta independente do browser.
+ * Retorna dataURL com pixels já rotacionados + dimensões corretas.
  */
-async function normalizeImage(dataUrl: string): Promise<{ dataUrl: string; w: number; h: number } | null> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = 'Anonymous';
-    img.onload = () => {
-      try {
-        const w = img.naturalWidth || img.width;
-        const h = img.naturalHeight || img.height;
-        if (w === 0 || h === 0) { resolve(null); return; }
+async function loadPhotoForPdf(path?: string | null): Promise<{ dataUrl: string; w: number; h: number } | null> {
+  if (!path) return null;
+  const url = await resolveAnexoUrl(path);
+  if (!url) return null;
 
-        // Redesenhar via canvas para aplicar EXIF e obter dimensões corretas
-        const canvas = document.createElement('canvas');
-        canvas.width = w;
-        canvas.height = h;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) { resolve({ dataUrl, w, h }); return; }
-        ctx.drawImage(img, 0, 0, w, h);
-        const normalized = canvas.toDataURL('image/jpeg', 0.90);
-        resolve({ dataUrl: normalized, w, h });
-      } catch {
-        resolve(null);
-      }
-    };
-    img.onerror = () => resolve(null);
-    img.src = dataUrl;
-  });
+  try {
+    // Buscar a imagem como Blob (preserva EXIF)
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const blob = await response.blob();
+
+    // createImageBitmap com imageOrientation: 'from-image' aplica rotação EXIF
+    const bitmap = await createImageBitmap(blob, {
+      imageOrientation: 'from-image',
+    });
+
+    // Desenhar no canvas para obter dataURL com pixels já na orientação correta
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      bitmap.close();
+      return null;
+    }
+    ctx.drawImage(bitmap, 0, 0);
+    bitmap.close();
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+    return { dataUrl, w: canvas.width, h: canvas.height };
+  } catch {
+    // Fallback: usar o método antigo se createImageBitmap não for suportado
+    const dataUrl = await loadStorageImage(path);
+    if (!dataUrl) return null;
+    const dims = await measureImage(dataUrl);
+    return dims ? { dataUrl, w: dims.w, h: dims.h } : null;
+  }
 }
 
 
@@ -389,26 +400,22 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
     for (const foto of lista) {
       idx += 1;
 
-      const rawDataUrl = await loadStorageImage(foto.foto_url);
-
-      // Normalizar imagem via canvas (aplica rotação EXIF)
-      const normalized = rawDataUrl ? await normalizeImage(rawDataUrl) : null;
-      const dataUrl = normalized?.dataUrl ?? rawDataUrl;
+      // Carregar foto com EXIF corrigido
+      const photoData = await loadPhotoForPdf(foto.foto_url);
+      const dataUrl = photoData?.dataUrl ?? null;
 
       // Calcular dimensões proporcionais
       let imgW = contentW;
       let imgH = 95; // fallback
 
-      if (normalized && normalized.w > 0 && normalized.h > 0) {
-        const ratio = normalized.w / normalized.h;
-        if (ratio >= 1) {
-          // Foto paisagem: largura total, altura proporcional
-          imgW = contentW;
-          imgH = contentW / ratio;
-        } else {
-          // Foto retrato: limitar altura a 120mm, largura proporcional, centralizada
-          imgH = Math.min(120, contentW / ratio);
-          imgW = imgH * ratio;
+      if (photoData) {
+        const ratio = photoData.w / photoData.h;
+        imgW = contentW;
+        imgH = contentW / ratio;
+        // Limitar altura máxima para fotos muito verticais
+        if (imgH > 130) {
+          imgH = 130;
+          imgW = 130 * ratio;
         }
       }
 
@@ -417,7 +424,7 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
         y = newPage();
       }
 
-      // Centralizar se mais estreita que contentW
+      // Centralizar horizontalmente se a foto for mais estreita que contentW
       const fotoX = imgW < contentW ? MARGIN + (contentW - imgW) / 2 : MARGIN;
 
       if (dataUrl) {
