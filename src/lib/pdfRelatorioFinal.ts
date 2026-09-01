@@ -356,43 +356,17 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
     let idx = 0;
     for (const foto of lista) {
       idx += 1;
-
-      // Carregar foto com EXIF corrigido
-      const photoData = await loadPhotoForPdf(foto.foto_url);
-      const dataUrl = photoData?.dataUrl ?? null;
-
-      // Calcular dimensões proporcionais
-      let imgW = contentW;
-      let imgH = 95; // fallback
-
-      if (photoData) {
-        const ratio = photoData.w / photoData.h;
-        imgW = contentW;
-        imgH = contentW / ratio;
-        // Limitar altura máxima para fotos muito verticais
-        if (imgH > 130) {
-          imgH = 130;
-          imgW = 130 * ratio;
-        }
-      }
-
-      // Verificar se cabe na página
+      const imgH = 95;
       if (y + imgH + 14 > pageH - 20) {
         y = newPage();
       }
-
-      // Centralizar horizontalmente se a foto for mais estreita que contentW
-      const fotoX = imgW < contentW ? MARGIN + (contentW - imgW) / 2 : MARGIN;
-
+      const dataUrl = await loadStorageImage(foto.foto_url);
       if (dataUrl) {
-        try {
-          doc.addImage(dataUrl, 'JPEG', fotoX, y, imgW, imgH, undefined, 'FAST');
-        } catch { /* ignore */ }
+        try { doc.addImage(dataUrl, 'JPEG', MARGIN, y, contentW, imgH, undefined, 'FAST'); } catch { /* ignore */ }
       } else {
         doc.setDrawColor(200);
         doc.rect(MARGIN, y, contentW, imgH);
       }
-
       y += imgH + 5;
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9.5);
@@ -400,6 +374,7 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
       doc.text(doc.splitTextToSize(legenda, contentW) as string[], MARGIN, y);
       y += 10;
     }
+
   }
 
   // ---------- ASSINATURAS ----------
