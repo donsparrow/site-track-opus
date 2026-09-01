@@ -400,26 +400,22 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
     for (const foto of lista) {
       idx += 1;
 
-      const rawDataUrl = await loadStorageImage(foto.foto_url);
-
-      // Normalizar imagem via canvas (aplica rotação EXIF)
-      const normalized = rawDataUrl ? await normalizeImage(rawDataUrl) : null;
-      const dataUrl = normalized?.dataUrl ?? rawDataUrl;
+      // Carregar foto com EXIF corrigido
+      const photoData = await loadPhotoForPdf(foto.foto_url);
+      const dataUrl = photoData?.dataUrl ?? null;
 
       // Calcular dimensões proporcionais
       let imgW = contentW;
       let imgH = 95; // fallback
 
-      if (normalized && normalized.w > 0 && normalized.h > 0) {
-        const ratio = normalized.w / normalized.h;
-        if (ratio >= 1) {
-          // Foto paisagem: largura total, altura proporcional
-          imgW = contentW;
-          imgH = contentW / ratio;
-        } else {
-          // Foto retrato: limitar altura a 120mm, largura proporcional, centralizada
-          imgH = Math.min(120, contentW / ratio);
-          imgW = imgH * ratio;
+      if (photoData) {
+        const ratio = photoData.w / photoData.h;
+        imgW = contentW;
+        imgH = contentW / ratio;
+        // Limitar altura máxima para fotos muito verticais
+        if (imgH > 130) {
+          imgH = 130;
+          imgW = 130 * ratio;
         }
       }
 
@@ -428,7 +424,7 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
         y = newPage();
       }
 
-      // Centralizar se mais estreita que contentW
+      // Centralizar horizontalmente se a foto for mais estreita que contentW
       const fotoX = imgW < contentW ? MARGIN + (contentW - imgW) / 2 : MARGIN;
 
       if (dataUrl) {
