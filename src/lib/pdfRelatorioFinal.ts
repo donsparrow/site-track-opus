@@ -274,8 +274,11 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
     doc.setFontSize(8);
     doc.setTextColor(120, 120, 120);
     doc.text(textoHeaderInterno, MARGIN, ny);
-    doc.setTextColor(30, 30, 30);
     ny += 6;
+    // Restaurar font padrão para o conteúdo
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10.5);
+    doc.setTextColor(30, 30, 30);
     return ny + 6;
   };
 
@@ -351,17 +354,43 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
     let idx = 0;
     for (const foto of lista) {
       idx += 1;
-      const imgH = 95;
+
+      const dataUrl = await loadStorageImage(foto.foto_url);
+
+      // Calcular dimensões proporcionais da foto
+      let imgW = contentW;
+      let imgH = 95; // fallback
+      if (dataUrl) {
+        const dims = await measureImage(dataUrl);
+        if (dims && dims.w > 0 && dims.h > 0) {
+          const ratio = dims.w / dims.h;
+          // Largura máxima = contentW, altura proporcional
+          imgH = contentW / ratio;
+          // Se a foto for muito alta (retrato), limitar altura a 130mm
+          if (imgH > 130) {
+            imgH = 130;
+            imgW = imgH * ratio;
+          }
+        }
+      }
+
+      // Verificar se cabe na página (foto + legenda)
       if (y + imgH + 14 > pageH - 20) {
         y = newPage();
       }
-      const dataUrl = await loadStorageImage(foto.foto_url);
+
+      // Centralizar foto se for mais estreita que contentW
+      const fotoX = imgW < contentW ? MARGIN + (contentW - imgW) / 2 : MARGIN;
+
       if (dataUrl) {
-        try { doc.addImage(dataUrl, 'PNG', MARGIN, y, contentW, imgH, undefined, 'FAST'); } catch { /* ignore */ }
+        try {
+          doc.addImage(dataUrl, 'JPEG', fotoX, y, imgW, imgH, undefined, 'FAST');
+        } catch { /* ignore */ }
       } else {
         doc.setDrawColor(200);
         doc.rect(MARGIN, y, contentW, imgH);
       }
+
       y += imgH + 5;
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9.5);
