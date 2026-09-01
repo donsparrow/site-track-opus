@@ -40,6 +40,40 @@ async function loadStorageImage(path?: string | null): Promise<string | null> {
   return loadImageAsDataUrl(url);
 }
 
+/**
+ * Carrega uma imagem via canvas para obter dimensões corretas (com EXIF aplicado)
+ * e retorna um dataURL normalizado.
+ * O canvas do browser aplica automaticamente a rotação EXIF.
+ */
+async function normalizeImage(dataUrl: string): Promise<{ dataUrl: string; w: number; h: number } | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => {
+      try {
+        const w = img.naturalWidth || img.width;
+        const h = img.naturalHeight || img.height;
+        if (w === 0 || h === 0) { resolve(null); return; }
+
+        // Redesenhar via canvas para aplicar EXIF e obter dimensões corretas
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { resolve({ dataUrl, w, h }); return; }
+        ctx.drawImage(img, 0, 0, w, h);
+        const normalized = canvas.toDataURL('image/jpeg', 0.90);
+        resolve({ dataUrl: normalized, w, h });
+      } catch {
+        resolve(null);
+      }
+    };
+    img.onerror = () => resolve(null);
+    img.src = dataUrl;
+  });
+}
+
+
 interface Params {
   relatorio: RelatorioFinal;
   fotos: RelatorioFinalFoto[];
@@ -355,31 +389,35 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
     for (const foto of lista) {
       idx += 1;
 
-      const dataUrl = await loadStorageImage(foto.foto_url);
+      const rawDataUrl = await loadStorageImage(foto.foto_url);
 
-      // Calcular dimensões proporcionais da foto
+      // Normalizar imagem via canvas (aplica rotação EXIF)
+      const normalized = rawDataUrl ? await normalizeImage(rawDataUrl) : null;
+      const dataUrl = normalized?.dataUrl ?? rawDataUrl;
+
+      // Calcular dimensões proporcionais
       let imgW = contentW;
       let imgH = 95; // fallback
-      if (dataUrl) {
-        const dims = await measureImage(dataUrl);
-        if (dims && dims.w > 0 && dims.h > 0) {
-          const ratio = dims.w / dims.h;
-          // Largura máxima = contentW, altura proporcional
+
+      if (normalized && normalized.w > 0 && normalized.h > 0) {
+        const ratio = normalized.w / normalized.h;
+        if (ratio >= 1) {
+          // Foto paisagem: largura total, altura proporcional
+          imgW = contentW;
           imgH = contentW / ratio;
-          // Se a foto for muito alta (retrato), limitar altura a 130mm
-          if (imgH > 130) {
-            imgH = 130;
-            imgW = imgH * ratio;
-          }
+        } else {
+          // Foto retrato: limitar altura a 120mm, largura proporcional, centralizada
+          imgH = Math.min(120, contentW / ratio);
+          imgW = imgH * ratio;
         }
       }
 
-      // Verificar se cabe na página (foto + legenda)
+      // Verificar se cabe na página
       if (y + imgH + 14 > pageH - 20) {
         y = newPage();
       }
 
-      // Centralizar foto se for mais estreita que contentW
+      // Centralizar se mais estreita que contentW
       const fotoX = imgW < contentW ? MARGIN + (contentW - imgW) / 2 : MARGIN;
 
       if (dataUrl) {
