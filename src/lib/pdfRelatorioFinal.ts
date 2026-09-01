@@ -40,49 +40,6 @@ async function loadStorageImage(path?: string | null): Promise<string | null> {
   return loadImageAsDataUrl(url);
 }
 
-/**
- * Carrega uma foto do Storage aplicando rotação EXIF corretamente.
- * Usa createImageBitmap que garante orientação correta independente do browser.
- * Retorna dataURL com pixels já rotacionados + dimensões corretas.
- */
-async function loadPhotoForPdf(path?: string | null): Promise<{ dataUrl: string; w: number; h: number } | null> {
-  if (!path) return null;
-  const url = await resolveAnexoUrl(path);
-  if (!url) return null;
-
-  try {
-    // Buscar a imagem como Blob (preserva EXIF)
-    const response = await fetch(url);
-    if (!response.ok) return null;
-    const blob = await response.blob();
-
-    // createImageBitmap com imageOrientation: 'from-image' aplica rotação EXIF
-    const bitmap = await createImageBitmap(blob, {
-      imageOrientation: 'from-image',
-    });
-
-    // Desenhar no canvas para obter dataURL com pixels já na orientação correta
-    const canvas = document.createElement('canvas');
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      bitmap.close();
-      return null;
-    }
-    ctx.drawImage(bitmap, 0, 0);
-    bitmap.close();
-
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
-    return { dataUrl, w: canvas.width, h: canvas.height };
-  } catch {
-    // Fallback: usar o método antigo se createImageBitmap não for suportado
-    const dataUrl = await loadStorageImage(path);
-    if (!dataUrl) return null;
-    const dims = await measureImage(dataUrl);
-    return dims ? { dataUrl, w: dims.w, h: dims.h } : null;
-  }
-}
 
 
 interface Params {
@@ -399,43 +356,17 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
     let idx = 0;
     for (const foto of lista) {
       idx += 1;
-
-      // Carregar foto com EXIF corrigido
-      const photoData = await loadPhotoForPdf(foto.foto_url);
-      const dataUrl = photoData?.dataUrl ?? null;
-
-      // Calcular dimensões proporcionais
-      let imgW = contentW;
-      let imgH = 95; // fallback
-
-      if (photoData) {
-        const ratio = photoData.w / photoData.h;
-        imgW = contentW;
-        imgH = contentW / ratio;
-        // Limitar altura máxima para fotos muito verticais
-        if (imgH > 130) {
-          imgH = 130;
-          imgW = 130 * ratio;
-        }
-      }
-
-      // Verificar se cabe na página
+      const imgH = 95;
       if (y + imgH + 14 > pageH - 20) {
         y = newPage();
       }
-
-      // Centralizar horizontalmente se a foto for mais estreita que contentW
-      const fotoX = imgW < contentW ? MARGIN + (contentW - imgW) / 2 : MARGIN;
-
+      const dataUrl = await loadStorageImage(foto.foto_url);
       if (dataUrl) {
-        try {
-          doc.addImage(dataUrl, 'JPEG', fotoX, y, imgW, imgH, undefined, 'FAST');
-        } catch { /* ignore */ }
+        try { doc.addImage(dataUrl, 'JPEG', MARGIN, y, contentW, imgH, undefined, 'FAST'); } catch { /* ignore */ }
       } else {
         doc.setDrawColor(200);
         doc.rect(MARGIN, y, contentW, imgH);
       }
-
       y += imgH + 5;
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9.5);
@@ -443,6 +374,7 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
       doc.text(doc.splitTextToSize(legenda, contentW) as string[], MARGIN, y);
       y += 10;
     }
+
   }
 
   // ---------- ASSINATURAS ----------
