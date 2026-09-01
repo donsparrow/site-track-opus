@@ -40,49 +40,6 @@ async function loadStorageImage(path?: string | null): Promise<string | null> {
   return loadImageAsDataUrl(url);
 }
 
-/**
- * Carrega uma foto do Storage aplicando rotação EXIF corretamente.
- * Usa createImageBitmap que garante orientação correta independente do browser.
- * Retorna dataURL com pixels já rotacionados + dimensões corretas.
- */
-async function loadPhotoForPdf(path?: string | null): Promise<{ dataUrl: string; w: number; h: number } | null> {
-  if (!path) return null;
-  const url = await resolveAnexoUrl(path);
-  if (!url) return null;
-
-  try {
-    // Buscar a imagem como Blob (preserva EXIF)
-    const response = await fetch(url);
-    if (!response.ok) return null;
-    const blob = await response.blob();
-
-    // createImageBitmap com imageOrientation: 'from-image' aplica rotação EXIF
-    const bitmap = await createImageBitmap(blob, {
-      imageOrientation: 'from-image',
-    });
-
-    // Desenhar no canvas para obter dataURL com pixels já na orientação correta
-    const canvas = document.createElement('canvas');
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) {
-      bitmap.close();
-      return null;
-    }
-    ctx.drawImage(bitmap, 0, 0);
-    bitmap.close();
-
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
-    return { dataUrl, w: canvas.width, h: canvas.height };
-  } catch {
-    // Fallback: usar o método antigo se createImageBitmap não for suportado
-    const dataUrl = await loadStorageImage(path);
-    if (!dataUrl) return null;
-    const dims = await measureImage(dataUrl);
-    return dims ? { dataUrl, w: dims.w, h: dims.h } : null;
-  }
-}
 
 
 interface Params {
