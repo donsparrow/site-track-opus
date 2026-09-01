@@ -23,15 +23,16 @@ export function useObrasRelatorioFinal() {
   return { ...query, obras: query.data ?? [] };
 }
 
-export function useRelatorioFinal(obraId: string | null) {
+export function useRelatorioFinal(obraId: string | null, tipoRelatorio: string = 'entrega_obra') {
   return useQuery({
-    queryKey: relatorioFinalKeys.relatorio(obraId),
+    queryKey: relatorioFinalKeys.relatorio(obraId, tipoRelatorio),
     enabled: !!obraId,
     queryFn: async (): Promise<RelatorioFinal | null> => {
       const { data, error } = await supabase
         .from('relatorios_finais')
         .select('*')
         .eq('obra_id', obraId!)
+        .eq('tipo_relatorio', tipoRelatorio)
         .maybeSingle();
       if (error) throw error;
       return data;

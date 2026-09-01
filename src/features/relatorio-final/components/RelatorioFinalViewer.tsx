@@ -11,6 +11,8 @@ interface RelatorioFinalViewerProps {
   relatorio: RelatorioFinal;
   fotos: RelatorioFinalFoto[];
   obraNome: string;
+  /** Tipo do laudo exibido (usado para adaptações de layout). */
+  tipoRelatorio?: string;
   onAssinar: (tipo: 'empresa' | 'sindico', values: { dataUrl: string; nome: string; cargo: string }) => void;
   assinarPending: boolean;
 }

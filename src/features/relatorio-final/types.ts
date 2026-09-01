@@ -3,7 +3,18 @@ import type { Tables } from '@/integrations/supabase/types';
 export type RelatorioFinal = Tables<'relatorios_finais'>;
 export type RelatorioFinalFoto = Tables<'relatorio_final_fotos'>;
 
-export type TipoFoto = 'pre_obra' | 'pos_obra';
+/** Tipo de laudo técnico. */
+export type TipoRelatorio = 'entrega_obra' | 'vistoria_previa';
+
+/** Grupo/categoria da foto. Texto livre (ex.: 'pre_obra', 'pos_obra', 'Sala 01'). */
+export type TipoFoto = string;
+
+export interface SecaoExtra {
+  id: string;
+  titulo: string;
+  conteudo: string;
+  ordem: number;
+}
 
 export interface ObraOption {
   id: string;

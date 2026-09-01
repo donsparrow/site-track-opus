@@ -1837,6 +1837,7 @@ export type Database = {
           link_externo_label: string | null
           obra_id: string
           responsavel: string | null
+          secoes_extras: Json
           status: string
           template_capa_url: string | null
           tipo_relatorio: string
@@ -1875,6 +1876,7 @@ export type Database = {
           link_externo_label?: string | null
           obra_id: string
           responsavel?: string | null
+          secoes_extras?: Json
           status?: string
           template_capa_url?: string | null
           tipo_relatorio?: string
@@ -1913,6 +1915,7 @@ export type Database = {
           link_externo_label?: string | null
           obra_id?: string
           responsavel?: string | null
+          secoes_extras?: Json
           status?: string
           template_capa_url?: string | null
           tipo_relatorio?: string
@@ -1933,7 +1936,7 @@ export type Database = {
           {
             foreignKeyName: "relatorios_finais_obra_id_fkey"
             columns: ["obra_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "obras"
             referencedColumns: ["id"]
           },

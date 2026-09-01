@@ -19,7 +19,7 @@ import FotosManager from '@/features/relatorio-final/components/FotosManager';
 import AssinaturasCard from '@/features/relatorio-final/components/AssinaturasCard';
 import RelatorioFinalViewer from '@/features/relatorio-final/components/RelatorioFinalViewer';
 import type { EmpresaPDFData } from '@/lib/pdfShared';
-import type { RelatorioFinalFoto, TipoFoto } from '@/features/relatorio-final/types';
+import type { RelatorioFinalFoto } from '@/features/relatorio-final/types';
 
 export default function RelatorioFinalPage() {
   const { empresaId, role } = useAuth();
@@ -27,13 +27,14 @@ export default function RelatorioFinalPage() {
   const { pode } = usePermissions();
   const qc = useQueryClient();
   const [obraId, setObraId] = useState<string | null>(null);
+  const [tipoRelatorio, setTipoRelatorio] = useState<string>('entrega_obra');
   const [criando, setCriando] = useState(false);
   const [gerando, setGerando] = useState(false);
 
   const { obras, isLoading: loadingObras } = useObrasRelatorioFinal();
-  const { data: relatorio, isLoading: loadingRelatorio } = useRelatorioFinal(obraId);
+  const { data: relatorio, isLoading: loadingRelatorio } = useRelatorioFinal(obraId, tipoRelatorio);
   const { fotos } = useRelatorioFinalFotos(relatorio?.id ?? null);
-  const m = useRelatorioFinalMutations(obraId, relatorio?.id ?? null);
+  const m = useRelatorioFinalMutations(obraId, relatorio?.id ?? null, tipoRelatorio);
 
   useEffect(() => {
     if (!obraId && obras.length) setObraId(obras[0].id);
@@ -42,6 +43,7 @@ export default function RelatorioFinalPage() {
   const obra = useMemo(() => obras.find((o) => o.id === obraId) || null, [obras, obraId]);
   const canEdit = pode('relatorio_final', 'editar') && relatorio?.status !== 'assinado';
   const canCreate = pode('relatorio_final', 'criar');
+  const tituloTipo = tipoRelatorio === 'vistoria_previa' ? 'Vistoria Prévia' : 'Entrega de Obra';
 
   const criarRelatorio = async () => {
     if (!obra) return;
@@ -54,6 +56,7 @@ export default function RelatorioFinalPage() {
       .limit(1)
       .maybeSingle();
     const { error } = await supabase.from('relatorios_finais').insert({
+      tipo_relatorio: tipoRelatorio,
       template_capa_url: comTemplate?.template_capa_url ?? null,
       obra_id: obra.id,
       empresa_id: empresaId,
@@ -65,9 +68,9 @@ export default function RelatorioFinalPage() {
       data_fim_prevista: obra.data_fim_prevista,
     });
     setCriando(false);
-    if (error) { toast.error(`Erro ao criar relatório: ${error.message}`); return; }
-    toast.success('Relatório final criado');
-    qc.invalidateQueries({ queryKey: relatorioFinalKeys.relatorio(obra.id) });
+    if (error) { toast.error(`Erro ao criar laudo: ${error.message}`); return; }
+    toast.success('Laudo criado');
+    qc.invalidateQueries({ queryKey: relatorioFinalKeys.relatorio(obra.id, tipoRelatorio) });
   };
 
   const moverFoto = (id: string, dir: -1 | 1) => {
@@ -98,10 +101,17 @@ export default function RelatorioFinalPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold">Relatório Final</h1>
-          <p className="text-sm text-muted-foreground">Relatório de entrega da obra com registro fotográfico e assinaturas.</p>
+          <h1 className="font-display text-2xl font-bold">Laudos Técnicos</h1>
+          <p className="text-sm text-muted-foreground">{tituloTipo} — Relatório com registro fotográfico e assinaturas.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Select value={tipoRelatorio} onValueChange={setTipoRelatorio}>
+            <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="entrega_obra">Entrega de Obra</SelectItem>
+              <SelectItem value="vistoria_previa">Vistoria Prévia</SelectItem>
+            </SelectContent>
+          </Select>
           <Select value={obraId ?? ''} onValueChange={setObraId}>
             <SelectTrigger className="w-64"><SelectValue placeholder="Selecione a obra" /></SelectTrigger>
             <SelectContent>
@@ -123,10 +133,10 @@ export default function RelatorioFinalPage() {
       ) : !relatorio ? (
         <Card>
           <CardContent className="py-10 text-center space-y-4">
-            <p className="text-muted-foreground">Esta obra ainda não possui relatório final.</p>
+            <p className="text-muted-foreground">Esta obra ainda não possui laudo de {tituloTipo}.</p>
             {canCreate && (
               <Button className="bg-accent text-accent-foreground hover:bg-accent/90" disabled={criando} onClick={criarRelatorio}>
-                <FilePlus2 className="h-4 w-4 mr-1" /> {criando ? 'Criando...' : 'Gerar Relatório Final'}
+                <FilePlus2 className="h-4 w-4 mr-1" /> {criando ? 'Criando...' : 'Gerar Laudo'}
               </Button>
             )}
           </CardContent>
@@ -136,6 +146,7 @@ export default function RelatorioFinalPage() {
           relatorio={relatorio}
           fotos={fotos}
           obraNome={obra.nome}
+          tipoRelatorio={tipoRelatorio}
           onAssinar={(tipo, values) => m.assinar.mutate({ tipo, ...values })}
           assinarPending={m.assinar.isPending}
         />
@@ -153,11 +164,11 @@ export default function RelatorioFinalPage() {
             onRemoverTemplate={() => m.removerTemplateCapa.mutate(relatorio.template_capa_url)}
           />
 
-          {(['pre_obra', 'pos_obra'] as TipoFoto[]).map((tipo) => (
+          {(tipoRelatorio === 'vistoria_previa' ? ['registro'] : ['pre_obra', 'pos_obra']).map((tipo) => (
             <FotosManager
               key={tipo}
               tipo={tipo}
-              titulo={tipo === 'pre_obra' ? 'Registro fotográfico — Pré-obra' : 'Registro fotográfico — Pós-obra'}
+              titulo={tipo === 'registro' ? 'Registro Fotográfico' : tipo === 'pre_obra' ? 'Registro fotográfico — Pré-obra' : 'Registro fotográfico — Pós-obra'}
               fotos={fotos}
               editable={canEdit}
               uploading={m.adicionarFotos.isPending}
