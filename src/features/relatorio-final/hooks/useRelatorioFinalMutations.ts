@@ -15,10 +15,14 @@ export async function uploadRelatorioFinalArquivo(obraId: string, file: Blob, fi
   return path;
 }
 
-export function useRelatorioFinalMutations(obraId: string | null, relatorioId: string | null) {
+export function useRelatorioFinalMutations(
+  obraId: string | null,
+  relatorioId: string | null,
+  tipoRelatorio: string = 'entrega_obra'
+) {
   const qc = useQueryClient();
   const invalidate = () => {
-    qc.invalidateQueries({ queryKey: relatorioFinalKeys.relatorio(obraId) });
+    qc.invalidateQueries({ queryKey: relatorioFinalKeys.relatorio(obraId, tipoRelatorio) });
     qc.invalidateQueries({ queryKey: relatorioFinalKeys.fotos(relatorioId) });
   };
 
