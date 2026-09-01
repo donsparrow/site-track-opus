@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import AssinarDialog from '@/features/relatorios/components/AssinarDialog';
 import { useSignedUrls } from '../hooks/useSignedUrls';
-import type { RelatorioFinal, RelatorioFinalFoto } from '../types';
+import type { RelatorioFinal, RelatorioFinalFoto, SecaoExtra } from '../types';
 import { SECOES } from '../types';
 
 interface RelatorioFinalViewerProps {
@@ -25,19 +25,21 @@ function hasContent(html: string | null): boolean {
   return html.replace(/<[^>]*>/g, '').trim().length > 0;
 }
 
-export default function RelatorioFinalViewer({ relatorio, fotos, obraNome, onAssinar, assinarPending }: RelatorioFinalViewerProps) {
+export default function RelatorioFinalViewer({ relatorio, fotos, obraNome, tipoRelatorio = 'entrega_obra', onAssinar, assinarPending }: RelatorioFinalViewerProps) {
   const [dialogAberto, setDialogAberto] = useState(false);
+  const isVistoria = tipoRelatorio === 'vistoria_previa';
 
   const preObra = fotos.filter((f) => f.tipo === 'pre_obra').sort((a, b) => a.ordem - b.ordem);
   const posObra = fotos.filter((f) => f.tipo === 'pos_obra').sort((a, b) => a.ordem - b.ordem);
+  const gruposVistoria = Array.from(new Set(fotos.map((f) => f.tipo))).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  const secoesExtras = (Array.isArray(relatorio.secoes_extras) ? relatorio.secoes_extras : []) as unknown as SecaoExtra[];
 
   const urls = useSignedUrls([
     relatorio.template_capa_url,
     relatorio.foto_capa_url,
     relatorio.assinatura_empresa_url,
     relatorio.assinatura_sindico_url,
-    ...preObra.map((f) => f.foto_url),
-    ...posObra.map((f) => f.foto_url),
+    ...fotos.map((f) => f.foto_url),
   ]);
 
   const dados: [string, string | null][] = [
@@ -91,7 +93,7 @@ export default function RelatorioFinalViewer({ relatorio, fotos, obraNome, onAss
               <div className="relative h-[300px] rounded-lg overflow-hidden">
                 {templateUrl && <img src={templateUrl} alt="Template da capa" className="w-full h-full object-cover" />}
                 <p className="absolute top-4 left-0 right-0 text-center font-bold text-white" style={{ textShadow: '0 1px 4px rgba(0,0,0,0.8)' }}>
-                  RELATÓRIO DE VISTORIA PÓS-OBRA
+                  {isVistoria ? 'RELATÓRIO DE VISTORIA PRÉVIA' : 'RELATÓRIO DE VISTORIA PÓS-OBRA'}
                 </p>
                 {fotoCapaUrl && (
                   <img
@@ -124,25 +126,54 @@ export default function RelatorioFinalViewer({ relatorio, fotos, obraNome, onAss
       </Card>
 
       {/* C) Seções de conteúdo */}
-      {SECOES.map((s) => {
-        const conteudo = relatorio[s.conteudo] as string | null;
-        if (!hasContent(conteudo)) return null;
-        const titulo = (relatorio[s.titulo] as string | null) || s.label;
+      {(() => {
+        const renderSecao = (key: string, titulo: string, conteudo: string | null) => {
+          if (!hasContent(conteudo)) return null;
+          return (
+            <Card key={key}>
+              <CardHeader>
+                <CardTitle className="font-display text-base">{titulo}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: conteudo! }} />
+              </CardContent>
+            </Card>
+          );
+        };
+
+        const fixa = (key: 'introducao' | 'conclusao') => {
+          const s = SECOES.find((x) => x.key === key)!;
+          return renderSecao(s.key, (relatorio[s.titulo] as string | null) || s.label, relatorio[s.conteudo] as string | null);
+        };
+
+        if (!isVistoria) {
+          return SECOES.map((s) =>
+            renderSecao(s.key, (relatorio[s.titulo] as string | null) || s.label, relatorio[s.conteudo] as string | null),
+          );
+        }
+
         return (
-          <Card key={s.key}>
-            <CardHeader>
-              <CardTitle className="font-display text-base">{titulo}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: conteudo! }} />
-            </CardContent>
-          </Card>
+          <>
+            {fixa('introducao')}
+            {[...secoesExtras]
+              .sort((a, b) => a.ordem - b.ordem)
+              .map((secao) => renderSecao(secao.id, secao.titulo, secao.conteudo))}
+            {fixa('conclusao')}
+          </>
         );
-      })}
+      })()}
 
       {/* D/E) Registro fotográfico */}
-      {renderGaleria(preObra, 'Registro Fotográfico — Pré-Obra')}
-      {renderGaleria(posObra, 'Registro Fotográfico — Pós-Obra')}
+      {isVistoria
+        ? gruposVistoria.map((grupo) =>
+            renderGaleria(fotos.filter((f) => f.tipo === grupo).sort((a, b) => a.ordem - b.ordem), grupo),
+          )
+        : (
+          <>
+            {renderGaleria(preObra, 'Registro Fotográfico — Pré-Obra')}
+            {renderGaleria(posObra, 'Registro Fotográfico — Pós-Obra')}
+          </>
+        )}
 
       {/* F) Link externo */}
       {relatorio.link_externo && (
