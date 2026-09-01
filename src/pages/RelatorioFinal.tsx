@@ -16,6 +16,7 @@ import { useObrasRelatorioFinal, useRelatorioFinal, useRelatorioFinalFotos } fro
 import { useRelatorioFinalMutations } from '@/features/relatorio-final/hooks/useRelatorioFinalMutations';
 import RelatorioFinalEditor from '@/features/relatorio-final/components/RelatorioFinalEditor';
 import FotosManager from '@/features/relatorio-final/components/FotosManager';
+import GruposFotosManager from '@/features/relatorio-final/components/GruposFotosManager';
 import AssinaturasCard from '@/features/relatorio-final/components/AssinaturasCard';
 import RelatorioFinalViewer from '@/features/relatorio-final/components/RelatorioFinalViewer';
 import type { EmpresaPDFData } from '@/lib/pdfShared';
@@ -154,6 +155,7 @@ export default function RelatorioFinalPage() {
         <div className="space-y-6">
           <RelatorioFinalEditor
             relatorio={relatorio}
+            tipoRelatorio={tipoRelatorio}
             editable={canEdit}
             saving={m.salvar.isPending}
             uploadingCapa={m.uploadCapa.isPending}
@@ -164,24 +166,41 @@ export default function RelatorioFinalPage() {
             onRemoverTemplate={() => m.removerTemplateCapa.mutate(relatorio.template_capa_url)}
           />
 
-          {(tipoRelatorio === 'vistoria_previa' ? ['registro'] : ['pre_obra', 'pos_obra']).map((tipo) => (
-            <FotosManager
-              key={tipo}
-              tipo={tipo}
-              titulo={tipo === 'registro' ? 'Registro Fotográfico' : tipo === 'pre_obra' ? 'Registro fotográfico — Pré-obra' : 'Registro fotográfico — Pós-obra'}
+          {tipoRelatorio === 'vistoria_previa' ? (
+            <GruposFotosManager
               fotos={fotos}
               editable={canEdit}
               uploading={m.adicionarFotos.isPending}
-              onUpload={(files) => m.adicionarFotos.mutate({
+              onUpload={(files, grupo) => m.adicionarFotos.mutate({
                 files,
-                tipo,
-                ordemInicial: fotos.filter((f) => f.tipo === tipo).length,
+                tipo: grupo,
+                ordemInicial: fotos.filter((f) => f.tipo === grupo).length,
               })}
               onLegenda={(id, legenda) => m.atualizarFoto.mutate({ id, legenda })}
               onMover={moverFoto}
               onExcluir={(foto: RelatorioFinalFoto) => m.excluirFoto.mutate({ id: foto.id, fotoUrl: foto.foto_url })}
+              onRenomearGrupo={(antigoNome, novoNome) => m.renomearGrupoFotos.mutate({ antigoNome, novoNome })}
             />
-          ))}
+          ) : (
+            (['pre_obra', 'pos_obra'] as string[]).map((tipo) => (
+              <FotosManager
+                key={tipo}
+                tipo={tipo}
+                titulo={tipo === 'pre_obra' ? 'Registro fotográfico — Pré-obra' : 'Registro fotográfico — Pós-obra'}
+                fotos={fotos}
+                editable={canEdit}
+                uploading={m.adicionarFotos.isPending}
+                onUpload={(files) => m.adicionarFotos.mutate({
+                  files,
+                  tipo,
+                  ordemInicial: fotos.filter((f) => f.tipo === tipo).length,
+                })}
+                onLegenda={(id, legenda) => m.atualizarFoto.mutate({ id, legenda })}
+                onMover={moverFoto}
+                onExcluir={(foto: RelatorioFinalFoto) => m.excluirFoto.mutate({ id: foto.id, fotoUrl: foto.foto_url })}
+              />
+            ))
+          )}
 
           <AssinaturasCard
             relatorio={relatorio}
