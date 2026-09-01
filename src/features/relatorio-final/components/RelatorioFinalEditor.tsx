@@ -8,10 +8,12 @@ import { ImagePlus, Save, X } from 'lucide-react';
 import RichTextEditor from '@/components/RichTextEditor';
 import { useSignedUrls } from '../hooks/useSignedUrls';
 import { SECOES } from '../types';
-import type { RelatorioFinal } from '../types';
+import type { RelatorioFinal, SecaoExtra } from '../types';
+import SecoesExtrasEditor from './SecoesExtrasEditor';
 
 interface Props {
   relatorio: RelatorioFinal;
+  tipoRelatorio?: string;
   editable: boolean;
   saving: boolean;
   uploadingCapa: boolean;
@@ -22,7 +24,7 @@ interface Props {
   onRemoverTemplate: () => void;
 }
 
-export default function RelatorioFinalEditor({ relatorio, editable, saving, uploadingCapa, uploadingTemplate, onSalvar, onUploadCapa, onUploadTemplate, onRemoverTemplate }: Props) {
+export default function RelatorioFinalEditor({ relatorio, tipoRelatorio = 'entrega_obra', editable, saving, uploadingCapa, uploadingTemplate, onSalvar, onUploadCapa, onUploadTemplate, onRemoverTemplate }: Props) {
   const [form, setForm] = useState<Partial<RelatorioFinal>>(relatorio);
   const capaInput = useRef<HTMLInputElement>(null);
   const templateInput = useRef<HTMLInputElement>(null);
@@ -163,31 +165,55 @@ export default function RelatorioFinalEditor({ relatorio, editable, saving, uplo
         </CardContent>
       </Card>
 
-      {SECOES.map((s) => (
-        <Card key={s.key}>
-          <CardHeader className="flex flex-row items-center justify-between gap-3">
-            <Input
-              className="max-w-sm font-display font-semibold"
-              value={(form[s.titulo] as string) || ''}
-              placeholder={s.label}
-              disabled={!editable}
-              onChange={(e) => set(s.titulo, e.target.value)}
-            />
-            {editable && (
-              <Button size="sm" variant="outline" disabled={saving} onClick={() => onSalvar(form)}>
-                <Save className="h-4 w-4 mr-1" /> Salvar
-              </Button>
-            )}
-          </CardHeader>
-          <CardContent>
-            <RichTextEditor
-              value={(form[s.conteudo] as string) || ''}
+      {(() => {
+        const isVistoria = tipoRelatorio === 'vistoria_previa';
+        const renderSecao = (s: typeof SECOES[number]) => (
+          <Card key={s.key}>
+            <CardHeader className="flex flex-row items-center justify-between gap-3">
+              <Input
+                className="max-w-sm font-display font-semibold"
+                value={(form[s.titulo] as string) || ''}
+                placeholder={s.label}
+                disabled={!editable}
+                onChange={(e) => set(s.titulo, e.target.value)}
+              />
+              {editable && (
+                <Button size="sm" variant="outline" disabled={saving} onClick={() => onSalvar(form)}>
+                  <Save className="h-4 w-4 mr-1" /> Salvar
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent>
+              <RichTextEditor
+                value={(form[s.conteudo] as string) || ''}
+                editable={editable}
+                onChange={(html) => set(s.conteudo, html === '<p></p>' ? null : html)}
+              />
+            </CardContent>
+          </Card>
+        );
+
+        if (!isVistoria) return SECOES.map(renderSecao);
+
+        const intro = SECOES.find((s) => s.key === 'introducao')!;
+        const conclusao = SECOES.find((s) => s.key === 'conclusao')!;
+        const extras = (Array.isArray(form.secoes_extras) ? form.secoes_extras : []) as unknown as SecaoExtra[];
+
+        return (
+          <>
+            {renderSecao(intro)}
+            <SecoesExtrasEditor
+              secoes={extras}
               editable={editable}
-              onChange={(html) => set(s.conteudo, html === '<p></p>' ? null : html)}
+              onChange={(secoes) =>
+                setForm((f) => ({ ...f, secoes_extras: secoes as unknown as RelatorioFinal['secoes_extras'] }))
+              }
             />
-          </CardContent>
-        </Card>
-      ))}
+            {renderSecao(conclusao)}
+          </>
+        );
+      })()}
+
     </div>
   );
 }

@@ -86,6 +86,23 @@ export function useRelatorioFinalMutations(
     onError: (e) => toast.error(`Erro ao enviar fotos: ${e instanceof Error ? e.message : 'desconhecido'}`),
   });
 
+  const renomearGrupoFotos = useMutation({
+    mutationFn: async ({ antigoNome, novoNome }: { antigoNome: string; novoNome: string }) => {
+      if (!relatorioId) throw new Error('Relatório não encontrado');
+      const { error } = await supabase
+        .from('relatorio_final_fotos')
+        .update({ tipo: novoNome })
+        .eq('relatorio_id', relatorioId)
+        .eq('tipo', antigoNome);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: relatorioFinalKeys.fotos(relatorioId) });
+      toast.success('Ambiente renomeado');
+    },
+    onError: (e) => toast.error(`Erro ao renomear ambiente: ${e instanceof Error ? e.message : 'desconhecido'}`),
+  });
+
   const atualizarFoto = useMutation({
     mutationFn: async ({ id, ...values }: { id: string; legenda?: string | null; ordem?: number; tipo?: TipoFoto }) => {
       const { error } = await supabase.from('relatorio_final_fotos').update(values).eq('id', id);
@@ -134,5 +151,5 @@ export function useRelatorioFinalMutations(
     onError: (e) => toast.error(`Erro ao remover assinatura: ${e instanceof Error ? e.message : 'desconhecido'}`),
   });
 
-  return { salvar, uploadCapa, uploadTemplateCapa, removerTemplateCapa, adicionarFotos, atualizarFoto, excluirFoto, assinar, removerAssinatura };
+  return { salvar, uploadCapa, uploadTemplateCapa, removerTemplateCapa, adicionarFotos, renomearGrupoFotos, atualizarFoto, excluirFoto, assinar, removerAssinatura };
 }

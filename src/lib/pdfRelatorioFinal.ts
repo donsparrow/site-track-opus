@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import { BLUE, MARGIN, loadImageAsDataUrl, setupPDFHelpers, type EmpresaPDFData } from '@/lib/pdfShared';
 import { downloadPdf } from '@/lib/pdfDownload';
 import { resolveAnexoUrl } from '@/lib/anexoUrl';
-import type { RelatorioFinal, RelatorioFinalFoto } from '@/features/relatorio-final/types';
+import type { RelatorioFinal, RelatorioFinalFoto, SecaoExtra } from '@/features/relatorio-final/types';
 
 const fmtDate = (v?: string | null) => (v ? new Date(`${v}T00:00:00`).toLocaleDateString('pt-BR') : '—');
 
@@ -53,6 +53,11 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
   const pageH = doc.internal.pageSize.getHeight();
   const contentW = pageW - MARGIN * 2;
   const helpers = await setupPDFHelpers(doc, empresa);
+  const isVistoria = relatorio.tipo_relatorio === 'vistoria_previa';
+  const tituloPdf = isVistoria ? 'RELATÓRIO DE VISTORIA PRÉVIA' : 'RELATÓRIO DE VISTORIA PÓS-OBRA';
+  const textoHeaderInterno = isVistoria
+    ? `Relatório de Vistoria Prévia — Engenheiro Responsável: ${relatorio.responsavel || '—'}`
+    : `Relatório Final de Obra — Engenheiro Responsável: ${relatorio.responsavel || '—'}`;
 
   // ---------- CAPA ----------
   const capa = await loadStorageImage(relatorio.foto_capa_url);
@@ -70,7 +75,7 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
     doc.setTextColor(30, 30, 30);
-    doc.text('RELATÓRIO DE VISTORIA PÓS-OBRA', pageW / 2, 15, { align: 'center' });
+    doc.text(tituloPdf, pageW / 2, 15, { align: 'center' });
 
     // Foto de capa: sempre mostra inteira (contain, sem corte), escala controlável
     if (capa) {
@@ -173,7 +178,7 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
-    doc.text('RELATÓRIO FINAL DE OBRA', pageW - MARGIN, 24, { align: 'right' });
+    doc.text(isVistoria ? 'RELATÓRIO DE VISTORIA PRÉVIA' : 'RELATÓRIO FINAL DE OBRA', pageW - MARGIN, 24, { align: 'right' });
     doc.setFontSize(14);
     doc.setTextColor(220, 225, 235);
     doc.text(doc.splitTextToSize(obraNome, contentW - 50) as string[], pageW - MARGIN, 34, { align: 'right' });
@@ -236,12 +241,31 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
   }
 
   // ---------- SEÇÕES ----------
-  const secoes = [
-    { titulo: relatorio.titulo_introducao || 'Introdução', conteudo: relatorio.conteudo_introducao },
-    { titulo: relatorio.titulo_garantia || 'Garantia', conteudo: relatorio.conteudo_garantia },
-    { titulo: relatorio.titulo_aditivo || 'Aditivos', conteudo: relatorio.conteudo_aditivo },
-    { titulo: relatorio.titulo_conclusao || 'Conclusão', conteudo: relatorio.conteudo_conclusao },
-  ].filter((s) => htmlToParagraphs(s.conteudo).length > 0);
+  const secoesExtras: SecaoExtra[] = (() => {
+    const raw = relatorio.secoes_extras;
+    if (!raw) return [];
+    try {
+      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      return Array.isArray(parsed) ? (parsed as SecaoExtra[]) : [];
+    } catch {
+      return [];
+    }
+  })().sort((a, b) => a.ordem - b.ordem);
+
+  const secoesBase: { titulo: string; conteudo: string | null }[] = isVistoria
+    ? [
+        { titulo: relatorio.titulo_introducao || 'Introdução', conteudo: relatorio.conteudo_introducao },
+        ...secoesExtras.map((s) => ({ titulo: s.titulo || 'Seção', conteudo: s.conteudo })),
+        { titulo: relatorio.titulo_conclusao || 'Conclusão', conteudo: relatorio.conteudo_conclusao },
+      ]
+    : [
+        { titulo: relatorio.titulo_introducao || 'Introdução', conteudo: relatorio.conteudo_introducao },
+        { titulo: relatorio.titulo_garantia || 'Garantia', conteudo: relatorio.conteudo_garantia },
+        { titulo: relatorio.titulo_aditivo || 'Aditivos', conteudo: relatorio.conteudo_aditivo },
+        { titulo: relatorio.titulo_conclusao || 'Conclusão', conteudo: relatorio.conteudo_conclusao },
+      ];
+
+  const secoes = secoesBase.filter((s) => htmlToParagraphs(s.conteudo).length > 0);
 
   const newPage = () => {
     doc.addPage();
@@ -249,11 +273,7 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(120, 120, 120);
-    doc.text(
-      `Relatório Final de Obra — Engenheiro Responsável: ${relatorio.responsavel || '—'}`,
-      MARGIN,
-      ny,
-    );
+    doc.text(textoHeaderInterno, MARGIN, ny);
     doc.setTextColor(30, 30, 30);
     ny += 6;
     return ny + 6;
@@ -307,10 +327,14 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
   }
 
   // ---------- FOTOS ----------
-  const grupos: { tipo: string; label: string }[] = [
-    { tipo: 'pre_obra', label: 'REGISTRO FOTOGRÁFICO — PRÉ-OBRA' },
-    { tipo: 'pos_obra', label: 'REGISTRO FOTOGRÁFICO — PÓS-OBRA' },
-  ];
+  const grupos: { tipo: string; label: string }[] = isVistoria
+    ? Array.from(new Set(fotos.map((f) => f.tipo)))
+        .sort((a, b) => a.localeCompare(b, 'pt-BR'))
+        .map((tipo) => ({ tipo, label: tipo.toUpperCase() }))
+    : [
+        { tipo: 'pre_obra', label: 'REGISTRO FOTOGRÁFICO — PRÉ-OBRA' },
+        { tipo: 'pos_obra', label: 'REGISTRO FOTOGRÁFICO — PÓS-OBRA' },
+      ];
 
   for (const g of grupos) {
     const lista = fotos.filter((f) => f.tipo === g.tipo).sort((a, b) => a.ordem - b.ordem);
