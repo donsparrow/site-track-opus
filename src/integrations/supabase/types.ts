@@ -1086,6 +1086,189 @@ export type Database = {
           },
         ]
       }
+      funcionario_fechamentos: {
+        Row: {
+          created_at: string
+          detalhamento_obras: Json | null
+          dias_integrais: number
+          dias_meio: number
+          empresa_id: string
+          funcionario_id: string
+          id: string
+          periodo_fim: string
+          periodo_inicio: string
+          status: string
+          total_vales: number
+          updated_at: string
+          valor_diaria_congelado: number
+          valor_liquido: number
+          valor_nao_alocado: number
+        }
+        Insert: {
+          created_at?: string
+          detalhamento_obras?: Json | null
+          dias_integrais?: number
+          dias_meio?: number
+          empresa_id: string
+          funcionario_id: string
+          id?: string
+          periodo_fim: string
+          periodo_inicio: string
+          status?: string
+          total_vales?: number
+          updated_at?: string
+          valor_diaria_congelado: number
+          valor_liquido?: number
+          valor_nao_alocado?: number
+        }
+        Update: {
+          created_at?: string
+          detalhamento_obras?: Json | null
+          dias_integrais?: number
+          dias_meio?: number
+          empresa_id?: string
+          funcionario_id?: string
+          id?: string
+          periodo_fim?: string
+          periodo_inicio?: string
+          status?: string
+          total_vales?: number
+          updated_at?: string
+          valor_diaria_congelado?: number
+          valor_liquido?: number
+          valor_nao_alocado?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funcionario_fechamentos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funcionario_fechamentos_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funcionario_lancamentos: {
+        Row: {
+          created_at: string
+          data: string
+          descricao: string | null
+          empresa_id: string
+          funcionario_id: string
+          id: string
+          tipo: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          created_at?: string
+          data: string
+          descricao?: string | null
+          empresa_id: string
+          funcionario_id: string
+          id?: string
+          tipo: string
+          updated_at?: string
+          valor: number
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          descricao?: string | null
+          empresa_id?: string
+          funcionario_id?: string
+          id?: string
+          tipo?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funcionario_lancamentos_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funcionario_lancamentos_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "funcionarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      funcionarios: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          dias_padrao: number[]
+          empresa_id: string
+          foto_url: string | null
+          funcao: string | null
+          id: string
+          nome: string
+          obra_atual_id: string | null
+          obra_atual_texto: string | null
+          telefone: string | null
+          updated_at: string
+          valor_diaria: number
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          dias_padrao?: number[]
+          empresa_id: string
+          foto_url?: string | null
+          funcao?: string | null
+          id?: string
+          nome: string
+          obra_atual_id?: string | null
+          obra_atual_texto?: string | null
+          telefone?: string | null
+          updated_at?: string
+          valor_diaria?: number
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          dias_padrao?: number[]
+          empresa_id?: string
+          foto_url?: string | null
+          funcao?: string | null
+          id?: string
+          nome?: string
+          obra_atual_id?: string | null
+          obra_atual_texto?: string | null
+          telefone?: string | null
+          updated_at?: string
+          valor_diaria?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "funcionarios_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funcionarios_obra_atual_id_fkey"
+            columns: ["obra_atual_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       google_calendar_tokens: {
         Row: {
           access_token: string
@@ -1497,6 +1680,70 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      ponto_registros: {
+        Row: {
+          created_at: string
+          data: string
+          empresa_id: string
+          funcionario_id: string
+          id: string
+          motivo: string | null
+          obra_id: string | null
+          obra_texto: string | null
+          observacao: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data: string
+          empresa_id: string
+          funcionario_id: string
+          id?: string
+          motivo?: string | null
+          obra_id?: string | null
+          obra_texto?: string | null
+          observacao?: string | null
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          empresa_id?: string
+          funcionario_id?: string
+          id?: string
+          motivo?: string | null
+          obra_id?: string | null
+          obra_texto?: string | null
+          observacao?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ponto_registros_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ponto_registros_funcionario_id_fkey"
+            columns: ["funcionario_id"]
+            isOneToOne: false
+            referencedRelation: "funcionarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ponto_registros_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
