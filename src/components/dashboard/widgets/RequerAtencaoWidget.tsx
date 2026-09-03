@@ -95,7 +95,7 @@ export default function RequerAtencaoWidget() {
   const ultimoUtil = ultimoDiaUtil(new Date());
   const ultimoUtilIso = iso(ultimoUtil);
   obras
-    .filter(o => o.status === 'andamento' || o.status === 'planejamento')
+    .filter(o => o.status === 'andamento' && !obraConcluidaDeFato(o.id, atividades))
     .forEach(o => {
       const tem = diarios.some(d => d.obra_id === o.id && d.data === ultimoUtilIso);
       if (!tem) {
