@@ -45,7 +45,7 @@ export default function WidgetFrame({ editMode, title, headerColor, hidden, onCo
       {headerColor && (
         <div className="absolute top-0 left-0 right-0 h-1 rounded-t-lg z-10 pointer-events-none" style={{ backgroundColor: headerColor }} />
       )}
-      <div className="h-full w-full overflow-hidden rounded-lg">
+      <div className="h-full w-full overflow-hidden rounded-lg shadow-sm hover:shadow-md transition-shadow">
         {children}
       </div>
     </div>
