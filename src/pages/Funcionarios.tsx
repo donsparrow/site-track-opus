@@ -88,6 +88,23 @@ export default function Funcionarios() {
   const [lancInicio, setLancInicio] = useState(periodoInicio);
   const [lancFim, setLancFim] = useState(periodoFim);
 
+  const { funcionarios, isLoading } = useFuncionarios();
+  const { obras } = useObrasFuncionarios();
+  const funcMutations = useFuncionariosMutations();
+
+  const { registros, isLoading: pontoLoading } = usePonto(periodoInicio, periodoFim);
+  const { salvarPonto, limparPonto } = usePontoMutations(periodoInicio, periodoFim);
+
+  const { lancamentos, isLoading: lancLoading } = useLancamentos(filtroFuncionario, lancInicio, lancFim);
+  const lancMutations = useLancamentosMutations();
+
+  const [fechFuncionario, setFechFuncionario] = useState<string | null>(null);
+  const { lancamentos: lancFechamento } = useLancamentos(fechFuncionario, periodoInicio, periodoFim);
+  const { fechamentos, isLoading: fechLoading } = useFechamentos(fechFuncionario);
+  const fechMutations = useFechamentosMutations();
+
+  const semAncora = !ancoraLoading && !ancora;
+
 
   return (
     <div>
