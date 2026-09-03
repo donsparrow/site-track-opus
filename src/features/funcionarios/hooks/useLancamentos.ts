@@ -92,6 +92,8 @@ export function useLancamentosMutations() {
         tipo: values.tipo,
         valor: values.valor,
         descricao: values.descricao.trim() || null,
+        lancamento_origem_id:
+          values.tipo === 'desconto' ? values.lancamento_origem_id ?? null : null,
       };
       if (editId) {
         const { error } = await supabase.from('funcionario_lancamentos').update(payload).eq('id', editId);
