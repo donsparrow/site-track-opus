@@ -2296,6 +2296,7 @@ export type Database = {
         Returns: boolean
       }
       can_read_anexo: { Args: { _name: string }; Returns: boolean }
+      can_write_anexo: { Args: { _name: string }; Returns: boolean }
       create_empresa_and_link: {
         Args: { _cnpj?: string; _nome: string }
         Returns: string
