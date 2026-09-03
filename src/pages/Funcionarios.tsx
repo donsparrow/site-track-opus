@@ -181,7 +181,9 @@ export default function Funcionarios() {
             }
             onLimpar={(id) => limparPonto.mutate(id)}
           />
+          )}
         </TabsContent>
+
 
         <TabsContent value="lancamentos" className="mt-4">
           <LancamentosTab
