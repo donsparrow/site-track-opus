@@ -30,6 +30,54 @@ export interface LancamentoFormValues {
   tipo: string;
   valor: number;
   descricao: string;
+  lancamento_origem_id?: string | null;
+}
+
+/**
+ * Saldo devedor de vales/adiantamentos: soma os descontos vinculados a cada um.
+ * Ignora o filtro de período (o saldo é histórico).
+ */
+export function useAdiantamentosEmAberto(
+  funcionarioId: string | null,
+  incluirQuitados = false,
+) {
+  const query = useQuery({
+    queryKey: [...funcionariosKeys.adiantamentos(funcionarioId), incluirQuitados],
+    queryFn: async (): Promise<AdiantamentoSaldo[]> => {
+      let q = supabase
+        .from('funcionario_lancamentos')
+        .select('*')
+        .in('tipo', ['vale', 'adiantamento', 'desconto'])
+        .order('data', { ascending: false });
+      if (funcionarioId) q = q.eq('funcionario_id', funcionarioId);
+      const { data, error } = await q;
+      if (error) throw error;
+      const todos = (data || []) as Lancamento[];
+
+      const descontos = todos.filter((l) => l.tipo === 'desconto' && l.lancamento_origem_id);
+      const origens = todos.filter((l) => l.tipo === 'vale' || l.tipo === 'adiantamento');
+
+      const lista = origens.map((a) => {
+        const vinculados = descontos
+          .filter((d) => d.lancamento_origem_id === a.id)
+          .sort((x, y) => x.data.localeCompare(y.data));
+        const totalDescontado = vinculados.reduce((acc, d) => acc + Number(d.valor), 0);
+        const saldo = Number(a.valor) - totalDescontado;
+        return {
+          ...a,
+          valor: Number(a.valor),
+          totalDescontado,
+          saldo,
+          quitado: saldo <= 0.009,
+          descontos: vinculados,
+        } as AdiantamentoSaldo;
+      });
+
+      return incluirQuitados ? lista : lista.filter((a) => !a.quitado);
+    },
+  });
+
+  return { ...query, adiantamentos: query.data ?? [] };
 }
 
 export function useLancamentosMutations() {
