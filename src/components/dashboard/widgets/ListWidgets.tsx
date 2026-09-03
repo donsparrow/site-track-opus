@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Wrench, ClipboardList, CalendarClock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Wrench, ClipboardList, CalendarClock, Inbox } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useNavigate } from 'react-router-dom';
 import { useDashboardData } from '@/hooks/useDashboardData';
@@ -8,44 +9,48 @@ import type { WidgetConfig } from '@/types/dashboard';
 
 interface Props { config?: WidgetConfig }
 
+const CARD_CLASS = 'h-full flex flex-col shadow-sm hover:shadow-md transition-shadow';
+const TITLE_CLASS = 'text-sm font-display font-semibold flex items-center gap-2';
+
+function EmptyLine({ children }: { children: string }) {
+  return (
+    <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
+      <Inbox className="h-4 w-4 shrink-0" />
+      <span>{children}</span>
+    </div>
+  );
+}
+
 export function FerramentasResumoWidget({ config }: Props) {
   const { ferramentas, loading } = useDashboardData();
   const navigate = useNavigate();
   const filtered = config?.obraId ? ferramentas.filter(f => f.obra_id === config.obraId) : ferramentas;
-  const resumo = {
-    total: filtered.length,
-    em_uso: filtered.filter(f => f.status === 'em_uso').length,
-    disponivel: filtered.filter(f => f.status === 'disponivel').length,
-    manutencao: filtered.filter(f => f.status === 'manutencao').length,
-    inativo: filtered.filter(f => f.status === 'inativo').length,
-  };
+  const resumo = [
+    { label: 'Total', value: filtered.length, color: 'text-foreground' },
+    { label: 'Em Uso', value: filtered.filter(f => f.status === 'em_uso').length, color: 'text-accent' },
+    { label: 'Disponíveis', value: filtered.filter(f => f.status === 'disponivel').length, color: 'text-success' },
+    { label: 'Manutenção', value: filtered.filter(f => f.status === 'manutencao').length, color: 'text-warning' },
+    { label: 'Inativas', value: filtered.filter(f => f.status === 'inativo').length, color: 'text-destructive' },
+  ];
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="pb-2">
-        <CardTitle className="font-display text-base flex items-center gap-2"><Wrench className="h-5 w-5" /> Ferramentas</CardTitle>
+    <Card className={CARD_CLASS}>
+      <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
+        <CardTitle className={TITLE_CLASS}><Wrench className="h-4 w-4" /> Ferramentas</CardTitle>
+        <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => navigate('/ferramentas')}>Gerenciar</Button>
       </CardHeader>
-      <CardContent className="flex-1 overflow-auto">
-        {loading ? <Skeleton className="h-32 w-full" /> : (
-          <>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm mb-3">
-              <div><p className="text-muted-foreground text-xs">Total</p><p className="text-lg font-bold">{resumo.total}</p></div>
-              <div><p className="text-muted-foreground text-xs">Em Uso</p><p className="text-lg font-bold text-accent">{resumo.em_uso}</p></div>
-              <div><p className="text-muted-foreground text-xs">Disponíveis</p><p className="text-lg font-bold text-success">{resumo.disponivel}</p></div>
-              <div><p className="text-muted-foreground text-xs">Manutenção</p><p className="text-lg font-bold text-warning">{resumo.manutencao}</p></div>
-              <div><p className="text-muted-foreground text-xs">Inativas</p><p className="text-lg font-bold text-destructive">{resumo.inativo}</p></div>
-            </div>
-            <div className="space-y-1">
-              {filtered.slice(0, 5).map(f => (
-                <div key={f.id} className="flex items-center justify-between text-xs py-1 border-b border-border/50 last:border-0 cursor-pointer hover:bg-muted/50 rounded px-2"
-                  onClick={() => navigate('/ferramentas')}>
-                  <span className="truncate">{f.nome} <span className="text-muted-foreground">#{f.numero_cadastro}</span></span>
-                  <Badge variant="outline" className="text-[10px] ml-2 shrink-0">{f.obra_nome || 'Sem obra'}</Badge>
-                </div>
-              ))}
-              {filtered.length === 0 && <p className="text-xs text-muted-foreground">Nenhuma ferramenta.</p>}
-            </div>
-          </>
+      <CardContent className="flex-1 min-h-0 flex items-center">
+        {loading ? <Skeleton className="h-16 w-full" /> : filtered.length === 0 ? (
+          <EmptyLine>Nenhuma ferramenta cadastrada.</EmptyLine>
+        ) : (
+          <div className="w-full grid grid-cols-3 sm:grid-cols-5 divide-x divide-border">
+            {resumo.map(r => (
+              <div key={r.label} className="px-2 text-center first:pl-0 last:pr-0">
+                <p className={`text-xl font-display font-bold ${r.color}`}>{r.value}</p>
+                <p className="text-[11px] text-muted-foreground truncate">{r.label}</p>
+              </div>
+            ))}
+          </div>
         )}
       </CardContent>
     </Card>
@@ -57,13 +62,13 @@ export function UltimosDiariosWidget({ config }: Props) {
   const navigate = useNavigate();
   const filtered = config?.obraId ? diarios.filter(d => d.obra_id === config.obraId) : diarios;
   return (
-    <Card className="h-full flex flex-col">
+    <Card className={CARD_CLASS}>
       <CardHeader className="pb-2">
-        <CardTitle className="font-display text-base flex items-center gap-2"><ClipboardList className="h-5 w-5" /> Últimos Diários</CardTitle>
+        <CardTitle className={TITLE_CLASS}><ClipboardList className="h-4 w-4" /> Últimos Diários</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 overflow-auto">
-        {loading ? <Skeleton className="h-24 w-full" /> : filtered.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhum diário registrado.</p>
+        {loading ? <Skeleton className="h-16 w-full" /> : filtered.length === 0 ? (
+          <EmptyLine>Nenhum diário recente.</EmptyLine>
         ) : (
           <div className="space-y-1">
             {filtered.slice(0, 8).map(d => (
@@ -85,13 +90,13 @@ export function AtividadesPendentesWidget({ config }: Props) {
   const pendentes = atividades.filter(a => a.status !== 'concluido' && (a.percentual || 0) < 100);
   const filtered = config?.obraId ? pendentes.filter(a => a.obra_id === config.obraId) : pendentes;
   return (
-    <Card className="h-full flex flex-col">
+    <Card className={CARD_CLASS}>
       <CardHeader className="pb-2">
-        <CardTitle className="font-display text-base flex items-center gap-2"><CalendarClock className="h-5 w-5" /> Atividades Pendentes</CardTitle>
+        <CardTitle className={TITLE_CLASS}><CalendarClock className="h-4 w-4" /> Atividades Pendentes</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 overflow-auto">
-        {loading ? <Skeleton className="h-24 w-full" /> : filtered.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Sem atividades pendentes.</p>
+        {loading ? <Skeleton className="h-16 w-full" /> : filtered.length === 0 ? (
+          <EmptyLine>Sem atividades pendentes.</EmptyLine>
         ) : (
           <div className="space-y-1">
             {filtered.slice(0, 8).map(a => (
@@ -113,13 +118,13 @@ export function AtividadesAtrasoWidget({ config }: Props) {
   const atrasadas = atividades.filter(a => a.data_fim && a.data_fim < today && a.status !== 'concluido' && (a.percentual || 0) < 100);
   const filtered = config?.obraId ? atrasadas.filter(a => a.obra_id === config.obraId) : atrasadas;
   return (
-    <Card className="h-full flex flex-col">
+    <Card className={CARD_CLASS}>
       <CardHeader className="pb-2">
-        <CardTitle className="font-display text-base flex items-center gap-2 text-destructive"><CalendarClock className="h-5 w-5" /> Atividades em Atraso</CardTitle>
+        <CardTitle className={`${TITLE_CLASS} text-destructive`}><CalendarClock className="h-4 w-4" /> Atividades em Atraso</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 overflow-auto">
-        {loading ? <Skeleton className="h-24 w-full" /> : filtered.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nenhuma atividade em atraso.</p>
+        {loading ? <Skeleton className="h-16 w-full" /> : filtered.length === 0 ? (
+          <EmptyLine>Nenhuma atividade em atraso.</EmptyLine>
         ) : (
           <div className="space-y-1">
             {filtered.slice(0, 8).map(a => (

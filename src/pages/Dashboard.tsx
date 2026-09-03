@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Plus, ClipboardList, LayoutGrid, Save, X } from 'lucide-react';
+import { Plus, ClipboardList, LayoutGrid, Save, X, Eye, EyeOff } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useValueVisibility } from '@/hooks/useValueVisibility';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -26,6 +28,7 @@ function DashboardInner() {
   const { pode } = usePermissions();
   const canSeeDiario = pode('diario_obra', 'visualizar');
   const { obras, refresh } = useDashboardData();
+  const { hidden: valuesHidden, toggle: toggleValues } = useValueVisibility();
 
   const { widgets, setWidgets, gridConfig, setGridConfig, loading: layoutLoading, save } = useDashboardLayout();
 
@@ -138,6 +141,16 @@ function DashboardInner() {
               <Button onClick={enterEdit} variant="outline">
                 <LayoutGrid className="h-4 w-4 mr-2" /> Personalizar Dashboard
               </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" onClick={toggleValues} aria-label={valuesHidden ? 'Mostrar valores' : 'Ocultar valores'}>
+                      {valuesHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{valuesHidden ? 'Mostrar valores' : 'Ocultar valores'}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </>
           ) : (
             <>
