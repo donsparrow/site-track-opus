@@ -1166,6 +1166,7 @@ export type Database = {
           empresa_id: string
           funcionario_id: string
           id: string
+          lancamento_origem_id: string | null
           tipo: string
           updated_at: string
           valor: number
@@ -1177,6 +1178,7 @@ export type Database = {
           empresa_id: string
           funcionario_id: string
           id?: string
+          lancamento_origem_id?: string | null
           tipo: string
           updated_at?: string
           valor: number
@@ -1188,6 +1190,7 @@ export type Database = {
           empresa_id?: string
           funcionario_id?: string
           id?: string
+          lancamento_origem_id?: string | null
           tipo?: string
           updated_at?: string
           valor?: number
@@ -1205,6 +1208,13 @@ export type Database = {
             columns: ["funcionario_id"]
             isOneToOne: false
             referencedRelation: "funcionarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "funcionario_lancamentos_lancamento_origem_id_fkey"
+            columns: ["lancamento_origem_id"]
+            isOneToOne: false
+            referencedRelation: "funcionario_lancamentos"
             referencedColumns: ["id"]
           },
         ]
