@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { funcionariosKeys, funcionariosPrefixes } from '../queryKeys';
-import type { Lancamento } from '../types';
+import type { AdiantamentoSaldo, Lancamento } from '../types';
 
 export function useLancamentos(funcionarioId: string | null, inicio: string, fim: string) {
   const query = useQuery({
