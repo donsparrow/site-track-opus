@@ -106,11 +106,15 @@ export function KpiGastosWidget() {
   const somaMes = (m: string) => despesas.filter(d => d.data?.slice(0, 7) === m).reduce((s, d) => s + d.valor, 0);
   const atual = somaMes(mesAtual);
   const anterior = somaMes(mesAnterior);
-  let badge = 'sem comparativo';
+  let badge: string;
   let tone: BadgeTone = 'neutral';
-  if (anterior > 0) {
+  if (atual === 0) {
+    badge = 'sem gastos este mês';
+  } else if (anterior === 0) {
+    badge = 'primeiro mês com gastos';
+  } else {
     const varPct = Math.round(((atual - anterior) / anterior) * 100);
-    badge = `${varPct > 0 ? '+' : ''}${varPct}% vs mês anterior`;
+    badge = varPct === 0 ? 'estável vs mês anterior' : `${varPct > 0 ? '↑' : '↓'} ${Math.abs(varPct)}% vs mês anterior`;
     tone = varPct > 0 ? 'danger' : varPct < 0 ? 'success' : 'neutral';
   }
   return (
