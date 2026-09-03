@@ -1,10 +1,13 @@
 import { useMemo, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { ChevronLeft, ChevronRight, Settings } from 'lucide-react';
 import type { Funcionario, ObraOption, PontoRegistro, PontoStatus } from '../types';
-import { corDaObra, parseISODate, resolverCelula, siglaObra } from '../utils';
+import { corDaObra, parseISODate, resolverCelula, rotuloCiclo, siglaObra } from '../utils';
 import PontoCelulaDialog, { type CelulaSelecionada } from './PontoCelulaDialog';
 
 interface Props {
@@ -12,13 +15,16 @@ interface Props {
   obras: ObraOption[];
   registros: PontoRegistro[];
   dias: string[];
-  ano: number;
-  mes: number;
-  quinzena: 1 | 2;
   isLoading: boolean;
   canEdit: boolean;
   saving: boolean;
-  onChangePeriodo: (ano: number, mes: number, quinzena: 1 | 2) => void;
+  isAdmin: boolean;
+  ancora: string | null;
+  savingAncora?: boolean;
+  onAnterior: () => void;
+  onProxima: () => void;
+  onHoje: () => void;
+  onSalvarAncora: (ancoraISO: string) => void;
   onSalvar: (
     funcionarioId: string,
     data: string,
@@ -28,13 +34,14 @@ interface Props {
   onLimpar: (registroId: string) => void;
 }
 
-const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
-
 export default function PontoTab({
-  funcionarios, obras, registros, dias, ano, mes, quinzena, isLoading, canEdit, saving,
-  onChangePeriodo, onSalvar, onLimpar,
+  funcionarios, obras, registros, dias, isLoading, canEdit, saving,
+  isAdmin, ancora, savingAncora, onAnterior, onProxima, onHoje, onSalvarAncora,
+  onSalvar, onLimpar,
 }: Props) {
   const [selecionada, setSelecionada] = useState<CelulaSelecionada | null>(null);
+  const [configOpen, setConfigOpen] = useState(false);
+  const [ancoraDraft, setAncoraDraft] = useState(ancora ?? '');
 
   const ativos = useMemo(() => funcionarios.filter((f) => f.ativo), [funcionarios]);
   const mapa = useMemo(() => {
@@ -46,28 +53,53 @@ export default function PontoTab({
   const nomeObraDia = (obraId: string | null, obraTexto: string | null) =>
     obraId ? obras.find((o) => o.id === obraId)?.nome ?? 'Obra' : obraTexto || 'Avulsa';
 
-  const anos = [ano - 1, ano, ano + 1];
-
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
-        <Select value={String(mes)} onValueChange={(v) => onChangePeriodo(ano, Number(v), quinzena)}>
-          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {MESES.map((m, i) => <SelectItem key={m} value={String(i)}>{m}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={String(ano)} onValueChange={(v) => onChangePeriodo(Number(v), mes, quinzena)}>
-          <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {anos.map((a) => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <div className="flex gap-1">
-          <Button variant={quinzena === 1 ? 'default' : 'outline'} onClick={() => onChangePeriodo(ano, mes, 1)}>1ª quinzena (1–15)</Button>
-          <Button variant={quinzena === 2 ? 'default' : 'outline'} onClick={() => onChangePeriodo(ano, mes, 2)}>2ª quinzena (16–fim)</Button>
-        </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="outline" size="sm" onClick={onAnterior}>
+          <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+        </Button>
+        <span className="px-3 py-1.5 rounded-md bg-muted font-semibold text-sm tabular-nums">
+          {rotuloCiclo(dias)}
+        </span>
+        <Button variant="outline" size="sm" onClick={onProxima}>
+          Próxima <ChevronRight className="h-4 w-4 ml-1" />
+        </Button>
+        <Button variant="ghost" size="sm" onClick={onHoje}>Hoje</Button>
+        {isAdmin && (
+          <Button
+            variant="ghost"
+            size="icon"
+            title="Configurar data-âncora do ciclo"
+            onClick={() => { setAncoraDraft(ancora ?? ''); setConfigOpen(true); }}
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+        )}
       </div>
+
+      <Dialog open={configOpen} onOpenChange={setConfigOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Ciclo de pagamento</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="ancora-ciclo">Data de início do ciclo</Label>
+            <Input id="ancora-ciclo" type="date" value={ancoraDraft} onChange={(e) => setAncoraDraft(e.target.value)} />
+            <p className="text-xs text-muted-foreground">
+              Mudar essa data desloca todos os ciclos futuros; fechamentos já feitos não são afetados.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfigOpen(false)}>Cancelar</Button>
+            <Button
+              disabled={!ancoraDraft || savingAncora}
+              onClick={() => { onSalvarAncora(ancoraDraft); setConfigOpen(false); }}
+            >
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">
