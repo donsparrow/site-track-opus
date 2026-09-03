@@ -59,7 +59,7 @@ export default function RequerAtencaoWidget() {
 
   // Regra 1 — atividades em atraso
   atividades
-    .filter(a => a.data_fim && a.data_fim < hoje && a.status !== 'concluida')
+    .filter(a => a.data_fim && a.data_fim < hoje && !estaConcluida(a))
     .forEach(a => {
       const obra = obras.find(o => o.id === a.obra_id);
       alertas.push({
