@@ -13,4 +13,5 @@ export const funcionariosPrefixes = {
   funcionarios: ['funcionarios'] as const,
   ponto: ['ponto'] as const,
   lancamentos: ['lancamentos'] as const,
+  adiantamentos: ['adiantamentos'] as const,
 };

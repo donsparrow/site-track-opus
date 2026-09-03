@@ -109,6 +109,7 @@ export function useLancamentosMutations() {
     onSuccess: () => {
       toast.success('Lançamento salvo');
       qc.invalidateQueries({ queryKey: funcionariosPrefixes.lancamentos });
+      qc.invalidateQueries({ queryKey: funcionariosPrefixes.adiantamentos });
     },
     onError: (e) => toast.error(`Erro ao salvar: ${e instanceof Error ? e.message : 'desconhecido'}`),
   });
@@ -121,6 +122,7 @@ export function useLancamentosMutations() {
     onSuccess: () => {
       toast.success('Lançamento excluído');
       qc.invalidateQueries({ queryKey: funcionariosPrefixes.lancamentos });
+      qc.invalidateQueries({ queryKey: funcionariosPrefixes.adiantamentos });
     },
     onError: (e) => toast.error(`Erro ao excluir: ${e instanceof Error ? e.message : 'desconhecido'}`),
   });
