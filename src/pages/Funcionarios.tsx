@@ -4,13 +4,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CadastroTab from '@/features/funcionarios/components/CadastroTab';
 import PontoTab from '@/features/funcionarios/components/PontoTab';
 import LancamentosTab from '@/features/funcionarios/components/LancamentosTab';
+import FechamentosTab from '@/features/funcionarios/components/FechamentosTab';
 import { useFuncionarios, useFuncionariosMutations, useObrasFuncionarios } from '@/features/funcionarios/hooks/useFuncionarios';
 import { usePonto, usePontoMutations } from '@/features/funcionarios/hooks/usePonto';
 import { useLancamentos, useLancamentosMutations } from '@/features/funcionarios/hooks/useLancamentos';
+import { useFechamentos, useFechamentosMutations } from '@/features/funcionarios/hooks/useFechamentos';
 import { diasDaQuinzena } from '@/features/funcionarios/utils';
 
 export default function Funcionarios() {
-  const { canEdit } = useAuth();
+  const { canEdit, isAdmin } = useAuth();
   const hoje = new Date();
 
   const [ano, setAno] = useState(hoje.getFullYear());
@@ -35,6 +37,11 @@ export default function Funcionarios() {
   const { lancamentos, isLoading: lancLoading } = useLancamentos(filtroFuncionario, lancInicio, lancFim);
   const lancMutations = useLancamentosMutations();
 
+  const [fechFuncionario, setFechFuncionario] = useState<string | null>(null);
+  const { lancamentos: lancFechamento } = useLancamentos(fechFuncionario, periodoInicio, periodoFim);
+  const { fechamentos, isLoading: fechLoading } = useFechamentos(fechFuncionario);
+  const fechMutations = useFechamentosMutations();
+
   return (
     <div>
       <div className="mb-6">
@@ -47,6 +54,7 @@ export default function Funcionarios() {
           <TabsTrigger value="cadastro">Cadastro</TabsTrigger>
           <TabsTrigger value="ponto">Ponto</TabsTrigger>
           <TabsTrigger value="lancamentos">Lançamentos</TabsTrigger>
+          <TabsTrigger value="fechamentos">Fechamentos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="cadastro" className="mt-4">
@@ -106,6 +114,28 @@ export default function Funcionarios() {
             onChangePeriodo={(i, f) => { setLancInicio(i); setLancFim(f); }}
             onSave={(values) => lancMutations.salvar.mutate({ editId: null, values })}
             onDelete={(id) => lancMutations.excluir.mutate(id)}
+          />
+        </TabsContent>
+        <TabsContent value="fechamentos" className="mt-4">
+          <FechamentosTab
+            funcionarios={funcionarios}
+            obras={obras}
+            registros={registros}
+            lancamentos={lancFechamento}
+            dias={dias}
+            ano={ano}
+            mes={mes}
+            quinzena={quinzena}
+            fechamentos={fechamentos}
+            isLoading={fechLoading}
+            canEdit={canEdit}
+            isAdmin={isAdmin}
+            saving={fechMutations.fechar.isPending}
+            funcionarioId={fechFuncionario}
+            onChangeFuncionario={setFechFuncionario}
+            onChangePeriodo={(a, m, q) => { setAno(a); setMes(m); setQuinzena(q); }}
+            onFechar={(input) => fechMutations.fechar.mutate(input)}
+            onReabrir={(id) => fechMutations.reabrir.mutate(id)}
           />
         </TabsContent>
       </Tabs>
