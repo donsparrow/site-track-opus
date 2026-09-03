@@ -28,6 +28,7 @@ function DashboardInner() {
   const { pode } = usePermissions();
   const canSeeDiario = pode('diario_obra', 'visualizar');
   const { obras, refresh } = useDashboardData();
+  const { hidden: valuesHidden, toggle: toggleValues } = useValueVisibility();
 
   const { widgets, setWidgets, gridConfig, setGridConfig, loading: layoutLoading, save } = useDashboardLayout();
 
