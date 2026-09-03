@@ -24,6 +24,9 @@ function diasAtraso(dataRef: string, hoje: string): number {
   return Math.max(1, Math.round(diff / 86400000));
 }
 
+const estaConcluida = (a: { status?: string; percentual?: number }) =>
+  a.status === 'concluido' || a.status === 'concluida' || (a.percentual ?? 0) >= 100;
+
 function ultimoDiaUtil(hoje: Date): Date {
   const d = new Date(hoje);
   d.setDate(d.getDate() - 1);
