@@ -41,7 +41,7 @@ async function getNomeUsuario(userId: string) {
     .select('nome, email')
     .eq('user_id', userId)
     .maybeSingle();
-  return data?.nome || data?.email || 'Usuário';
+  return data?.nome || data?.email || 'Responsável Técnico';
 }
 
 /* ------------------------------- inputs ---------------------------------- */
@@ -197,7 +197,7 @@ export function useRelatorioMutations() {
       const versoes = await fetchVersoes(relatorioId);
       const currentSnapshot = buildSnapshot(dados, periodo);
       const lastSnapshot = (versoes[0]?.snapshot_dados as unknown as SnapshotDados) || null;
-      const { hasChanges, summary } = detectChanges(lastSnapshot, currentSnapshot);
+      const { hasChanges, summary } = detectChanges(lastSnapshot, currentSnapshot, versoes.length === 0);
 
       if (hasChanges && user) {
         const nextVersion = versoes.length > 0 ? versoes[0].numero_versao + 1 : 1;
@@ -243,7 +243,7 @@ export function useRelatorioMutations() {
 
       const currentSnapshot = buildSnapshot(dados, periodo);
       const lastSnapshot = (versoes[0]?.snapshot_dados as unknown as SnapshotDados) || null;
-      const { hasChanges, summary } = detectChanges(lastSnapshot, currentSnapshot);
+      const { hasChanges, summary } = detectChanges(lastSnapshot, currentSnapshot, versoes.length === 0);
       const label = revLabel(revisaoPdf);
 
       await gerarPDFRelatorio({ empresa, obra, periodo, dados, assinaturas, versoes, revisao: revisaoPdf });
@@ -400,6 +400,8 @@ export function useRelatorioMutations() {
           criado_por: user.id,
           status: 'assinado',
           descricao_alteracao: `Assinado por ${nome}`,
+          // Propaga o último snapshot conhecido para não gerar "Criação do relatório" falso depois.
+          snapshot_dados: versoes[0]?.snapshot_dados ?? null,
         });
         await supabase.from('relatorio_logs').insert({
           relatorio_id: relatorioId,
