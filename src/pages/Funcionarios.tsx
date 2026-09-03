@@ -1,6 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { CalendarClock } from 'lucide-react';
 import CadastroTab from '@/features/funcionarios/components/CadastroTab';
 import PontoTab from '@/features/funcionarios/components/PontoTab';
 import LancamentosTab from '@/features/funcionarios/components/LancamentosTab';
@@ -9,38 +18,76 @@ import { useFuncionarios, useFuncionariosMutations, useObrasFuncionarios } from 
 import { usePonto, usePontoMutations } from '@/features/funcionarios/hooks/usePonto';
 import { useLancamentos, useLancamentosMutations } from '@/features/funcionarios/hooks/useLancamentos';
 import { useFechamentos, useFechamentosMutations } from '@/features/funcionarios/hooks/useFechamentos';
-import { diasDaQuinzena } from '@/features/funcionarios/utils';
+import { diasDoCiclo, offsetCicloAtual, parseISODate, toISODate } from '@/features/funcionarios/utils';
 
 export default function Funcionarios() {
-  const { canEdit, isAdmin } = useAuth();
+  const { canEdit, isAdmin, empresaId } = useAuth();
+  const qc = useQueryClient();
   const hoje = new Date();
+  const hojeISO = toISODate(hoje);
 
-  const [ano, setAno] = useState(hoje.getFullYear());
-  const [mes, setMes] = useState(hoje.getMonth());
-  const [quinzena, setQuinzena] = useState<1 | 2>(hoje.getDate() <= 15 ? 1 : 2);
+  const { data: ancora, isLoading: ancoraLoading } = useQuery({
+    queryKey: ['funcionarios', 'config-ciclo', empresaId],
+    queryFn: async (): Promise<string | null> => {
+      const { data, error } = await supabase
+        .from('configuracoes_empresa')
+        .select('ponto_ciclo_ancora')
+        .eq('empresa_id', empresaId as string)
+        .maybeSingle();
+      if (error) throw error;
+      return (data?.ponto_ciclo_ancora as string | null) ?? null;
+    },
+    enabled: !!empresaId,
+  });
 
-  const dias = useMemo(() => diasDaQuinzena(ano, mes, quinzena), [ano, mes, quinzena]);
-  const periodoInicio = dias[0];
-  const periodoFim = dias[dias.length - 1];
+  const salvarAncora = useMutation({
+    mutationFn: async (ancoraISO: string) => {
+      const { error } = await supabase
+        .from('configuracoes_empresa')
+        .update({ ponto_ciclo_ancora: ancoraISO })
+        .eq('empresa_id', empresaId as string);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Ciclo de pagamento atualizado');
+      qc.invalidateQueries({ queryKey: ['funcionarios', 'config-ciclo'] });
+    },
+    onError: (e) => toast.error(`Erro ao salvar: ${e instanceof Error ? e.message : 'desconhecido'}`),
+  });
+
+  const [cicloOffset, setCicloOffset] = useState(0);
+  const [ancoraIniciada, setAncoraIniciada] = useState(false);
+  const [setupOpen, setSetupOpen] = useState(false);
+  const [setupDraft, setSetupDraft] = useState(hojeISO);
+
+  useEffect(() => {
+    if (ancora && !ancoraIniciada) {
+      setCicloOffset(offsetCicloAtual(ancora, hojeISO));
+      setAncoraIniciada(true);
+    }
+  }, [ancora, ancoraIniciada, hojeISO]);
+
+  const dias = useMemo(
+    () => (ancora ? diasDoCiclo(ancora, cicloOffset) : []),
+    [ancora, cicloOffset],
+  );
+  const periodoInicio = dias[0] ?? hojeISO;
+  const periodoFim = dias[dias.length - 1] ?? hojeISO;
+
+  // Compatibilidade com componentes que ainda recebem ano/mes/quinzena.
+  const inicioDate = parseISODate(periodoInicio);
+  const ano = inicioDate.getFullYear();
+  const mes = inicioDate.getMonth();
+  const quinzena: 1 | 2 = inicioDate.getDate() <= 15 ? 1 : 2;
+  const irParaData = (a: number, m: number, q: 1 | 2) => {
+    if (!ancora) return;
+    setCicloOffset(offsetCicloAtual(ancora, toISODate(new Date(a, m, q === 1 ? 1 : 16))));
+  };
 
   const [filtroFuncionario, setFiltroFuncionario] = useState<string | null>(null);
   const [lancInicio, setLancInicio] = useState(periodoInicio);
   const [lancFim, setLancFim] = useState(periodoFim);
 
-  const { funcionarios, isLoading } = useFuncionarios();
-  const { obras } = useObrasFuncionarios();
-  const funcMutations = useFuncionariosMutations();
-
-  const { registros, isLoading: pontoLoading } = usePonto(periodoInicio, periodoFim);
-  const { salvarPonto, limparPonto } = usePontoMutations(periodoInicio, periodoFim);
-
-  const { lancamentos, isLoading: lancLoading } = useLancamentos(filtroFuncionario, lancInicio, lancFim);
-  const lancMutations = useLancamentosMutations();
-
-  const [fechFuncionario, setFechFuncionario] = useState<string | null>(null);
-  const { lancamentos: lancFechamento } = useLancamentos(fechFuncionario, periodoInicio, periodoFim);
-  const { fechamentos, isLoading: fechLoading } = useFechamentos(fechFuncionario);
-  const fechMutations = useFechamentosMutations();
 
   return (
     <div>
