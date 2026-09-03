@@ -43,6 +43,9 @@ export const WIDGET_REGISTRY: Record<string, WidgetDefinition> = {
   'obras-atrasadas': { type: 'obras-atrasadas', label: 'Obras Atrasadas', description: 'Obras com prazo vencido', category: 'obras', defaultSize: 'small', Component: ObrasAtrasadasWidget },
   'evolucao-fisica': { type: 'evolucao-fisica', label: 'Evolução Física Média', description: '% médio de progresso', category: 'obras', defaultSize: 'small', Component: EvolucaoFisicaWidget },
 
+  'requer-atencao': { type: 'requer-atencao', label: 'Requer Atenção', description: 'Pendências que exigem ação (atrasos, vencimentos, diários)', category: 'obras', defaultSize: 'medium', Component: RequerAtencaoWidget },
+  'minhas-obras': { type: 'minhas-obras', label: 'Minhas Obras', description: 'Cartões de obras com progresso físico e financeiro', category: 'obras', defaultSize: 'full', Component: MinhasObrasWidget },
+
   // FERRAMENTAS
   'ferramentas-resumo': { type: 'ferramentas-resumo', label: 'Resumo de Ferramentas', description: 'Status e lista de ferramentas', category: 'ferramentas', defaultSize: 'full', Component: FerramentasResumoWidget, supportsObraFilter: true },
 
