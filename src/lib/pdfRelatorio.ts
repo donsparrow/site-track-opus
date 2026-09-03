@@ -62,6 +62,15 @@ const fmt = (d: string) => {
 const BLUE = [30, 58, 95] as const;
 const MARGIN = 15;
 
+// jsPDF/Helvetica (WinAnsi) não suporta alguns caracteres Unicode — normaliza para ASCII.
+const sanitizePdfText = (s: string) =>
+  (s || '')
+    .replace(/[→⟶➜]/g, '->')
+    .replace(/[–—]/g, '-')
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/…/g, '...');
+
 async function loadImageAsDataUrl(url: string): Promise<string | null> {
   try {
     return await new Promise<string | null>((resolve) => {
