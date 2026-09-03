@@ -141,6 +141,16 @@ function DashboardInner() {
               <Button onClick={enterEdit} variant="outline">
                 <LayoutGrid className="h-4 w-4 mr-2" /> Personalizar Dashboard
               </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="icon" onClick={toggleValues} aria-label={valuesHidden ? 'Mostrar valores' : 'Ocultar valores'}>
+                      {valuesHidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>{valuesHidden ? 'Mostrar valores' : 'Ocultar valores'}</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </>
           ) : (
             <>
