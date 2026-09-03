@@ -224,6 +224,34 @@ export default function Funcionarios() {
           />
         </TabsContent>
       </Tabs>
+
+      <Dialog open={setupOpen} onOpenChange={setSetupOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Ciclo de pagamento</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="setup-ancora">Data de início do ciclo</Label>
+            <Input id="setup-ancora" type="date" value={setupDraft} onChange={(e) => setSetupDraft(e.target.value)} />
+            <p className="text-xs text-muted-foreground">
+              Mudar essa data desloca todos os ciclos futuros; fechamentos já feitos não são afetados.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSetupOpen(false)}>Cancelar</Button>
+            <Button
+              disabled={!setupDraft || salvarAncora.isPending}
+              onClick={() => {
+                salvarAncora.mutate(setupDraft, {
+                  onSuccess: () => { setCicloOffset(offsetCicloAtual(setupDraft, hojeISO)); setAncoraIniciada(true); },
+                });
+                setSetupOpen(false);
+              }}
+            >
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
