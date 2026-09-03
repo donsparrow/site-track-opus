@@ -280,6 +280,7 @@ export type Database = {
           instagram: string | null
           logo_url: string | null
           nome_empresa: string
+          ponto_ciclo_ancora: string | null
           responsavel_legal: string | null
           site: string | null
           telefone: string | null
@@ -298,6 +299,7 @@ export type Database = {
           instagram?: string | null
           logo_url?: string | null
           nome_empresa?: string
+          ponto_ciclo_ancora?: string | null
           responsavel_legal?: string | null
           site?: string | null
           telefone?: string | null
@@ -316,6 +318,7 @@ export type Database = {
           instagram?: string | null
           logo_url?: string | null
           nome_empresa?: string
+          ponto_ciclo_ancora?: string | null
           responsavel_legal?: string | null
           site?: string | null
           telefone?: string | null

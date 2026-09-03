@@ -1,0 +1,1 @@
+ALTER TABLE public.configuracoes_empresa ADD COLUMN IF NOT EXISTS ponto_ciclo_ancora date;
