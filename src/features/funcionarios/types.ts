@@ -50,6 +50,21 @@ export interface Lancamento {
   tipo: string;
   valor: number;
   descricao: string | null;
+  lancamento_origem_id?: string | null;
+}
+
+/** Adiantamento/vale com o total já abatido por descontos vinculados. */
+export interface AdiantamentoSaldo {
+  id: string;
+  funcionario_id: string;
+  data: string;
+  tipo: string;
+  valor: number;
+  descricao: string | null;
+  totalDescontado: number;
+  saldo: number;
+  quitado: boolean;
+  descontos: Lancamento[];
 }
 
 export interface ObraOption {

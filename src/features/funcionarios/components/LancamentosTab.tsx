@@ -7,12 +7,15 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Plus } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Trash2, Plus, Link2 } from 'lucide-react';
 import { TIPOS_LANCAMENTO, type Funcionario, type Lancamento } from '../types';
 import { parseISODate, toISODate } from '../utils';
-import type { LancamentoFormValues } from '../hooks/useLancamentos';
+import { useAdiantamentosEmAberto, type LancamentoFormValues } from '../hooks/useLancamentos';
+import AdiantamentosPanel from './AdiantamentosPanel';
 
 const TODOS = '__todos__';
+const SEM_VINCULO = '__sem_vinculo__';
 const brl = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 interface Props {
@@ -40,6 +43,18 @@ export default function LancamentosTab({
   const [tipo, setTipo] = useState('vale');
   const [valor, setValor] = useState('');
   const [descricao, setDescricao] = useState('');
+  const [origemId, setOrigemId] = useState<string>(SEM_VINCULO);
+
+  const { adiantamentos: emAberto } = useAdiantamentosEmAberto(funcionarioId || null);
+  const { adiantamentos: painel, isLoading: loadingPainel } = useAdiantamentosEmAberto(
+    filtroFuncionario,
+    true,
+  );
+
+  const origemSelecionada = emAberto.find((a) => a.id === origemId);
+  const excedeSaldo =
+    !!origemSelecionada && Number(valor) > origemSelecionada.saldo + 0.009;
+  const origemPorId = new Map(painel.map((a) => [a.id, a]));
 
   const nome = (id: string) => funcionarios.find((f) => f.id === id)?.nome ?? '—';
   const total = lancamentos.reduce((acc, l) => {
@@ -49,8 +64,16 @@ export default function LancamentosTab({
 
   const submit = () => {
     if (!funcionarioId || !valor) return;
-    onSave({ funcionario_id: funcionarioId, data, tipo, valor: Number(valor), descricao });
-    setValor(''); setDescricao(''); setAberto(false);
+    onSave({
+      funcionario_id: funcionarioId,
+      data,
+      tipo,
+      valor: Number(valor),
+      descricao,
+      lancamento_origem_id:
+        tipo === 'desconto' && origemId !== SEM_VINCULO ? origemId : null,
+    });
+    setValor(''); setDescricao(''); setOrigemId(SEM_VINCULO); setAberto(false);
   };
 
   return (
@@ -117,6 +140,27 @@ export default function LancamentosTab({
               <Label className="text-xs">Descrição</Label>
               <Input value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Opcional" />
             </div>
+            {tipo === 'desconto' && emAberto.length > 0 && (
+              <div className="space-y-1 md:col-span-3">
+                <Label className="text-xs">Abater de qual adiantamento? (opcional)</Label>
+                <Select value={origemId} onValueChange={setOrigemId}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={SEM_VINCULO}>Nenhum</SelectItem>
+                    {emAberto.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {`Adiantamento de ${brl(a.valor)} em ${parseISODate(a.data).toLocaleDateString('pt-BR')} — saldo ${brl(a.saldo)}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {excedeSaldo && (
+                  <p className="text-xs text-destructive">
+                    Atenção: o valor informado excede o saldo restante deste adiantamento.
+                  </p>
+                )}
+              </div>
+            )}
             <div className="md:col-span-5 flex justify-end gap-2">
               <Button variant="outline" onClick={() => setAberto(false)}>Cancelar</Button>
               <Button onClick={submit} disabled={saving || !funcionarioId || !valor}>Salvar</Button>
@@ -124,6 +168,12 @@ export default function LancamentosTab({
           </CardContent>
         </Card>
       )}
+
+      <AdiantamentosPanel
+        adiantamentos={painel}
+        funcionarios={funcionarios}
+        isLoading={loadingPainel}
+      />
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">
@@ -153,7 +203,28 @@ export default function LancamentosTab({
                         {TIPOS_LANCAMENTO.find((t) => t.valor === l.tipo)?.label ?? l.tipo}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{l.descricao || '—'}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      <span className="inline-flex items-center gap-1">
+                        {l.descricao || '—'}
+                        {l.lancamento_origem_id && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Link2 className="h-3.5 w-3.5 text-primary" />
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {(() => {
+                                  const o = origemPorId.get(l.lancamento_origem_id as string);
+                                  return o
+                                    ? `Abatido do adiantamento de ${brl(o.valor)} de ${parseISODate(o.data).toLocaleDateString('pt-BR')}`
+                                    : 'Vinculado a um adiantamento';
+                                })()}
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        )}
+                      </span>
+                    </TableCell>
                     <TableCell className="text-right">{brl(Number(l.valor))}</TableCell>
                     <TableCell className="text-right">
                       {canEdit && (
