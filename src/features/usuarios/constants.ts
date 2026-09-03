@@ -37,6 +37,7 @@ export const DEFAULT_PERMISSIONS: Record<string, Record<Modulo, { v: boolean; c:
     clientes: { v: false, c: false, e: false, x: false },
     ferramentas: { v: true, c: true, e: false, x: false },
     relatorio_final: { v: true, c: false, e: false, x: false },
+    funcionarios: { v: false, c: false, e: false, x: false },
   },
   sindico: {
     dashboard: { v: true, c: false, e: false, x: false },
@@ -50,6 +51,7 @@ export const DEFAULT_PERMISSIONS: Record<string, Record<Modulo, { v: boolean; c:
     clientes: { v: false, c: false, e: false, x: false },
     ferramentas: { v: false, c: false, e: false, x: false },
     relatorio_final: { v: true, c: false, e: false, x: false },
+    funcionarios: { v: false, c: false, e: false, x: false },
   },
   cliente: {
     dashboard: { v: true, c: false, e: false, x: false },
@@ -63,6 +65,7 @@ export const DEFAULT_PERMISSIONS: Record<string, Record<Modulo, { v: boolean; c:
     clientes: { v: false, c: false, e: false, x: false },
     ferramentas: { v: false, c: false, e: false, x: false },
     relatorio_final: { v: true, c: false, e: false, x: false },
+    funcionarios: { v: false, c: false, e: false, x: false },
   },
 };
 
