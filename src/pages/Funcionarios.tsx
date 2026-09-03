@@ -135,18 +135,37 @@ export default function Funcionarios() {
         </TabsContent>
 
         <TabsContent value="ponto" className="mt-4">
+          {semAncora ? (
+            <Card>
+              <CardContent className="p-8 flex flex-col items-center gap-3 text-center">
+                <CalendarClock className="h-8 w-8 text-muted-foreground" />
+                <p className="font-semibold">Configure a data de início do seu ciclo de pagamento</p>
+                <p className="text-sm text-muted-foreground max-w-md">
+                  O ponto usa ciclos fixos de 15 dias a partir dessa data-âncora.
+                </p>
+                <Button onClick={() => { setSetupDraft(hojeISO); setSetupOpen(true); }} disabled={!isAdmin}>
+                  Configurar ciclo
+                </Button>
+                {!isAdmin && <p className="text-xs text-muted-foreground">Peça a um administrador para configurar.</p>}
+              </CardContent>
+            </Card>
+          ) : (
           <PontoTab
             funcionarios={funcionarios}
             obras={obras}
             registros={registros}
             dias={dias}
-            ano={ano}
-            mes={mes}
-            quinzena={quinzena}
-            isLoading={isLoading || pontoLoading}
+            isLoading={isLoading || pontoLoading || ancoraLoading}
             canEdit={canEdit}
             saving={salvarPonto.isPending}
-            onChangePeriodo={(a, m, q) => { setAno(a); setMes(m); setQuinzena(q); }}
+            isAdmin={isAdmin}
+            ancora={ancora ?? null}
+            savingAncora={salvarAncora.isPending}
+            onAnterior={() => setCicloOffset((o) => o - 1)}
+            onProxima={() => setCicloOffset((o) => o + 1)}
+            onHoje={() => ancora && setCicloOffset(offsetCicloAtual(ancora, hojeISO))}
+            onSalvarAncora={(iso) => salvarAncora.mutate(iso, { onSuccess: () => setCicloOffset(offsetCicloAtual(iso, hojeISO)) })}
+
             onSalvar={(funcionarioId, data, registroId, payload) =>
               salvarPonto.mutate({
                 funcionarioId,
