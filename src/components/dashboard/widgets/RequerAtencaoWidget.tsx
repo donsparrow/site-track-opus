@@ -27,6 +27,11 @@ function diasAtraso(dataRef: string, hoje: string): number {
 const estaConcluida = (a: { status?: string; percentual?: number }) =>
   a.status === 'concluido' || a.status === 'concluida' || (a.percentual ?? 0) >= 100;
 
+const obraConcluidaDeFato = (obraId: string, atividades: AtividadeItem[]) => {
+  const atvsDaObra = atividades.filter(a => a.obra_id === obraId);
+  return atvsDaObra.length > 0 && atvsDaObra.every(a => estaConcluida(a));
+};
+
 function ultimoDiaUtil(hoje: Date): Date {
   const d = new Date(hoje);
   d.setDate(d.getDate() - 1);
