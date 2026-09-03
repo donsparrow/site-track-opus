@@ -218,7 +218,7 @@ export default function Funcionarios() {
             saving={fechMutations.fechar.isPending}
             funcionarioId={fechFuncionario}
             onChangeFuncionario={setFechFuncionario}
-            onChangePeriodo={(a, m, q) => { setAno(a); setMes(m); setQuinzena(q); }}
+            onChangePeriodo={(a, m, q) => irParaData(a, m, q)}
             onFechar={(input) => fechMutations.fechar.mutate(input)}
             onReabrir={(id) => fechMutations.reabrir.mutate(id)}
           />
