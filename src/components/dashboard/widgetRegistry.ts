@@ -9,6 +9,8 @@ import {
   FerramentasResumoWidget, UltimosDiariosWidget,
   AtividadesPendentesWidget, AtividadesAtrasoWidget,
 } from './widgets/ListWidgets';
+import RequerAtencaoWidget from './widgets/RequerAtencaoWidget';
+import MinhasObrasWidget from './widgets/MinhasObrasWidget';
 import type { WidgetSize, WidgetConfig } from '@/types/dashboard';
 import type { ComponentType } from 'react';
 
