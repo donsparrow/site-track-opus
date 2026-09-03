@@ -12,7 +12,7 @@ export interface Permissao {
   pode_excluir: boolean;
 }
 
-const MODULOS: Modulo[] = ['dashboard', 'financeiro', 'diario_obra', 'cronograma', 'relatorios', 'documentos', 'usuarios', 'configuracoes', 'clientes', 'ferramentas', 'relatorio_final'];
+const MODULOS: Modulo[] = ['dashboard', 'financeiro', 'diario_obra', 'cronograma', 'relatorios', 'documentos', 'usuarios', 'configuracoes', 'clientes', 'ferramentas', 'relatorio_final', 'funcionarios'];
 
 const MODULO_LABELS: Record<Modulo, string> = {
   dashboard: 'Dashboard',
