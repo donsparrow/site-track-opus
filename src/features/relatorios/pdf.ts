@@ -55,7 +55,10 @@ export async function gerarPDFRelatorio({ empresa, obra, periodo, dados, assinat
     versao: revisao,
     versoes: (versoes || []).map((v) => ({
       rev: revLabel(v.numero_versao),
-      data: new Date(v.data_criacao).toLocaleDateString('pt-BR'),
+      data: new Date(v.data_criacao).toLocaleString('pt-BR', {
+        day: '2-digit', month: '2-digit', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      }),
       resumo: v.descricao_alteracao || '—',
     })),
   });

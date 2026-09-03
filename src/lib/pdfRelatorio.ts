@@ -62,6 +62,15 @@ const fmt = (d: string) => {
 const BLUE = [30, 58, 95] as const;
 const MARGIN = 15;
 
+// jsPDF/Helvetica (WinAnsi) não suporta alguns caracteres Unicode — normaliza para ASCII.
+const sanitizePdfText = (s: string) =>
+  (s || '')
+    .replace(/[→⟶➜]/g, '->')
+    .replace(/[–—]/g, '-')
+    .replace(/[“”]/g, '"')
+    .replace(/[‘’]/g, "'")
+    .replace(/…/g, '...');
+
 async function loadImageAsDataUrl(url: string): Promise<string | null> {
   try {
     return await new Promise<string | null>((resolve) => {
@@ -935,10 +944,12 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
       doc.setFont('helvetica', 'bold');
       doc.text(`${v.rev}`, MARGIN, y);
       doc.setFont('helvetica', 'normal');
-      doc.text(` — ${v.resumo}`, MARGIN + 18, y);
+      doc.text(` - ${sanitizePdfText(v.resumo)}`, MARGIN + 18, y);
       doc.setTextColor(120);
+      doc.setFontSize(8);
       doc.text(v.data, pageW - MARGIN, y, { align: 'right' });
       doc.setTextColor(0);
+      doc.setFontSize(9);
       y += 6;
     });
     y += 4;

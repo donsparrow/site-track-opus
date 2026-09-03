@@ -35,12 +35,17 @@ export function buildSnapshot(dados: DadosRelatorio, periodo: { inicio: string; 
 type SnapshotParcial = Partial<SnapshotDados> | null | undefined;
 
 /** Compara dois snapshots e gera o resumo textual das alterações. */
-export function detectChanges(prev: SnapshotParcial, curr: SnapshotDados): { hasChanges: boolean; summary: string } {
-  if (!prev) return { hasChanges: true, summary: 'Criação do relatório' };
+export function detectChanges(
+  prev: SnapshotParcial,
+  curr: SnapshotDados,
+  isPrimeiraVersao = false
+): { hasChanges: boolean; summary: string } {
+  if (isPrimeiraVersao) return { hasChanges: true, summary: 'Criação do relatório' };
+  if (!prev) return { hasChanges: true, summary: 'Atualização do relatório' };
   const changes: string[] = [];
   /** Campo ausente em snapshot antigo não conta como alteração (evita revisão falsa). */
   const diffCount = (before: number | undefined, after: number, label: string) => {
-    if ((before ?? after) !== after) changes.push(`${label}: ${before ?? 0} → ${after}`);
+    if ((before ?? after) !== after) changes.push(`${label}: ${before ?? 0} -> ${after}`);
   };
   if (prev.prazos?.contratual !== curr.prazos?.contratual) changes.push(`Prazo alterado de ${prev.prazos?.contratual || 0} para ${curr.prazos?.contratual || 0} dias`);
   if (prev.prazos?.parados !== curr.prazos?.parados) changes.push(`Dias parados: ${prev.prazos?.parados || 0} → ${curr.prazos?.parados || 0}`);
