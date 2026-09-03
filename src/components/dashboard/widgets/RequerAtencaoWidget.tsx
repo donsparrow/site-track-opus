@@ -24,6 +24,9 @@ function diasAtraso(dataRef: string, hoje: string): number {
   return Math.max(1, Math.round(diff / 86400000));
 }
 
+const estaConcluida = (a: { status?: string; percentual?: number }) =>
+  a.status === 'concluido' || a.status === 'concluida' || (a.percentual ?? 0) >= 100;
+
 function ultimoDiaUtil(hoje: Date): Date {
   const d = new Date(hoje);
   d.setDate(d.getDate() - 1);
@@ -56,7 +59,7 @@ export default function RequerAtencaoWidget() {
 
   // Regra 1 — atividades em atraso
   atividades
-    .filter(a => a.data_fim && a.data_fim < hoje && a.status !== 'concluida')
+    .filter(a => a.data_fim && a.data_fim < hoje && !estaConcluida(a))
     .forEach(a => {
       const obra = obras.find(o => o.id === a.obra_id);
       alertas.push({
