@@ -85,3 +85,41 @@ export function resolverCelula(
     motivo: null,
   };
 }
+
+/** Soma dias a uma data ISO (aritmética local). */
+export function addDaysISO(iso: string, dias: number): string {
+  const d = parseISODate(iso);
+  d.setDate(d.getDate() + dias);
+  return toISODate(d);
+}
+
+/** Diferença em dias entre duas datas ISO (local). */
+export function diffDias(aISO: string, bISO: string): number {
+  const a = parseISODate(aISO);
+  const b = parseISODate(bISO);
+  return Math.round((b.getTime() - a.getTime()) / 86400000);
+}
+
+/** As 15 datas ISO do ciclo. offset=0 é o ciclo que contém a âncora. */
+export function diasDoCiclo(ancoraISO: string, offset: number): string[] {
+  const inicio = addDaysISO(ancoraISO, offset * 15);
+  const out: string[] = [];
+  for (let i = 0; i < 15; i += 1) out.push(addDaysISO(inicio, i));
+  return out;
+}
+
+/** Offset do ciclo (relativo à âncora) em que a data cai. */
+export function offsetCicloAtual(ancoraISO: string, hojeISO: string): number {
+  return Math.floor(diffDias(ancoraISO, hojeISO) / 15);
+}
+
+/** Rótulo curto de período: "31 ago – 14 set". */
+export function rotuloCiclo(dias: string[]): string {
+  if (dias.length === 0) return '';
+  const fmt = (iso: string) => {
+    const d = parseISODate(iso);
+    const mes = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'][d.getMonth()];
+    return `${String(d.getDate()).padStart(2, '0')} ${mes}`;
+  };
+  return `${fmt(dias[0])} – ${fmt(dias[dias.length - 1])}`;
+}

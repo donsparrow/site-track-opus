@@ -1,6 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { CalendarClock } from 'lucide-react';
 import CadastroTab from '@/features/funcionarios/components/CadastroTab';
 import PontoTab from '@/features/funcionarios/components/PontoTab';
 import LancamentosTab from '@/features/funcionarios/components/LancamentosTab';
@@ -9,19 +18,71 @@ import { useFuncionarios, useFuncionariosMutations, useObrasFuncionarios } from 
 import { usePonto, usePontoMutations } from '@/features/funcionarios/hooks/usePonto';
 import { useLancamentos, useLancamentosMutations } from '@/features/funcionarios/hooks/useLancamentos';
 import { useFechamentos, useFechamentosMutations } from '@/features/funcionarios/hooks/useFechamentos';
-import { diasDaQuinzena } from '@/features/funcionarios/utils';
+import { diasDoCiclo, offsetCicloAtual, parseISODate, toISODate } from '@/features/funcionarios/utils';
 
 export default function Funcionarios() {
-  const { canEdit, isAdmin } = useAuth();
+  const { canEdit, isAdmin, empresaId } = useAuth();
+  const qc = useQueryClient();
   const hoje = new Date();
+  const hojeISO = toISODate(hoje);
 
-  const [ano, setAno] = useState(hoje.getFullYear());
-  const [mes, setMes] = useState(hoje.getMonth());
-  const [quinzena, setQuinzena] = useState<1 | 2>(hoje.getDate() <= 15 ? 1 : 2);
+  const { data: ancora, isLoading: ancoraLoading } = useQuery({
+    queryKey: ['funcionarios', 'config-ciclo', empresaId],
+    queryFn: async (): Promise<string | null> => {
+      const { data, error } = await supabase
+        .from('configuracoes_empresa')
+        .select('ponto_ciclo_ancora')
+        .eq('empresa_id', empresaId as string)
+        .maybeSingle();
+      if (error) throw error;
+      return (data?.ponto_ciclo_ancora as string | null) ?? null;
+    },
+    enabled: !!empresaId,
+  });
 
-  const dias = useMemo(() => diasDaQuinzena(ano, mes, quinzena), [ano, mes, quinzena]);
-  const periodoInicio = dias[0];
-  const periodoFim = dias[dias.length - 1];
+  const salvarAncora = useMutation({
+    mutationFn: async (ancoraISO: string) => {
+      const { error } = await supabase
+        .from('configuracoes_empresa')
+        .update({ ponto_ciclo_ancora: ancoraISO })
+        .eq('empresa_id', empresaId as string);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Ciclo de pagamento atualizado');
+      qc.invalidateQueries({ queryKey: ['funcionarios', 'config-ciclo'] });
+    },
+    onError: (e) => toast.error(`Erro ao salvar: ${e instanceof Error ? e.message : 'desconhecido'}`),
+  });
+
+  const [cicloOffset, setCicloOffset] = useState(0);
+  const [ancoraIniciada, setAncoraIniciada] = useState(false);
+  const [setupOpen, setSetupOpen] = useState(false);
+  const [setupDraft, setSetupDraft] = useState(hojeISO);
+
+  useEffect(() => {
+    if (ancora && !ancoraIniciada) {
+      setCicloOffset(offsetCicloAtual(ancora, hojeISO));
+      setAncoraIniciada(true);
+    }
+  }, [ancora, ancoraIniciada, hojeISO]);
+
+  const dias = useMemo(
+    () => (ancora ? diasDoCiclo(ancora, cicloOffset) : []),
+    [ancora, cicloOffset],
+  );
+  const periodoInicio = dias[0] ?? hojeISO;
+  const periodoFim = dias[dias.length - 1] ?? hojeISO;
+
+  // Compatibilidade com componentes que ainda recebem ano/mes/quinzena.
+  const inicioDate = parseISODate(periodoInicio);
+  const ano = inicioDate.getFullYear();
+  const mes = inicioDate.getMonth();
+  const quinzena: 1 | 2 = inicioDate.getDate() <= 15 ? 1 : 2;
+  const irParaData = (a: number, m: number, q: 1 | 2) => {
+    if (!ancora) return;
+    setCicloOffset(offsetCicloAtual(ancora, toISODate(new Date(a, m, q === 1 ? 1 : 16))));
+  };
 
   const [filtroFuncionario, setFiltroFuncionario] = useState<string | null>(null);
   const [lancInicio, setLancInicio] = useState(periodoInicio);
@@ -41,6 +102,9 @@ export default function Funcionarios() {
   const { lancamentos: lancFechamento } = useLancamentos(fechFuncionario, periodoInicio, periodoFim);
   const { fechamentos, isLoading: fechLoading } = useFechamentos(fechFuncionario);
   const fechMutations = useFechamentosMutations();
+
+  const semAncora = !ancoraLoading && !ancora;
+
 
   return (
     <div>
@@ -71,18 +135,37 @@ export default function Funcionarios() {
         </TabsContent>
 
         <TabsContent value="ponto" className="mt-4">
+          {semAncora ? (
+            <Card>
+              <CardContent className="p-8 flex flex-col items-center gap-3 text-center">
+                <CalendarClock className="h-8 w-8 text-muted-foreground" />
+                <p className="font-semibold">Configure a data de início do seu ciclo de pagamento</p>
+                <p className="text-sm text-muted-foreground max-w-md">
+                  O ponto usa ciclos fixos de 15 dias a partir dessa data-âncora.
+                </p>
+                <Button onClick={() => { setSetupDraft(hojeISO); setSetupOpen(true); }} disabled={!isAdmin}>
+                  Configurar ciclo
+                </Button>
+                {!isAdmin && <p className="text-xs text-muted-foreground">Peça a um administrador para configurar.</p>}
+              </CardContent>
+            </Card>
+          ) : (
           <PontoTab
             funcionarios={funcionarios}
             obras={obras}
             registros={registros}
             dias={dias}
-            ano={ano}
-            mes={mes}
-            quinzena={quinzena}
-            isLoading={isLoading || pontoLoading}
+            isLoading={isLoading || pontoLoading || ancoraLoading}
             canEdit={canEdit}
             saving={salvarPonto.isPending}
-            onChangePeriodo={(a, m, q) => { setAno(a); setMes(m); setQuinzena(q); }}
+            isAdmin={isAdmin}
+            ancora={ancora ?? null}
+            savingAncora={salvarAncora.isPending}
+            onAnterior={() => setCicloOffset((o) => o - 1)}
+            onProxima={() => setCicloOffset((o) => o + 1)}
+            onHoje={() => ancora && setCicloOffset(offsetCicloAtual(ancora, hojeISO))}
+            onSalvarAncora={(iso) => salvarAncora.mutate(iso, { onSuccess: () => setCicloOffset(offsetCicloAtual(iso, hojeISO)) })}
+
             onSalvar={(funcionarioId, data, registroId, payload) =>
               salvarPonto.mutate({
                 funcionarioId,
@@ -98,7 +181,9 @@ export default function Funcionarios() {
             }
             onLimpar={(id) => limparPonto.mutate(id)}
           />
+          )}
         </TabsContent>
+
 
         <TabsContent value="lancamentos" className="mt-4">
           <LancamentosTab
@@ -133,12 +218,40 @@ export default function Funcionarios() {
             saving={fechMutations.fechar.isPending}
             funcionarioId={fechFuncionario}
             onChangeFuncionario={setFechFuncionario}
-            onChangePeriodo={(a, m, q) => { setAno(a); setMes(m); setQuinzena(q); }}
+            onChangePeriodo={(a, m, q) => irParaData(a, m, q)}
             onFechar={(input) => fechMutations.fechar.mutate(input)}
             onReabrir={(id) => fechMutations.reabrir.mutate(id)}
           />
         </TabsContent>
       </Tabs>
+
+      <Dialog open={setupOpen} onOpenChange={setSetupOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Ciclo de pagamento</DialogTitle></DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="setup-ancora">Data de início do ciclo</Label>
+            <Input id="setup-ancora" type="date" value={setupDraft} onChange={(e) => setSetupDraft(e.target.value)} />
+            <p className="text-xs text-muted-foreground">
+              Mudar essa data desloca todos os ciclos futuros; fechamentos já feitos não são afetados.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setSetupOpen(false)}>Cancelar</Button>
+            <Button
+              disabled={!setupDraft || salvarAncora.isPending}
+              onClick={() => {
+                salvarAncora.mutate(setupDraft, {
+                  onSuccess: () => { setCicloOffset(offsetCicloAtual(setupDraft, hojeISO)); setAncoraIniciada(true); },
+                });
+                setSetupOpen(false);
+              }}
+            >
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
   );
 }
