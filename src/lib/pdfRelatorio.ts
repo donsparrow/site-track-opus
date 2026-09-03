@@ -944,10 +944,12 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
       doc.setFont('helvetica', 'bold');
       doc.text(`${v.rev}`, MARGIN, y);
       doc.setFont('helvetica', 'normal');
-      doc.text(` — ${v.resumo}`, MARGIN + 18, y);
+      doc.text(` - ${sanitizePdfText(v.resumo)}`, MARGIN + 18, y);
       doc.setTextColor(120);
+      doc.setFontSize(8);
       doc.text(v.data, pageW - MARGIN, y, { align: 'right' });
       doc.setTextColor(0);
+      doc.setFontSize(9);
       y += 6;
     });
     y += 4;
