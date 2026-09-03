@@ -25,6 +25,7 @@ const Documentacao = lazyWithReload(() => import("./pages/Documentacao"));
 const Empresas = lazyWithReload(() => import("./pages/Empresas"));
 const Obras = lazyWithReload(() => import("./pages/Obras"));
 const Ferramentas = lazyWithReload(() => import("./pages/Ferramentas"));
+const Funcionarios = lazyWithReload(() => import("./pages/Funcionarios"));
 const Calendario = lazyWithReload(() => import("./pages/Calendario"));
 const CalendarioCallback = lazyWithReload(() => import("./pages/CalendarioCallback"));
 const NotFound = lazyWithReload(() => import("./pages/NotFound"));
@@ -65,6 +66,7 @@ const App = () => (
                 <Route path="/documentacao" element={<ProtectedRoute modulo="documentos"><Documentacao /></ProtectedRoute>} />
                 <Route path="/usuarios" element={<ProtectedRoute modulo="usuarios"><Usuarios /></ProtectedRoute>} />
                 <Route path="/ferramentas" element={<ProtectedRoute modulo="ferramentas"><Ferramentas /></ProtectedRoute>} />
+                <Route path="/funcionarios" element={<ProtectedRoute modulo="funcionarios"><Funcionarios /></ProtectedRoute>} />
                 <Route path="/calendario" element={<Calendario />} />
                 <Route path="/calendario/callback" element={<CalendarioCallback />} />
                 <Route path="/empresas" element={<Empresas />} />
