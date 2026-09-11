@@ -18,7 +18,7 @@ import { useFuncionarios, useFuncionariosMutations, useObrasFuncionarios } from 
 import { usePonto, usePontoMutations } from '@/features/funcionarios/hooks/usePonto';
 import { useLancamentos, useLancamentosMutations } from '@/features/funcionarios/hooks/useLancamentos';
 import { useFechamentos, useFechamentosMutations } from '@/features/funcionarios/hooks/useFechamentos';
-import { diasDoCiclo, offsetCicloAtual, parseISODate, toISODate } from '@/features/funcionarios/utils';
+import { diasDoCiclo, offsetCicloAtual, toISODate } from '@/features/funcionarios/utils';
 
 export default function Funcionarios() {
   const { canEdit, isAdmin, empresaId } = useAuth();
@@ -74,15 +74,6 @@ export default function Funcionarios() {
   const periodoInicio = dias[0] ?? hojeISO;
   const periodoFim = dias[dias.length - 1] ?? hojeISO;
 
-  // Compatibilidade com componentes que ainda recebem ano/mes/quinzena.
-  const inicioDate = parseISODate(periodoInicio);
-  const ano = inicioDate.getFullYear();
-  const mes = inicioDate.getMonth();
-  const quinzena: 1 | 2 = inicioDate.getDate() <= 15 ? 1 : 2;
-  const irParaData = (a: number, m: number, q: 1 | 2) => {
-    if (!ancora) return;
-    setCicloOffset(offsetCicloAtual(ancora, toISODate(new Date(a, m, q === 1 ? 1 : 16))));
-  };
 
   const [filtroFuncionario, setFiltroFuncionario] = useState<string | null>(null);
   const [lancInicio, setLancInicio] = useState(periodoInicio);
@@ -208,9 +199,6 @@ export default function Funcionarios() {
             registros={registros}
             lancamentos={lancFechamento}
             dias={dias}
-            ano={ano}
-            mes={mes}
-            quinzena={quinzena}
             fechamentos={fechamentos}
             isLoading={fechLoading}
             canEdit={canEdit}
@@ -218,7 +206,9 @@ export default function Funcionarios() {
             saving={fechMutations.fechar.isPending}
             funcionarioId={fechFuncionario}
             onChangeFuncionario={setFechFuncionario}
-            onChangePeriodo={(a, m, q) => irParaData(a, m, q)}
+            onAnterior={() => setCicloOffset((o) => o - 1)}
+            onProxima={() => setCicloOffset((o) => o + 1)}
+            onHoje={() => ancora && setCicloOffset(offsetCicloAtual(ancora, hojeISO))}
             onFechar={(input) => fechMutations.fechar.mutate(input)}
             onReabrir={(id) => fechMutations.reabrir.mutate(id)}
           />
