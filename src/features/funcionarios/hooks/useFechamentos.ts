@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { funcionariosPrefixes } from '../queryKeys';
 
 export interface DetalheObra {
   obra_id: string | null;
@@ -61,6 +62,7 @@ export interface CriarFechamentoInput {
   valor_liquido: number;
   valor_nao_alocado: number;
   detalhamento_obras: DetalheObra[];
+  parcelas?: { adiantamento_id: string; valor: number }[];
 }
 
 export function useFechamentosMutations() {
@@ -72,17 +74,33 @@ export function useFechamentosMutations() {
   const fechar = useMutation({
     mutationFn: async (input: CriarFechamentoInput) => {
       if (!empresaId) throw new Error('Empresa não identificada');
+      const { parcelas, ...fechamento } = input;
+      if (parcelas && parcelas.length > 0) {
+        const linhas = parcelas.map((p) => ({
+          empresa_id: empresaId,
+          funcionario_id: input.funcionario_id,
+          data: input.periodo_fim,
+          tipo: 'desconto',
+          valor: p.valor,
+          descricao: 'Parcela de adiantamento (fechamento)',
+          lancamento_origem_id: p.adiantamento_id,
+        }));
+        const { error: errPar } = await supabase.from('funcionario_lancamentos').insert(linhas);
+        if (errPar) throw errPar;
+      }
       const { error } = await supabase.from('funcionario_fechamentos').insert({
-        ...input,
+        ...fechamento,
         empresa_id: empresaId,
         status: 'fechado',
-        detalhamento_obras: input.detalhamento_obras as unknown as never,
+        detalhamento_obras: fechamento.detalhamento_obras as unknown as never,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       toast.success('Quinzena fechada e despesas lançadas no Financeiro');
       invalidate();
+      qc.invalidateQueries({ queryKey: funcionariosPrefixes.lancamentos });
+      qc.invalidateQueries({ queryKey: funcionariosPrefixes.adiantamentos });
     },
     onError: (e) => toast.error(`Erro ao fechar quinzena: ${e instanceof Error ? e.message : 'desconhecido'}`),
   });
