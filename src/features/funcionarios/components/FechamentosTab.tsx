@@ -7,16 +7,14 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { AlertCircle, Lock, RotateCcw } from 'lucide-react';
+import { AlertCircle, ChevronLeft, ChevronRight, Lock, RotateCcw } from 'lucide-react';
 import type { Funcionario, Lancamento, ObraOption, PontoRegistro } from '../types';
 import { TIPOS_LANCAMENTO } from '../types';
-import { parseISODate, resolverCelula } from '../utils';
+import { parseISODate, resolverCelula, rotuloCiclo } from '../utils';
 import type { CriarFechamentoInput, DetalheObra, Fechamento } from '../hooks/useFechamentos';
 
 const brl = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const dataBR = (s: string) => parseISODate(s).toLocaleDateString('pt-BR');
-
-const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
 interface Props {
   funcionarios: Funcionario[];
@@ -24,9 +22,6 @@ interface Props {
   registros: PontoRegistro[];
   lancamentos: Lancamento[];
   dias: string[];
-  ano: number;
-  mes: number;
-  quinzena: 1 | 2;
   fechamentos: Fechamento[];
   isLoading: boolean;
   canEdit: boolean;
@@ -34,15 +29,17 @@ interface Props {
   saving: boolean;
   funcionarioId: string | null;
   onChangeFuncionario: (id: string | null) => void;
-  onChangePeriodo: (ano: number, mes: number, quinzena: 1 | 2) => void;
+  onAnterior: () => void;
+  onProxima: () => void;
+  onHoje: () => void;
   onFechar: (input: CriarFechamentoInput) => void;
   onReabrir: (id: string) => void;
 }
 
 export default function FechamentosTab({
-  funcionarios, obras, registros, lancamentos, dias, ano, mes, quinzena,
+  funcionarios, obras, registros, lancamentos, dias,
   fechamentos, isLoading, canEdit, isAdmin, saving, funcionarioId,
-  onChangeFuncionario, onChangePeriodo, onFechar, onReabrir,
+  onChangeFuncionario, onAnterior, onProxima, onHoje, onFechar, onReabrir,
 }: Props) {
   const [revisando, setRevisando] = useState(false);
 
@@ -143,17 +140,17 @@ export default function FechamentosTab({
             </SelectContent>
           </Select>
         </div>
-        <Select value={String(mes)} onValueChange={(v) => onChangePeriodo(ano, Number(v), quinzena)}>
-          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
-          <SelectContent>{MESES.map((m, i) => <SelectItem key={m} value={String(i)}>{m}</SelectItem>)}</SelectContent>
-        </Select>
-        <Select value={String(ano)} onValueChange={(v) => onChangePeriodo(Number(v), mes, quinzena)}>
-          <SelectTrigger className="w-[110px]"><SelectValue /></SelectTrigger>
-          <SelectContent>{[ano - 1, ano, ano + 1].map((a) => <SelectItem key={a} value={String(a)}>{a}</SelectItem>)}</SelectContent>
-        </Select>
-        <div className="flex gap-1">
-          <Button variant={quinzena === 1 ? 'default' : 'outline'} onClick={() => onChangePeriodo(ano, mes, 1)}>1ª quinzena</Button>
-          <Button variant={quinzena === 2 ? 'default' : 'outline'} onClick={() => onChangePeriodo(ano, mes, 2)}>2ª quinzena</Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" onClick={onAnterior}>
+            <ChevronLeft className="h-4 w-4 mr-1" /> Anterior
+          </Button>
+          <span className="px-3 py-1.5 rounded-md bg-muted font-semibold text-sm tabular-nums">
+            {rotuloCiclo(dias)}
+          </span>
+          <Button variant="outline" size="sm" onClick={onProxima}>
+            Próxima <ChevronRight className="h-4 w-4 ml-1" />
+          </Button>
+          <Button variant="ghost" size="sm" onClick={onHoje}>Hoje</Button>
         </div>
         <Button
           className="ml-auto"
