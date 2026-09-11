@@ -100,17 +100,17 @@ export function diffDias(aISO: string, bISO: string): number {
   return Math.round((b.getTime() - a.getTime()) / 86400000);
 }
 
-/** As 15 datas ISO do ciclo. offset=0 é o ciclo que contém a âncora. */
+/** As 14 datas ISO do ciclo. offset=0 é o ciclo que contém a âncora. */
 export function diasDoCiclo(ancoraISO: string, offset: number): string[] {
-  const inicio = addDaysISO(ancoraISO, offset * 15);
+  const inicio = addDaysISO(ancoraISO, offset * 14);
   const out: string[] = [];
-  for (let i = 0; i < 15; i += 1) out.push(addDaysISO(inicio, i));
+  for (let i = 0; i < 14; i += 1) out.push(addDaysISO(inicio, i));
   return out;
 }
 
 /** Offset do ciclo (relativo à âncora) em que a data cai. */
 export function offsetCicloAtual(ancoraISO: string, hojeISO: string): number {
-  return Math.floor(diffDias(ancoraISO, hojeISO) / 15);
+  return Math.floor(diffDias(ancoraISO, hojeISO) / 14);
 }
 
 /** Rótulo curto de período: "31 ago – 14 set". */
