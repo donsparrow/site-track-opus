@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { AlertCircle, ChevronLeft, ChevronRight, Lock, RotateCcw } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { useAdiantamentosEmAberto } from '../hooks/useLancamentos';
 import type { Funcionario, Lancamento, ObraOption, PontoRegistro } from '../types';
 import { TIPOS_LANCAMENTO } from '../types';
 import { parseISODate, resolverCelula, rotuloCiclo } from '../utils';
@@ -42,6 +44,8 @@ export default function FechamentosTab({
   onChangeFuncionario, onAnterior, onProxima, onHoje, onFechar, onReabrir,
 }: Props) {
   const [revisando, setRevisando] = useState(false);
+  const { adiantamentos: adiantamentosAbertos } = useAdiantamentosEmAberto(funcionarioId);
+  const [parcelas, setParcelas] = useState<Record<string, string>>({});
 
   const funcionario = funcionarios.find((f) => f.id === funcionarioId) ?? null;
   const periodoInicio = dias[0];
@@ -111,8 +115,17 @@ export default function FechamentosTab({
     (f) => f.funcionario_id === funcionarioId && f.periodo_inicio === periodoInicio && f.status === 'fechado',
   );
 
+  const totalParcelas = adiantamentosAbertos.reduce((s, a) => {
+    const v = Math.min(Math.max(Number(parcelas[a.id]) || 0, 0), a.saldo);
+    return s + v;
+  }, 0);
+  const liquidoFinal = resumo ? Number((resumo.liquido - totalParcelas).toFixed(2)) : 0;
+
   const confirmar = () => {
     if (!funcionario || !resumo) return;
+    const listaParcelas = adiantamentosAbertos
+      .map((a) => ({ adiantamento_id: a.id, valor: Math.min(Math.max(Number(parcelas[a.id]) || 0, 0), a.saldo) }))
+      .filter((p) => p.valor > 0);
     onFechar({
       funcionario_id: funcionario.id,
       periodo_inicio: periodoInicio,
@@ -120,11 +133,13 @@ export default function FechamentosTab({
       valor_diaria_congelado: resumo.diaria,
       dias_integrais: resumo.diasIntegrais,
       dias_meio: resumo.diasMeio,
-      total_vales: Number((resumo.descontos - resumo.bonus).toFixed(2)),
-      valor_liquido: resumo.liquido,
+      total_vales: Number((resumo.descontos + totalParcelas - resumo.bonus).toFixed(2)),
+      valor_liquido: liquidoFinal,
       valor_nao_alocado: resumo.naoAlocado,
       detalhamento_obras: resumo.detalhamento,
+      parcelas: listaParcelas,
     });
+    setParcelas({});
     setRevisando(false);
   };
 
@@ -155,7 +170,7 @@ export default function FechamentosTab({
         <Button
           className="ml-auto"
           disabled={!funcionario || !canEdit || jaFechado}
-          onClick={() => setRevisando(true)}
+          onClick={() => { setParcelas({}); setRevisando(true); }}
         >
           <Lock className="h-4 w-4 mr-2" /> Fechar quinzena
         </Button>
@@ -270,12 +285,42 @@ export default function FechamentosTab({
                 </Table>
               </div>
 
+              {adiantamentosAbertos.length > 0 && (
+                <div className="rounded-md border p-3 space-y-3">
+                  <div>
+                    <p className="font-semibold">Adiantamentos / vales em aberto</p>
+                    <p className="text-xs text-muted-foreground">
+                      Informe quanto descontar nesta quinzena. Deixe em branco para não descontar agora.
+                    </p>
+                  </div>
+                  {adiantamentosAbertos.map((a) => (
+                    <div key={a.id} className="space-y-1">
+                      <Label className="text-xs">
+                        {a.tipo} de {dataBR(a.data)} · saldo {brl(a.saldo)}
+                      </Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={a.saldo}
+                        step="0.01"
+                        placeholder="0,00"
+                        value={parcelas[a.id] ?? ''}
+                        onChange={(e) => setParcelas((p) => ({ ...p, [a.id]: e.target.value }))}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="rounded-md border p-3 space-y-1">
                 <div className="flex justify-between"><span>Valor bruto ({resumo.totalDias} dias)</span><span>{brl(resumo.bruto)}</span></div>
                 <div className="flex justify-between text-muted-foreground"><span>Valor não alocado (sem obra cadastrada)</span><span>{brl(resumo.naoAlocado)}</span></div>
-                <div className="flex justify-between"><span>Vales / adiantamentos / descontos</span><span className="text-destructive">- {brl(resumo.descontos)}</span></div>
+                <div className="flex justify-between"><span>Descontos avulsos</span><span className="text-destructive">- {brl(resumo.descontos)}</span></div>
+                {totalParcelas > 0 && (
+                  <div className="flex justify-between"><span>Parcelas de adiantamento</span><span className="text-destructive">- {brl(totalParcelas)}</span></div>
+                )}
                 <div className="flex justify-between"><span>Bônus</span><span className="text-emerald-600">+ {brl(resumo.bonus)}</span></div>
-                <div className="flex justify-between font-semibold text-base pt-2 border-t"><span>Valor líquido</span><span>{brl(resumo.liquido)}</span></div>
+                <div className="flex justify-between font-semibold text-base pt-2 border-t"><span>Valor líquido</span><span>{brl(liquidoFinal)}</span></div>
               </div>
 
               <p className="text-xs text-muted-foreground">
