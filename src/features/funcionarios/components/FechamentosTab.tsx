@@ -285,12 +285,42 @@ export default function FechamentosTab({
                 </Table>
               </div>
 
+              {adiantamentosAbertos.length > 0 && (
+                <div className="rounded-md border p-3 space-y-3">
+                  <div>
+                    <p className="font-semibold">Adiantamentos / vales em aberto</p>
+                    <p className="text-xs text-muted-foreground">
+                      Informe quanto descontar nesta quinzena. Deixe em branco para não descontar agora.
+                    </p>
+                  </div>
+                  {adiantamentosAbertos.map((a) => (
+                    <div key={a.id} className="space-y-1">
+                      <Label className="text-xs">
+                        {a.tipo} de {dataBR(a.data)} · saldo {brl(a.saldo)}
+                      </Label>
+                      <Input
+                        type="number"
+                        min={0}
+                        max={a.saldo}
+                        step="0.01"
+                        placeholder="0,00"
+                        value={parcelas[a.id] ?? ''}
+                        onChange={(e) => setParcelas((p) => ({ ...p, [a.id]: e.target.value }))}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="rounded-md border p-3 space-y-1">
                 <div className="flex justify-between"><span>Valor bruto ({resumo.totalDias} dias)</span><span>{brl(resumo.bruto)}</span></div>
                 <div className="flex justify-between text-muted-foreground"><span>Valor não alocado (sem obra cadastrada)</span><span>{brl(resumo.naoAlocado)}</span></div>
-                <div className="flex justify-between"><span>Vales / adiantamentos / descontos</span><span className="text-destructive">- {brl(resumo.descontos)}</span></div>
+                <div className="flex justify-between"><span>Descontos avulsos</span><span className="text-destructive">- {brl(resumo.descontos)}</span></div>
+                {totalParcelas > 0 && (
+                  <div className="flex justify-between"><span>Parcelas de adiantamento</span><span className="text-destructive">- {brl(totalParcelas)}</span></div>
+                )}
                 <div className="flex justify-between"><span>Bônus</span><span className="text-emerald-600">+ {brl(resumo.bonus)}</span></div>
-                <div className="flex justify-between font-semibold text-base pt-2 border-t"><span>Valor líquido</span><span>{brl(resumo.liquido)}</span></div>
+                <div className="flex justify-between font-semibold text-base pt-2 border-t"><span>Valor líquido</span><span>{brl(liquidoFinal)}</span></div>
               </div>
 
               <p className="text-xs text-muted-foreground">
