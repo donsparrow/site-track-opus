@@ -94,7 +94,7 @@ export default function FechamentosTab({
       (l) => l.funcionario_id === funcionario.id && l.data >= periodoInicio && l.data <= periodoFim,
     );
     const descontos = lancPeriodo
-      .filter((l) => (TIPOS_LANCAMENTO.find((t) => t.valor === l.tipo)?.sinal ?? -1) === -1)
+      .filter((l) => l.tipo === 'desconto' && !l.lancamento_origem_id)
       .reduce((a, l) => a + Number(l.valor), 0);
     const bonus = lancPeriodo
       .filter((l) => (TIPOS_LANCAMENTO.find((t) => t.valor === l.tipo)?.sinal ?? -1) === 1)
