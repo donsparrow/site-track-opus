@@ -8,11 +8,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Trash2, Plus, Link2 } from 'lucide-react';
+import { Trash2, Plus, Link2, Lock } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { TIPOS_LANCAMENTO, type Funcionario, type Lancamento } from '../types';
 import { parseISODate, toISODate } from '../utils';
 import { useAdiantamentosEmAberto, type LancamentoFormValues } from '../hooks/useLancamentos';
-import AdiantamentosPanel from './AdiantamentosPanel';
+import AdiantamentosPanel, { PARCELA_FECHAMENTO, PARCELA_TOOLTIP } from './AdiantamentosPanel';
 
 const TODOS = '__todos__';
 const SEM_VINCULO = '__sem_vinculo__';
@@ -44,6 +48,7 @@ export default function LancamentosTab({
   const [valor, setValor] = useState('');
   const [descricao, setDescricao] = useState('');
   const [origemId, setOrigemId] = useState<string>(SEM_VINCULO);
+  const [excluirId, setExcluirId] = useState<string | null>(null);
 
   const { adiantamentos: emAberto } = useAdiantamentosEmAberto(funcionarioId || null);
   const { adiantamentos: painel, isLoading: loadingPainel } = useAdiantamentosEmAberto(
@@ -173,7 +178,29 @@ export default function LancamentosTab({
         adiantamentos={painel}
         funcionarios={funcionarios}
         isLoading={loadingPainel}
+        canEdit={canEdit}
+        onDelete={onDelete}
       />
+
+      <AlertDialog open={!!excluirId} onOpenChange={(o) => !o && setExcluirId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir lançamento</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir este lançamento? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { if (excluirId) onDelete(excluirId); setExcluirId(null); }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Card>
         <CardContent className="p-0 overflow-x-auto">
@@ -227,8 +254,17 @@ export default function LancamentosTab({
                     </TableCell>
                     <TableCell className="text-right">{brl(Number(l.valor))}</TableCell>
                     <TableCell className="text-right">
-                      {canEdit && (
-                        <Button variant="ghost" size="icon" onClick={() => onDelete(l.id)}>
+                      {l.descricao === PARCELA_FECHAMENTO ? (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Lock className="h-3.5 w-3.5 text-muted-foreground inline-block mr-3" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">{PARCELA_TOOLTIP}</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      ) : canEdit && (
+                        <Button variant="ghost" size="icon" onClick={() => setExcluirId(l.id)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       )}
