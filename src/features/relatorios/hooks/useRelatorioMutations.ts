@@ -106,6 +106,9 @@ export function useRelatorioMutations() {
   /** Cria (ou atualiza) o relatório do período e vincula os diários. */
   const consolidar = useMutation({
     mutationFn: async ({ obraId, inicio, fim, dados }: ConsolidarInput) => {
+      if (!dados.diarios || dados.diarios.length === 0) {
+        throw new Error('Nenhum diário encontrado no período. Aguarde o carregamento e tente novamente.');
+      }
       const { contratual, parados, trabalhados, ajustado, saldo } = dados.prazos;
       const indicadores = calcularIndicadores(dados);
 
@@ -251,28 +254,32 @@ export function useRelatorioMutations() {
       const { hasChanges, summary } = detectChanges(lastSnapshot, currentSnapshot, versoes.length === 0);
 
       const versaoLayout = await getVersaoLayout(relatorioId);
-      await gerarPDFRelatorio({ empresa, obra, periodo, dados, assinaturas, versoes, revisao: revisaoPdf, versaoLayout });
-
-      if (!relatorioId || !user) return { relatorioId, novaRevisao: revisaoPdf, mensagem: 'PDF gerado!' };
-
-      const { data: relAtual } = await supabase.from('relatorios').select('status').eq('id', relatorioId).maybeSingle();
-      const statusAtual = (relAtual as Relatorio | null)?.status || 'rascunho';
-
-      const primeiraVez = await isPrimeiroPdfDoUsuario(relatorioId, user.id);
       const nextVersion = versoes.length > 0 ? versoes[0].numero_versao + 1 : 1;
+      let versoesPdf = versoes;
 
-      if (hasChanges) {
+      if (hasChanges && relatorioId && user) {
+        const { data: relAtual } = await supabase.from('relatorios').select('status').eq('id', relatorioId).maybeSingle();
+        const statusAtual = (relAtual as Relatorio | null)?.status || 'rascunho';
         const nextRevisao = revisaoPdf + 1;
-        await supabase.from('relatorios').update({ revisao_pdf: nextRevisao }).eq('id', relatorioId);
-        await supabase.from('relatorio_versoes').insert({
+        const { error: errUpd } = await supabase.from('relatorios').update({ revisao_pdf: nextRevisao }).eq('id', relatorioId);
+        if (errUpd) throw errUpd;
+        const { data: novaVersao, error: errIns } = await supabase.from('relatorio_versoes').insert({
           relatorio_id: relatorioId,
           numero_versao: nextVersion,
           criado_por: user.id,
           status: statusAtual,
           descricao_alteracao: summary,
           snapshot_dados: currentSnapshot as unknown as Json,
-        });
+        }).select().single();
+        if (errIns) throw errIns;
+        versoesPdf = [novaVersao as typeof versoes[number], ...versoes];
       }
+
+      await gerarPDFRelatorio({ empresa, obra, periodo, dados, assinaturas, versoes: versoesPdf, revisao: hasChanges && relatorioId && user ? revisaoPdf + 1 : revisaoPdf, versaoLayout });
+
+      if (!relatorioId || !user) return { relatorioId, novaRevisao: revisaoPdf, mensagem: 'PDF gerado!' };
+
+      const primeiraVez = await isPrimeiroPdfDoUsuario(relatorioId, user.id);
 
       const revAtual = revLabel(Math.max(0, (hasChanges ? nextVersion : nextVersion - 1) - 1));
       if (primeiraVez) {

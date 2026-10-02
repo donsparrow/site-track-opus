@@ -74,6 +74,7 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
   const m = useRelatorioMutations();
 
   const carregando = dadosQuery.isPending && !!obraId && !!inicio && !!fim;
+  const dadosCarregando = dadosQuery.isPending || dadosQuery.isFetching || dadosQuery.isPlaceholderData;
 
   const handleConsolidar = () => {
     if (!obraId || !inicio || !fim) return;
@@ -128,8 +129,8 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
               <Input type="date" value={fim} onChange={(e) => setFim(e.target.value)} disabled={readOnly} />
             </div>
             {!readOnly && podeEditar && (
-              <Button onClick={handleConsolidar} disabled={!obraId || !inicio || !fim || m.consolidar.isPending} className="bg-accent text-accent-foreground hover:bg-accent/90">
-                <BarChart3 className="h-4 w-4 mr-2" />{m.consolidar.isPending ? 'Consolidando...' : 'Consolidar'}
+              <Button onClick={handleConsolidar} disabled={!obraId || !inicio || !fim || m.consolidar.isPending || dadosCarregando} className="bg-accent text-accent-foreground hover:bg-accent/90">
+                <BarChart3 className="h-4 w-4 mr-2" />{m.consolidar.isPending ? 'Consolidando...' : dadosCarregando ? 'Carregando dados...' : 'Consolidar'}
               </Button>
             )}
           </div>

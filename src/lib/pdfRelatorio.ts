@@ -320,11 +320,13 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
     doc.text(revLabel, pageW / 2, coverY, { align: 'center' });
     coverY += 10;
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(100);
-    doc.text(`Versão ${data.versao}`, pageW / 2, coverY, { align: 'center' });
-    coverY += 8;
+    if ((data.versaoLayout ?? 1) < 2) {
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100);
+      doc.text(`Versão ${data.versao}`, pageW / 2, coverY, { align: 'center' });
+      coverY += 8;
+    }
   }
 
   coverY += 10;
