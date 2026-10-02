@@ -47,11 +47,9 @@ export default function RelatoriosLista({ relatorios, podeEditar, podeExcluir, o
                   <TableCell><Badge variant={statusVariant(r.status)}>{(r.status || '').toUpperCase()}</Badge></TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      {((r.revisao_pdf || 0) > 0 || r.status === 'assinado') && (
-                        <Button size="sm" variant="ghost" onClick={() => onBaixar(r)} title="Baixar PDF">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      )}
+                      <Button size="sm" variant="ghost" onClick={() => onBaixar(r)} title="Baixar PDF">
+                        <Download className="h-4 w-4" />
+                      </Button>
                       <Button size="sm" variant="ghost" onClick={() => onVisualizar(r)} title="Visualizar">
                         <Eye className="h-4 w-4" />
                       </Button>
