@@ -8,6 +8,13 @@
       "when": 1790963305295,
       "tag": "0000_diario_obra_unique_obra_data",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790963325455,
+      "tag": "0001_diario_validacao_datas_triggers",
+      "breakpoints": true
     }
   ]
 }
