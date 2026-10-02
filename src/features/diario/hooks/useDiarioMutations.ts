@@ -20,7 +20,17 @@ export function useDiarioMutations({ obraId, diarioId }: Options) {
   const invalidateCronograma = () =>
     qc.invalidateQueries({ queryKey: diarioKeys.cronogramaAtividades(obraId) });
 
-  const fail = (e: unknown) => toast.error(e instanceof Error ? e.message : 'Erro inesperado');
+  const fail = (e: unknown) => {
+    const msg = e instanceof Error ? e.message : (e as { message?: string })?.message;
+    toast.error(msg || 'Erro inesperado');
+  };
+  const failDuplicado = (e: unknown) => {
+    if ((e as { code?: string })?.code === '23505') {
+      toast.error('Já existe um diário para esta obra nesta data.');
+      return;
+    }
+    fail(e);
+  };
 
   /* ---------------- Diário ---------------- */
 
@@ -89,7 +99,7 @@ export function useDiarioMutations({ obraId, diarioId }: Options) {
       toast.success('Diário criado com dados do último registro!');
       invalidateLista();
     },
-    onError: fail,
+    onError: failDuplicado,
   });
 
   const atualizarCabecalho = useMutation({
@@ -112,11 +122,21 @@ export function useDiarioMutations({ obraId, diarioId }: Options) {
       invalidateLista();
       invalidateDetail();
     },
-    onError: fail,
+    onError: failDuplicado,
   });
 
   const excluirDiario = useMutation({
     mutationFn: async (id: string) => {
+      // Primeiro passo: bloquear se vinculado a relatório (nada é apagado)
+      const { data: alvo, error: errAlvo } = await supabase
+        .from('diario_obra')
+        .select('relatorio_id')
+        .eq('id', id)
+        .maybeSingle();
+      if (errAlvo) throw errAlvo;
+      if (alvo?.relatorio_id) {
+        throw new Error('Este diário está vinculado a um relatório. Exclua o relatório antes de excluir o diário.');
+      }
       await Promise.all([
         supabase.from('diario_equipe').delete().eq('diario_id', id),
         supabase.from('diario_atividades').delete().eq('diario_id', id),
