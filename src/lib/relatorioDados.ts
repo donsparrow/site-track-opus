@@ -151,7 +151,10 @@ export async function carregarDadosRelatorio(
     atividades: at.data || [],
     materiais: mt.data || [],
     ocorrencias: oc.data || [],
-    imagens: im.data || [],
+    imagens: (im.data || []).map((img: any) => ({
+      ...img,
+      data_diario: dList.find((d) => d.id === img.diario_id)?.data ?? null,
+    })),
     paralisacoes: pa.data || [],
     cronograma: cronogramaAtivs,
     aditivos,
