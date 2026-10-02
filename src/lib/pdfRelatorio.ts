@@ -49,6 +49,8 @@ interface RelatorioPDFData {
   assinaturas: any[];
   versao?: number;
   versoes?: { rev: string; data: string; resumo: string }[];
+  /** 1 = layout legado (inalterado); >= 2 = fotos por data, histórico em colunas. */
+  versaoLayout?: number;
 }
 
 const fmt = (d: string) => {
@@ -883,8 +885,89 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   }
 
 
+  const layoutV2 = (data.versaoLayout ?? 1) >= 2;
+
+  // =========== PHOTO SECTION (layout v2: agrupado por data) ===========
+  if (layoutV2 && data.imagens.length > 0) {
+    newPage();
+    sec('REGISTRO FOTOGRÁFICO');
+
+    const imgW = (contentW - 8) / 2;
+    const imgH = imgW * 0.75;
+    const lineH = 3.5;
+    let figNum = 1;
+
+    const ordenadas = [...data.imagens].sort((a, b) => {
+      const da = String(a.data_diario || ''), db = String(b.data_diario || '');
+      if (da !== db) return da.localeCompare(db);
+      return String(a.created_at || '').localeCompare(String(b.created_at || ''));
+    });
+    const grupos: { data: string; itens: any[] }[] = [];
+    ordenadas.forEach((img) => {
+      const d = String(img.data_diario || '');
+      const g = grupos[grupos.length - 1];
+      if (g && g.data === d) g.itens.push(img); else grupos.push({ data: d, itens: [img] });
+    });
+
+    for (const grupo of grupos) {
+      const dataFmt = grupo.data ? fmt(grupo.data) : '';
+      checkPage(8 + imgH + 14);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0);
+      doc.text(dataFmt ? `Registros de ${dataFmt}` : 'Registros sem data', MARGIN, y);
+      doc.setFont('helvetica', 'normal');
+      y += 6;
+
+      for (let i = 0; i < grupo.itens.length; i += 2) {
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        const legendas: string[][] = [];
+        for (let col = 0; col < 2 && i + col < grupo.itens.length; col++) {
+          const img = grupo.itens[i + col];
+          const partes = [`Figura ${figNum + col}`];
+          if (img.descricao) partes.push(sanitizePdfText(String(img.descricao)));
+          if (dataFmt) partes.push(dataFmt);
+          legendas.push(doc.splitTextToSize(partes.join(' – '), imgW) as string[]);
+        }
+        const maxLinhas = Math.max(1, ...legendas.map((l) => l.length));
+        checkPage(imgH + 6 + maxLinhas * lineH);
+
+        for (let col = 0; col < legendas.length; col++) {
+          const img = grupo.itens[i + col];
+          const xPos = MARGIN + col * (imgW + 8);
+          try {
+            const resolvedUrl = (await resolveAnexoUrl(img.url)) || img.url;
+            const imgDataUrl = await loadImageAsDataUrl(resolvedUrl);
+            if (imgDataUrl) {
+              doc.setDrawColor(200);
+              doc.rect(xPos, y, imgW, imgH);
+              doc.addImage(imgDataUrl, 'PNG', xPos + 0.5, y + 0.5, imgW - 1, imgH - 1);
+            }
+          } catch {
+            doc.setDrawColor(200);
+            doc.rect(xPos, y, imgW, imgH);
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text('Imagem indisponível', xPos + imgW / 2, y + imgH / 2, { align: 'center' });
+            doc.setTextColor(0);
+          }
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(60);
+          doc.text(legendas[col], xPos, y + imgH + 4);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(0);
+        }
+        figNum += legendas.length;
+        y += imgH + 4 + maxLinhas * lineH + 4;
+      }
+      y += 2;
+    }
+  }
+
   // =========== PHOTO SECTION ===========
-  if (data.imagens.length > 0) {
+  if (!layoutV2 && data.imagens.length > 0) {
     newPage();
     sec('REGISTRO FOTOGRÁFICO');
 
@@ -932,8 +1015,35 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     }
   }
 
+  // =========== REVISION HISTORY (layout v2: três colunas) ===========
+  if (layoutV2 && data.versoes && data.versoes.length > 0) {
+    checkPage(30);
+    sec('HISTÓRICO DE REVISÕES');
+    const revW = 18;
+    const descW = contentW - revW - 32;
+    const lh = 4;
+    data.versoes.forEach((v) => {
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      const linhas = doc.splitTextToSize(sanitizePdfText(v.resumo), descW) as string[];
+      const h = Math.max(1, linhas.length) * lh + 2;
+      checkPage(h + 2);
+      doc.setFont('helvetica', 'bold');
+      doc.text(v.rev, MARGIN, y);
+      doc.setFont('helvetica', 'normal');
+      doc.text(linhas, MARGIN + revW, y);
+      doc.setTextColor(120);
+      doc.setFontSize(8);
+      doc.text(v.data, pageW - MARGIN, y, { align: 'right' });
+      doc.setTextColor(0);
+      doc.setFontSize(9);
+      y += h;
+    });
+    y += 4;
+  }
+
   // =========== REVISION HISTORY (SIMPLIFIED) ===========
-  if (data.versoes && data.versoes.length > 0) {
+  if (!layoutV2 && data.versoes && data.versoes.length > 0) {
     checkPage(30);
     sec('HISTÓRICO DE REVISÕES');
 
@@ -991,7 +1101,15 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
       doc.text(sig.nome_assinante, xPos, sigY + 5);
       doc.setFont('helvetica', 'normal');
       if (sig.cargo) doc.text(sig.cargo, xPos, sigY + 10);
-      doc.text(`Data: ${fmt(sig.data_assinatura)}`, xPos, sigY + (sig.cargo ? 15 : 10));
+      const dataSig = sig.assinado_em
+        ? (() => {
+            const dt = new Date(sig.assinado_em);
+            const d = dt.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+            const h = dt.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
+            return `${d} às ${h}`;
+          })()
+        : fmt(sig.data_assinatura);
+      doc.text(`Data: ${dataSig}`, xPos, sigY + (sig.cargo ? 15 : 10));
       doc.setFontSize(8);
       doc.setTextColor(100);
       doc.text(sig.tipo === 'responsavel_tecnico' ? 'RESPONSÁVEL TÉCNICO' : 'CLIENTE', xPos, sigY + (sig.cargo ? 20 : 15));

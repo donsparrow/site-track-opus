@@ -19,6 +19,8 @@ export interface GerarPdfArgs {
   assinaturas: Assinatura[];
   versoes: RelatorioVersao[];
   revisao: number;
+  /** 1 = layout legado; >= 2 = novo layout. */
+  versaoLayout?: number;
 }
 
 /**
@@ -26,7 +28,9 @@ export interface GerarPdfArgs {
  * não faz nenhum fetch: recebe os dados já carregados pelos hooks.
  * As assinaturas continuam resolvidas em URL assinada do bucket privado.
  */
-export async function gerarPDFRelatorio({ empresa, obra, periodo, dados, assinaturas, versoes, revisao }: GerarPdfArgs) {
+export async function gerarPDFRelatorio({ empresa, obra, periodo, dados, assinaturas, versoes, revisao, versaoLayout = 1 }: GerarPdfArgs) {
+  const v2 = versaoLayout >= 2;
+  const maiorVersao = (versoes || []).reduce((m, v) => Math.max(m, v.numero_versao), 0);
   await gerarRelatorioPDF({
     empresa: empresa || null,
     obra: {
@@ -52,9 +56,10 @@ export async function gerarPDFRelatorio({ empresa, obra, periodo, dados, assinat
     aditivos: dados.aditivos,
     planejamentoConfigurado: dados.planejamentoConfigurado,
     assinaturas: await resolveAssinaturas(assinaturas || []),
-    versao: revisao,
+    versao: v2 && maiorVersao > 0 ? maiorVersao - 1 : revisao,
+    versaoLayout,
     versoes: (versoes || []).map((v) => ({
-      rev: revLabel(v.numero_versao),
+      rev: revLabel(v2 ? Math.max(0, v.numero_versao - 1) : v.numero_versao),
       data: new Date(v.data_criacao).toLocaleString('pt-BR', {
         day: '2-digit', month: '2-digit', year: 'numeric',
         hour: '2-digit', minute: '2-digit'
