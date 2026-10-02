@@ -5,10 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
+import { hojeLocal, isDataFutura } from '@/lib/dataLocal';
 import type { DiarioFormValues } from '../types';
 
 const initialValues = (): DiarioFormValues => ({
-  data: new Date().toISOString().split('T')[0],
+  data: hojeLocal(),
   clima: 'sol',
   temperatura: '',
   horario_inicio: '07:00',
@@ -34,12 +36,16 @@ export function NovoDiarioDialog({ open, onOpenChange, saving, onSubmit }: Props
       <DialogContent>
         <DialogHeader><DialogTitle className="font-display">Novo Diário de Obra</DialogTitle></DialogHeader>
         <form
-          onSubmit={(e) => { e.preventDefault(); onSubmit(form); }}
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (isDataFutura(form.data)) { toast.error('Não é permitido registrar datas futuras.'); return; }
+            onSubmit(form);
+          }}
           className="space-y-4"
         >
           <div>
             <Label>Data *</Label>
-            <Input type="date" value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} required />
+            <Input type="date" value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} max={hojeLocal()} required />
           </div>
           <div>
             <Label>Clima</Label>
