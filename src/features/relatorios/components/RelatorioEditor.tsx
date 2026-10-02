@@ -64,7 +64,8 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
   const dadosQuery = useRelatorioDados({ obraId, inicio, fim, relatorioId });
   const { dados } = dadosQuery;
   const detail = useRelatorioDetail(relatorioId);
-  const historico = useRelatorioHistorico(relatorioId, tab === 'versoes');
+  const historico = useRelatorioHistorico(relatorioId, true);
+  const maiorVersao = historico.versoes.reduce((m, v) => Math.max(m, v.numero_versao), 0);
   /** Exibição e PDF usam os indicadores congelados no fechamento (documento imutável). */
   const dadosExibicao = useMemo(
     () => aplicarIndicadoresCongelados(dados, detail.relatorio),
@@ -103,7 +104,7 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
           {readOnly ? 'Visualizar Relatório' : (relatorioId ? 'Editar Relatório' : 'Novo Relatório')}
         </h1>
         {readOnly && <Badge variant="secondary" className="text-sm">Somente leitura</Badge>}
-        {relatorioId && revisaoPdf > 0 && <Badge variant="default" className="text-sm">{revLabel(revisaoPdf - 1)}</Badge>}
+        {relatorioId && maiorVersao > 0 && <Badge variant="default" className="text-sm">{revLabel(maiorVersao - 1)}</Badge>}
       </div>
 
       <Card className="mb-6">
