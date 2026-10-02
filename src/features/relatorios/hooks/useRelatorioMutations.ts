@@ -102,13 +102,16 @@ export function useRelatorioMutations() {
       const { contratual, parados, trabalhados, ajustado, saldo } = dados.prazos;
       const indicadores = calcularIndicadores(dados);
 
-      let { data: relatorio } = await supabase
+      const { data: existente, error: errBusca } = await supabase
         .from('relatorios')
         .select('id, status, prazo_contratual_dias_uteis, revisao_pdf')
         .eq('obra_id', obraId)
-        .gte('data_inicio', inicio)
-        .lte('data_fim', fim)
-        .single();
+        .eq('data_inicio', inicio)
+        .eq('data_fim', fim)
+        .neq('status', 'excluido')
+        .maybeSingle();
+      if (errBusca) throw errBusca;
+      let relatorio = existente;
 
       let revisao = 0;
 
@@ -138,13 +141,8 @@ export function useRelatorioMutations() {
             numero_versao: 1,
             criado_por: user.id,
             status: 'rascunho',
-            descricao_alteracao: 'Criação do relatório',
-            snapshot_dados: {
-              prazos: { contratual, parados, ajustado, trabalhados, saldo },
-              periodo: { inicio, fim },
-              diarios_count: 0, equipe_count: 0, atividades_count: 0,
-              materiais_count: 0, ocorrencias_count: 0, imagens_count: 0,
-            },
+            descricao_alteracao: 'Emissão inicial',
+            snapshot_dados: buildSnapshot(dados, { inicio, fim }) as unknown as Json,
           });
           await supabase.from('relatorio_logs').insert({
             relatorio_id: relatorio.id,
@@ -196,7 +194,7 @@ export function useRelatorioMutations() {
 
       const versoes = await fetchVersoes(relatorioId);
       const currentSnapshot = buildSnapshot(dados, periodo);
-      const lastSnapshot = (versoes[0]?.snapshot_dados as unknown as SnapshotDados) || null;
+      const lastSnapshot = (versoes.find((v) => v.snapshot_dados)?.snapshot_dados as unknown as SnapshotDados) || null;
       const { hasChanges, summary } = detectChanges(lastSnapshot, currentSnapshot, versoes.length === 0);
 
       if (hasChanges && user) {
@@ -242,9 +240,8 @@ export function useRelatorioMutations() {
         : [];
 
       const currentSnapshot = buildSnapshot(dados, periodo);
-      const lastSnapshot = (versoes[0]?.snapshot_dados as unknown as SnapshotDados) || null;
+      const lastSnapshot = (versoes.find((v) => v.snapshot_dados)?.snapshot_dados as unknown as SnapshotDados) || null;
       const { hasChanges, summary } = detectChanges(lastSnapshot, currentSnapshot, versoes.length === 0);
-      const label = revLabel(revisaoPdf);
 
       await gerarPDFRelatorio({ empresa, obra, periodo, dados, assinaturas, versoes, revisao: revisaoPdf });
 
@@ -254,53 +251,34 @@ export function useRelatorioMutations() {
       const statusAtual = (relAtual as Relatorio | null)?.status || 'rascunho';
 
       const primeiraVez = await isPrimeiroPdfDoUsuario(relatorioId, user.id);
-      const autorNome = await getNomeUsuario(user.id);
       const nextVersion = versoes.length > 0 ? versoes[0].numero_versao + 1 : 1;
 
       if (hasChanges) {
         const nextRevisao = revisaoPdf + 1;
         await supabase.from('relatorios').update({ revisao_pdf: nextRevisao }).eq('id', relatorioId);
-
         await supabase.from('relatorio_versoes').insert({
           relatorio_id: relatorioId,
           numero_versao: nextVersion,
           criado_por: user.id,
           status: statusAtual,
-          descricao_alteracao: primeiraVez ? `${summary} — PDF gerado por ${autorNome}` : summary,
+          descricao_alteracao: summary,
           snapshot_dados: currentSnapshot as unknown as Json,
         });
-
-        if (primeiraVez) {
-          await supabase.from('relatorio_logs').insert({
-            relatorio_id: relatorioId,
-            usuario_id: user.id,
-            acao: `gerou PDF ${label}`,
-          });
-        }
-
-        return { relatorioId, novaRevisao: nextRevisao, mensagem: `PDF ${label} gerado — nova revisão criada!` };
       }
 
-      const efetivaRevisao = revisaoPdf > 0 ? revisaoPdf : 1;
-      await supabase.from('relatorios').update({ revisao_pdf: efetivaRevisao }).eq('id', relatorioId);
-
+      const revAtual = revLabel(Math.max(0, (hasChanges ? nextVersion : nextVersion - 1) - 1));
       if (primeiraVez) {
-        await supabase.from('relatorio_versoes').insert({
-          relatorio_id: relatorioId,
-          numero_versao: nextVersion,
-          criado_por: user.id,
-          status: statusAtual,
-          descricao_alteracao: `PDF gerado por ${autorNome}`,
-          snapshot_dados: currentSnapshot as unknown as Json,
-        });
         await supabase.from('relatorio_logs').insert({
           relatorio_id: relatorioId,
           usuario_id: user.id,
-          acao: `gerou PDF ${label}`,
+          acao: `gerou PDF ${revAtual}`,
         });
       }
 
-      return { relatorioId, novaRevisao: efetivaRevisao, mensagem: `PDF ${label} gerado (mesma revisão, sem alterações).` };
+      if (hasChanges) {
+        return { relatorioId, novaRevisao: revisaoPdf + 1, mensagem: `PDF ${revAtual} gerado — nova revisão criada!` };
+      }
+      return { relatorioId, novaRevisao: revisaoPdf, mensagem: `PDF ${revAtual} gerado (sem alterações).` };
     },
     onSuccess: ({ relatorioId, mensagem }) => {
       invalidateRelatorio(relatorioId);
@@ -348,19 +326,11 @@ export function useRelatorioMutations() {
       });
 
       if (user && await isPrimeiroPdfDoUsuario(relatorio.id, user.id)) {
-        const autorNome = await getNomeUsuario(user.id);
-        const ultimaVersao = versoes[0];
-        await supabase.from('relatorio_versoes').insert({
-          relatorio_id: relatorio.id,
-          numero_versao: ultimaVersao ? ultimaVersao.numero_versao + 1 : 1,
-          criado_por: user.id,
-          status: relatorio.status || 'rascunho',
-          descricao_alteracao: `PDF gerado por ${autorNome}`,
-        });
+        const maior = versoes[0]?.numero_versao ?? 1;
         await supabase.from('relatorio_logs').insert({
           relatorio_id: relatorio.id,
           usuario_id: user.id,
-          acao: `gerou PDF ${revLabel(pdfRevisao)}`,
+          acao: `gerou PDF ${revLabel(Math.max(0, maior - 1))}`,
         });
       }
 
@@ -392,17 +362,6 @@ export function useRelatorioMutations() {
       if (error) throw error;
 
       if (user) {
-        const versoes = await fetchVersoes(relatorioId);
-        const nextVersion = versoes.length > 0 ? versoes[0].numero_versao + 1 : 1;
-        await supabase.from('relatorio_versoes').insert({
-          relatorio_id: relatorioId,
-          numero_versao: nextVersion,
-          criado_por: user.id,
-          status: 'assinado',
-          descricao_alteracao: `Assinado por ${nome}`,
-          // Propaga o último snapshot conhecido para não gerar "Criação do relatório" falso depois.
-          snapshot_dados: versoes[0]?.snapshot_dados ?? null,
-        });
         await supabase.from('relatorio_logs').insert({
           relatorio_id: relatorioId,
           usuario_id: user.id,

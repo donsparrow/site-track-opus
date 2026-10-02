@@ -42,14 +42,18 @@ export function detectChanges(
 ): { hasChanges: boolean; summary: string } {
   if (isPrimeiraVersao) return { hasChanges: true, summary: 'Criação do relatório' };
   if (!prev) return { hasChanges: true, summary: 'Atualização do relatório' };
+  // Snapshot legado zerado (criado antes da consolidação real)
+  if (prev.diarios_count === 0 && curr.diarios_count > 0) {
+    return { hasChanges: true, summary: 'Consolidação dos dados do período' };
+  }
   const changes: string[] = [];
   /** Campo ausente em snapshot antigo não conta como alteração (evita revisão falsa). */
   const diffCount = (before: number | undefined, after: number, label: string) => {
-    if ((before ?? after) !== after) changes.push(`${label}: ${before ?? 0} -> ${after}`);
+    if ((before ?? after) !== after) changes.push(`${label}: de ${before ?? 0} para ${after}`);
   };
-  if (prev.prazos?.contratual !== curr.prazos?.contratual) changes.push(`Prazo alterado de ${prev.prazos?.contratual || 0} para ${curr.prazos?.contratual || 0} dias`);
-  if (prev.prazos?.parados !== curr.prazos?.parados) changes.push(`Dias parados: ${prev.prazos?.parados || 0} → ${curr.prazos?.parados || 0}`);
-  if (prev.prazos?.trabalhados !== curr.prazos?.trabalhados) changes.push(`Dias trabalhados: ${prev.prazos?.trabalhados || 0} → ${curr.prazos?.trabalhados || 0}`);
+  if (prev.prazos?.contratual !== curr.prazos?.contratual) changes.push(`Prazo contratual: de ${prev.prazos?.contratual || 0} para ${curr.prazos?.contratual || 0} dias`);
+  if (prev.prazos?.parados !== curr.prazos?.parados) changes.push(`Dias parados: de ${prev.prazos?.parados || 0} para ${curr.prazos?.parados || 0}`);
+  if (prev.prazos?.trabalhados !== curr.prazos?.trabalhados) changes.push(`Dias trabalhados: de ${prev.prazos?.trabalhados || 0} para ${curr.prazos?.trabalhados || 0}`);
   if (prev.periodo?.inicio !== curr.periodo?.inicio || prev.periodo?.fim !== curr.periodo?.fim) changes.push('Alteração no período');
   diffCount(prev.imagens_count, curr.imagens_count, 'Imagens');
   diffCount(prev.atividades_count, curr.atividades_count, 'Atividades');
