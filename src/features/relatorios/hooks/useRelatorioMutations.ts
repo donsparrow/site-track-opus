@@ -15,6 +15,13 @@ import { useRelatoriosScope } from './useObrasRelatorios';
 
 /* ---------- leituras auxiliares usadas apenas dentro das mutations ---------- */
 
+/** Versão do layout do PDF (1 = legado). Sem relatório salvo → layout novo. */
+async function getVersaoLayout(relatorioId: string | null): Promise<number> {
+  if (!relatorioId) return 2;
+  const { data } = await supabase.from('relatorios').select('versao_layout').eq('id', relatorioId).maybeSingle();
+  return (data as { versao_layout?: number } | null)?.versao_layout ?? 1;
+}
+
 async function fetchVersoes(relatorioId: string): Promise<RelatorioVersao[]> {
   const { data } = await supabase
     .from('relatorio_versoes')
@@ -243,7 +250,8 @@ export function useRelatorioMutations() {
       const lastSnapshot = (versoes.find((v) => v.snapshot_dados)?.snapshot_dados as unknown as SnapshotDados) || null;
       const { hasChanges, summary } = detectChanges(lastSnapshot, currentSnapshot, versoes.length === 0);
 
-      await gerarPDFRelatorio({ empresa, obra, periodo, dados, assinaturas, versoes, revisao: revisaoPdf });
+      const versaoLayout = await getVersaoLayout(relatorioId);
+      await gerarPDFRelatorio({ empresa, obra, periodo, dados, assinaturas, versoes, revisao: revisaoPdf, versaoLayout });
 
       if (!relatorioId || !user) return { relatorioId, novaRevisao: revisaoPdf, mensagem: 'PDF gerado!' };
 
@@ -315,7 +323,9 @@ export function useRelatorioMutations() {
       const pdfRevisao = relatorio.revisao_pdf || 0;
       const versoes = (versRes.data || []) as RelatorioVersao[];
 
+      const versaoLayout = await getVersaoLayout(relatorio.id);
       await gerarPDFRelatorio({
+        versaoLayout,
         empresa,
         obra: obra as unknown as ObraRelatorio,
         periodo: { inicio: relatorio.data_inicio || '', fim: relatorio.data_fim || '' },
