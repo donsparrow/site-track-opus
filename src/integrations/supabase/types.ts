@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       assinaturas: {
         Row: {
+          assinado_em: string | null
           assinatura_url: string
           cargo: string | null
           created_at: string
@@ -27,6 +28,7 @@ export type Database = {
           tipo_assinatura: string
         }
         Insert: {
+          assinado_em?: string | null
           assinatura_url: string
           cargo?: string | null
           created_at?: string
@@ -38,6 +40,7 @@ export type Database = {
           tipo_assinatura?: string
         }
         Update: {
+          assinado_em?: string | null
           assinatura_url?: string
           cargo?: string | null
           created_at?: string
@@ -1999,6 +2002,7 @@ export type Database = {
           status: string
           status_obra: string | null
           updated_at: string
+          versao_layout: number
         }
         Insert: {
           created_at?: string
@@ -2024,6 +2028,7 @@ export type Database = {
           status?: string
           status_obra?: string | null
           updated_at?: string
+          versao_layout?: number
         }
         Update: {
           created_at?: string
@@ -2049,6 +2054,7 @@ export type Database = {
           status?: string
           status_obra?: string | null
           updated_at?: string
+          versao_layout?: number
         }
         Relationships: [
           {
