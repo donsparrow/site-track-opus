@@ -5,7 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 import { fmtData, totalDiasParalisacao } from '../utils';
+import { toast } from 'sonner';
+import { hojeLocal, isDataFutura } from '@/lib/dataLocal';
 import type { DiarioParalisacao } from '../types';
+
+function datasValidas(di: string, df: string) {
+  if (isDataFutura(di) || (df && isDataFutura(df))) { toast.error('Não é permitido registrar datas futuras.'); return false; }
+  if (df && df < di) { toast.error('A data final não pode ser anterior à data inicial.'); return false; }
+  return true;
+}
 
 interface Props {
   paralisacoes: DiarioParalisacao[];
@@ -51,12 +59,12 @@ export function ParalisacoesTab({ paralisacoes, canEdit, canEditDelete, onAdd, o
                 editingId === p.id ? (
                   <TableRow key={p.id}>
                     <TableCell><Input value={motivo} onChange={(e) => setMotivo(e.target.value)} className="h-8" /></TableCell>
-                    <TableCell><Input type="date" value={inicio} onChange={(e) => setInicio(e.target.value)} className="h-8" /></TableCell>
-                    <TableCell><Input type="date" value={fim} onChange={(e) => setFim(e.target.value)} className="h-8" /></TableCell>
+                    <TableCell><Input type="date" max={hojeLocal()} value={inicio} onChange={(e) => setInicio(e.target.value)} className="h-8" /></TableCell>
+                    <TableCell><Input type="date" max={hojeLocal()} value={fim} onChange={(e) => setFim(e.target.value)} className="h-8" /></TableCell>
                     <TableCell>—</TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => { onUpdate({ id: p.id, motivo, dataInicio: inicio, dataFim: fim }); setEditingId(null); }}><Save className="h-3 w-3" /></Button>
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => { if (!datasValidas(inicio, fim)) return; onUpdate({ id: p.id, motivo, dataInicio: inicio, dataFim: fim }); setEditingId(null); }}><Save className="h-3 w-3" /></Button>
                         <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setEditingId(null)}><X className="h-3 w-3" /></Button>
                       </div>
                     </TableCell>
@@ -93,18 +101,18 @@ export function ParalisacoesTab({ paralisacoes, canEdit, canEditDelete, onAdd, o
 
 function InlineParalisacaoForm({ onSave, onCancel }: { onSave: (m: string, di: string, df: string) => void; onCancel: () => void }) {
   const [m, setM] = useState('');
-  const [di, setDi] = useState(new Date().toISOString().split('T')[0]);
+  const [di, setDi] = useState(hojeLocal());
   const [df, setDf] = useState('');
   const total = di && df ? totalDiasParalisacao(di, df) : null;
   return (
     <div className="flex gap-2 mb-3 p-2 bg-muted rounded flex-wrap items-center">
       <Input placeholder="Motivo" value={m} onChange={(e) => setM(e.target.value)} className="flex-1 min-w-[150px]" />
-      <Input type="date" value={di} onChange={(e) => setDi(e.target.value)} className="w-36" />
-      <Input type="date" value={df} onChange={(e) => setDf(e.target.value)} className="w-36" />
+      <Input type="date" max={hojeLocal()} value={di} onChange={(e) => setDi(e.target.value)} className="w-36" />
+      <Input type="date" max={hojeLocal()} value={df} onChange={(e) => setDf(e.target.value)} className="w-36" />
       {total !== null && (
         <span className="text-xs text-muted-foreground whitespace-nowrap">{total} dia(s) útil(eis)</span>
       )}
-      <Button size="sm" onClick={() => m && onSave(m, di, df)}>OK</Button>
+      <Button size="sm" onClick={() => m && datasValidas(di, df) && onSave(m, di, df)}>OK</Button>
       <Button size="sm" variant="ghost" onClick={onCancel}>✕</Button>
     </div>
   );

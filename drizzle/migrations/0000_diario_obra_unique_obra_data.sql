@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS diario_obra_obra_id_data_key ON public.diario_obra (obra_id, data);

@@ -6,6 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Pencil, Save, Sun, X } from 'lucide-react';
+import { toast } from 'sonner';
+import { hojeLocal, isDataFutura } from '@/lib/dataLocal';
 import { climaIcons } from '../utils';
 import type { DiarioDetalhado, DiarioFormValues } from '../types';
 
@@ -46,7 +48,10 @@ export function CabecalhoDiario({ diario, editMode, canEditDelete, onEnterEdit, 
           </span>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" onClick={onCancelEdit}><X className="h-3 w-3 mr-1" />Cancelar</Button>
-            <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => onSave(form)}>
+            <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => {
+              if (form.data !== diario.data && isDataFutura(form.data)) { toast.error('Não é permitido registrar datas futuras.'); return; }
+              onSave(form);
+            }}>
               <Save className="h-3 w-3 mr-1" />Salvar Alterações
             </Button>
           </div>
@@ -66,7 +71,10 @@ export function CabecalhoDiario({ diario, editMode, canEditDelete, onEnterEdit, 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs">Data</Label>
-                  <Input type="date" value={form.data} onChange={(e) => setForm({ ...form, data: e.target.value })} />
+                  <Input type="date" value={form.data} max={hojeLocal()} disabled={!!diario.relatorio_id} onChange={(e) => setForm({ ...form, data: e.target.value })} />
+                  {diario.relatorio_id && (
+                    <p className="text-xs text-muted-foreground mt-1">Diário vinculado a um relatório. Para alterar a data, exclua o relatório.</p>
+                  )}
                 </div>
                 <div>
                   <Label className="text-xs">Clima</Label>
