@@ -7,9 +7,9 @@ import { Slider } from '@/components/ui/slider';
 import { ImagePlus, Save, X } from 'lucide-react';
 import RichTextEditor from '@/components/RichTextEditor';
 import { useSignedUrls } from '../hooks/useSignedUrls';
-import { SECOES } from '../types';
 import type { RelatorioFinal, SecaoExtra } from '../types';
-import SecoesExtrasEditor from './SecoesExtrasEditor';
+import { resolverSecoes } from '../lib/secoes';
+import SecoesEditor from './SecoesEditor';
 
 interface Props {
   relatorio: RelatorioFinal;
@@ -34,6 +34,19 @@ export default function RelatorioFinalEditor({ relatorio, tipoRelatorio = 'entre
 
   const set = (k: keyof RelatorioFinal, v: string | null) => setForm((f) => ({ ...f, [k]: v }));
 
+  /** Remove colunas legadas do envio: o editor grava apenas `secoes` (e demais dados). */
+  const semLegado = (values: Partial<RelatorioFinal>): Partial<RelatorioFinal> => {
+    const {
+      titulo_introducao, conteudo_introducao, titulo_garantia, conteudo_garantia,
+      titulo_aditivo, conteudo_aditivo, titulo_conclusao, conteudo_conclusao, secoes_extras,
+      ...resto
+    } = values;
+    void titulo_introducao; void conteudo_introducao; void titulo_garantia; void conteudo_garantia;
+    void titulo_aditivo; void conteudo_aditivo; void titulo_conclusao; void conteudo_conclusao; void secoes_extras;
+    return resto;
+  };
+  const salvar = () => onSalvar(semLegado(form));
+
   const campos: [keyof RelatorioFinal, string, string?][] = [
     ['cliente_nome', 'Cliente'],
     ['cliente_cpf_cnpj', 'CPF/CNPJ'],
@@ -44,6 +57,7 @@ export default function RelatorioFinalEditor({ relatorio, tipoRelatorio = 'entre
     ['data_vistoria', 'Data da vistoria', 'date'],
     ['link_externo_label', 'Rótulo do link externo'],
     ['link_externo', 'Link externo'],
+    ['contrato', 'Contrato'],
   ];
 
   return (
@@ -52,7 +66,7 @@ export default function RelatorioFinalEditor({ relatorio, tipoRelatorio = 'entre
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="font-display text-base">Dados do relatório</CardTitle>
           {editable && (
-            <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90" disabled={saving} onClick={() => onSalvar(form)}>
+            <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90" disabled={saving} onClick={salvar}>
               <Save className="h-4 w-4 mr-1" /> {saving ? 'Salvando...' : 'Salvar'}
             </Button>
           )}
@@ -65,6 +79,7 @@ export default function RelatorioFinalEditor({ relatorio, tipoRelatorio = 'entre
                 <Input
                   type={type || 'text'}
                   value={(form[key] as string) || ''}
+                  placeholder={key === 'contrato' ? 'Ex.: nº 802/2026, assinado em 25/03/2026' : undefined}
                   disabled={!editable}
                   onChange={(e) => set(key, e.target.value || null)}
                 />
@@ -154,7 +169,7 @@ export default function RelatorioFinalEditor({ relatorio, tipoRelatorio = 'entre
                   step={5}
                   value={[form.foto_capa_escala ?? 100]}
                   onValueChange={([v]) => setForm((f) => ({ ...f, foto_capa_escala: v }))}
-                  onValueCommit={([v]) => onSalvar({ ...form, foto_capa_escala: v })}
+                  onValueCommit={([v]) => onSalvar(semLegado({ ...form, foto_capa_escala: v }))}
                 />
                 <p className="text-xs text-muted-foreground">
                   100% = preencher área. Menor = foto mais distante. Maior = foto mais próxima.
@@ -165,55 +180,19 @@ export default function RelatorioFinalEditor({ relatorio, tipoRelatorio = 'entre
         </CardContent>
       </Card>
 
-      {(() => {
-        const isVistoria = tipoRelatorio === 'vistoria_previa';
-        const renderSecao = (s: typeof SECOES[number]) => (
-          <Card key={s.key}>
-            <CardHeader className="flex flex-row items-center justify-between gap-3">
-              <Input
-                className="max-w-sm font-display font-semibold"
-                value={(form[s.titulo] as string) || ''}
-                placeholder={s.label}
-                disabled={!editable}
-                onChange={(e) => set(s.titulo, e.target.value)}
-              />
-              {editable && (
-                <Button size="sm" variant="outline" disabled={saving} onClick={() => onSalvar(form)}>
-                  <Save className="h-4 w-4 mr-1" /> Salvar
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent>
-              <RichTextEditor
-                value={(form[s.conteudo] as string) || ''}
-                editable={editable}
-                onChange={(html) => set(s.conteudo, html === '<p></p>' ? null : html)}
-              />
-            </CardContent>
-          </Card>
-        );
+      <SecoesEditor
+        secoes={Array.isArray(form.secoes) ? (form.secoes as unknown as SecaoExtra[]) : resolverSecoes(form as RelatorioFinal)}
+        editable={editable}
+        onChange={(lista) => setForm((f) => ({ ...f, secoes: lista as unknown as RelatorioFinal['secoes'] }))}
+      />
 
-        if (!isVistoria) return SECOES.map(renderSecao);
-
-        const intro = SECOES.find((s) => s.key === 'introducao')!;
-        const conclusao = SECOES.find((s) => s.key === 'conclusao')!;
-        const extras = (Array.isArray(form.secoes_extras) ? form.secoes_extras : []) as unknown as SecaoExtra[];
-
-        return (
-          <>
-            {renderSecao(intro)}
-            <SecoesExtrasEditor
-              secoes={extras}
-              editable={editable}
-              onChange={(secoes) =>
-                setForm((f) => ({ ...f, secoes_extras: secoes as unknown as RelatorioFinal['secoes_extras'] }))
-              }
-            />
-            {renderSecao(conclusao)}
-          </>
-        );
-      })()}
-
+      {editable && (
+        <div className="sticky bottom-0 z-10 -mx-1 flex justify-end border-t bg-background/95 px-1 py-3 backdrop-blur">
+          <Button className="bg-accent text-accent-foreground hover:bg-accent/90" disabled={saving} onClick={salvar}>
+            <Save className="h-4 w-4 mr-1" /> {saving ? 'Salvando...' : 'Salvar laudo'}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
