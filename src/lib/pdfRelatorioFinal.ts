@@ -2,7 +2,8 @@ import jsPDF from 'jspdf';
 import { BLUE, MARGIN, loadImageAsDataUrl, setupPDFHelpers, type EmpresaPDFData } from '@/lib/pdfShared';
 import { downloadPdf } from '@/lib/pdfDownload';
 import { resolveAnexoUrl } from '@/lib/anexoUrl';
-import type { RelatorioFinal, RelatorioFinalFoto, SecaoExtra } from '@/features/relatorio-final/types';
+import type { RelatorioFinal, RelatorioFinalFoto } from '@/features/relatorio-final/types';
+import { resolverSecoes } from '@/features/relatorio-final/lib/secoes';
 
 const fmtDate = (v?: string | null) => (v ? new Date(`${v}T00:00:00`).toLocaleDateString('pt-BR') : '—');
 
@@ -152,8 +153,17 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
     doc.text(`DATA DE EMISSÃO: ${new Date().toLocaleDateString('pt-BR')}`, 8, yCliente + 4);
 
     // Data da vistoria/conclusão
+    let yInfo = yCliente + 4;
     if (relatorio.data_vistoria) {
-      doc.text(`DATA DA VISTORIA: ${fmtDate(relatorio.data_vistoria)}`, 8, yCliente + 12);
+      yInfo += 8;
+      doc.text(`DATA DA VISTORIA: ${fmtDate(relatorio.data_vistoria)}`, 8, yInfo);
+    }
+    if (relatorio.contrato?.trim()) {
+      yInfo += 8;
+      const contratoLines = doc.splitTextToSize(`CONTRATO: ${relatorio.contrato.trim()}`, 140) as string[];
+      contratoLines.forEach((line: string, i: number) => {
+        doc.text(line, 8, yInfo + i * 6);
+      });
     }
   } else {
     // Barra superior
@@ -199,10 +209,6 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
     }
 
     // Faixa de dados
-    const BOX_H = 60;
-    doc.setFillColor(240, 242, 245);
-    doc.roundedRect(MARGIN, y, contentW, BOX_H, 2, 2, 'F');
-
     const info: [string, string][] = [
       ['Cliente', relatorio.cliente_nome || '—'],
       ['CPF/CNPJ', relatorio.cliente_cpf_cnpj || '—'],
@@ -211,6 +217,10 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
       ['Início', fmtDate(relatorio.data_inicio)],
       ['Conclusão', fmtDate(relatorio.data_conclusao || relatorio.data_fim_prevista)],
     ];
+    if (relatorio.contrato?.trim()) info.push(['Contrato', relatorio.contrato.trim()]);
+    const BOX_H = Math.max(60, 12 + info.length * 8);
+    doc.setFillColor(240, 242, 245);
+    doc.roundedRect(MARGIN, y, contentW, BOX_H, 2, 2, 'F');
     let ly = y + 10;
     doc.setFontSize(10);
     info.forEach(([label, value]) => {
@@ -243,29 +253,10 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
   }
 
   // ---------- SEÇÕES ----------
-  const secoesExtras: SecaoExtra[] = (() => {
-    const raw = relatorio.secoes_extras;
-    if (!raw) return [];
-    try {
-      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-      return Array.isArray(parsed) ? (parsed as SecaoExtra[]) : [];
-    } catch {
-      return [];
-    }
-  })().sort((a, b) => a.ordem - b.ordem);
-
-  const secoesBase: { titulo: string; conteudo: string | null }[] = isVistoria
-    ? [
-        { titulo: relatorio.titulo_introducao || 'Introdução', conteudo: relatorio.conteudo_introducao },
-        ...secoesExtras.map((s) => ({ titulo: s.titulo || 'Seção', conteudo: s.conteudo })),
-        { titulo: relatorio.titulo_conclusao || 'Conclusão', conteudo: relatorio.conteudo_conclusao },
-      ]
-    : [
-        { titulo: relatorio.titulo_introducao || 'Introdução', conteudo: relatorio.conteudo_introducao },
-        { titulo: relatorio.titulo_garantia || 'Garantia', conteudo: relatorio.conteudo_garantia },
-        { titulo: relatorio.titulo_aditivo || 'Aditivos', conteudo: relatorio.conteudo_aditivo },
-        { titulo: relatorio.titulo_conclusao || 'Conclusão', conteudo: relatorio.conteudo_conclusao },
-      ];
+  const secoesBase: { titulo: string; conteudo: string | null }[] = resolverSecoes(relatorio).map((s) => ({
+    titulo: s.titulo || 'Seção',
+    conteudo: s.conteudo,
+  }));
 
   const secoes = secoesBase.filter((s) => htmlToParagraphs(s.conteudo).length > 0);
 

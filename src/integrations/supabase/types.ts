@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.4"
   }
   public: {
     Tables: {
@@ -2089,6 +2089,7 @@ export type Database = {
           conteudo_conclusao: string | null
           conteudo_garantia: string | null
           conteudo_introducao: string | null
+          contrato: string | null
           created_at: string
           data_conclusao: string | null
           data_fim_prevista: string | null
@@ -2103,6 +2104,7 @@ export type Database = {
           link_externo_label: string | null
           obra_id: string
           responsavel: string | null
+          secoes: Json | null
           secoes_extras: Json
           status: string
           template_capa_url: string | null
@@ -2128,6 +2130,7 @@ export type Database = {
           conteudo_conclusao?: string | null
           conteudo_garantia?: string | null
           conteudo_introducao?: string | null
+          contrato?: string | null
           created_at?: string
           data_conclusao?: string | null
           data_fim_prevista?: string | null
@@ -2142,6 +2145,7 @@ export type Database = {
           link_externo_label?: string | null
           obra_id: string
           responsavel?: string | null
+          secoes?: Json | null
           secoes_extras?: Json
           status?: string
           template_capa_url?: string | null
@@ -2167,6 +2171,7 @@ export type Database = {
           conteudo_conclusao?: string | null
           conteudo_garantia?: string | null
           conteudo_introducao?: string | null
+          contrato?: string | null
           created_at?: string
           data_conclusao?: string | null
           data_fim_prevista?: string | null
@@ -2181,6 +2186,7 @@ export type Database = {
           link_externo_label?: string | null
           obra_id?: string
           responsavel?: string | null
+          secoes?: Json | null
           secoes_extras?: Json
           status?: string
           template_capa_url?: string | null

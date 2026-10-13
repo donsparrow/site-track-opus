@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import AssinarDialog from '@/features/relatorios/components/AssinarDialog';
 import { useSignedUrls } from '../hooks/useSignedUrls';
-import type { RelatorioFinal, RelatorioFinalFoto, SecaoExtra } from '../types';
-import { SECOES } from '../types';
+import type { RelatorioFinal, RelatorioFinalFoto } from '../types';
+import { resolverSecoes } from '../lib/secoes';
 
 interface RelatorioFinalViewerProps {
   relatorio: RelatorioFinal;
@@ -32,7 +32,6 @@ export default function RelatorioFinalViewer({ relatorio, fotos, obraNome, tipoR
   const preObra = fotos.filter((f) => f.tipo === 'pre_obra').sort((a, b) => a.ordem - b.ordem);
   const posObra = fotos.filter((f) => f.tipo === 'pos_obra').sort((a, b) => a.ordem - b.ordem);
   const gruposVistoria = Array.from(new Set(fotos.map((f) => f.tipo))).sort((a, b) => a.localeCompare(b, 'pt-BR'));
-  const secoesExtras = (Array.isArray(relatorio.secoes_extras) ? relatorio.secoes_extras : []) as unknown as SecaoExtra[];
 
   const urls = useSignedUrls([
     relatorio.template_capa_url,
@@ -50,6 +49,7 @@ export default function RelatorioFinalViewer({ relatorio, fotos, obraNome, tipoR
     ['Data de início', fmt(relatorio.data_inicio)],
     ['Data de conclusão', fmt(relatorio.data_conclusao)],
     ['Data da vistoria', fmt(relatorio.data_vistoria)],
+    ['Contrato', relatorio.contrato],
   ];
 
   const templateUrl = relatorio.template_capa_url ? urls[relatorio.template_capa_url] : null;
@@ -141,26 +141,7 @@ export default function RelatorioFinalViewer({ relatorio, fotos, obraNome, tipoR
           );
         };
 
-        const fixa = (key: 'introducao' | 'conclusao') => {
-          const s = SECOES.find((x) => x.key === key)!;
-          return renderSecao(s.key, (relatorio[s.titulo] as string | null) || s.label, relatorio[s.conteudo] as string | null);
-        };
-
-        if (!isVistoria) {
-          return SECOES.map((s) =>
-            renderSecao(s.key, (relatorio[s.titulo] as string | null) || s.label, relatorio[s.conteudo] as string | null),
-          );
-        }
-
-        return (
-          <>
-            {fixa('introducao')}
-            {[...secoesExtras]
-              .sort((a, b) => a.ordem - b.ordem)
-              .map((secao) => renderSecao(secao.id, secao.titulo, secao.conteudo))}
-            {fixa('conclusao')}
-          </>
-        );
+        return resolverSecoes(relatorio).map((s) => renderSecao(s.id, s.titulo, s.conteudo));
       })()}
 
       {/* D/E) Registro fotográfico */}
