@@ -25,10 +25,3 @@ export interface ObraOption {
   data_fim_prevista: string | null;
   clientes: { nome: string | null; cpf_cnpj: string | null } | null;
 }
-
-export const SECOES = [
-  { key: 'introducao', titulo: 'titulo_introducao', conteudo: 'conteudo_introducao', label: 'Introdução' },
-  { key: 'garantia', titulo: 'titulo_garantia', conteudo: 'conteudo_garantia', label: 'Garantia' },
-  { key: 'aditivo', titulo: 'titulo_aditivo', conteudo: 'conteudo_aditivo', label: 'Aditivos' },
-  { key: 'conclusao', titulo: 'titulo_conclusao', conteudo: 'conteudo_conclusao', label: 'Conclusão' },
-] as const;

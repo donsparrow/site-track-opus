@@ -79,6 +79,7 @@ export default function RelatorioFinalEditor({ relatorio, tipoRelatorio = 'entre
                 <Input
                   type={type || 'text'}
                   value={(form[key] as string) || ''}
+                  placeholder={key === 'contrato' ? 'Ex.: nº 802/2026, assinado em 25/03/2026' : undefined}
                   disabled={!editable}
                   onChange={(e) => set(key, e.target.value || null)}
                 />
@@ -168,7 +169,7 @@ export default function RelatorioFinalEditor({ relatorio, tipoRelatorio = 'entre
                   step={5}
                   value={[form.foto_capa_escala ?? 100]}
                   onValueChange={([v]) => setForm((f) => ({ ...f, foto_capa_escala: v }))}
-                  onValueCommit={([v]) => onSalvar({ ...form, foto_capa_escala: v })}
+                  onValueCommit={([v]) => onSalvar(semLegado({ ...form, foto_capa_escala: v }))}
                 />
                 <p className="text-xs text-muted-foreground">
                   100% = preencher área. Menor = foto mais distante. Maior = foto mais próxima.
