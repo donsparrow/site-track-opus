@@ -4,6 +4,7 @@ import { downloadPdf } from '@/lib/pdfDownload';
 import { resolveAnexoUrl } from '@/lib/anexoUrl';
 import type { RelatorioFinal, RelatorioFinalFoto } from '@/features/relatorio-final/types';
 import { resolverSecoes } from '@/features/relatorio-final/lib/secoes';
+import { renderRichText } from '@/lib/pdfRichText';
 
 const fmtDate = (v?: string | null) => (v ? new Date(`${v}T00:00:00`).toLocaleDateString('pt-BR') : '—');
 
@@ -289,15 +290,16 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10.5);
       doc.setTextColor(30, 30, 30);
-      for (const par of htmlToParagraphs(s.conteudo)) {
-        const lines = doc.splitTextToSize(par, contentW) as string[];
-        for (const line of lines) {
-          if (y > pageH - 25) y = newPage();
-          doc.text(line, MARGIN, y);
-          y += 5.5;
-        }
-        y += 2;
-      }
+      y = renderRichText(doc, s.conteudo, {
+        x: MARGIN,
+        y,
+        width: contentW,
+        bottomLimit: pageH - 25,
+        newPage,
+        fontSize: 10.5,
+        lineHeight: 5.5,
+        paragraphGap: 2,
+      });
       y += 6;
     }
 
