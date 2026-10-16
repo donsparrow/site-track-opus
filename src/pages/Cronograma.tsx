@@ -60,6 +60,8 @@ export default function Cronograma() {
             totalPeso={p.indicadores.totalPeso}
             pesoValido={p.indicadores.pesoValido}
             temAtividades={p.atividades.length > 0}
+            temAditivos={p.indicadores.temAditivos}
+            progressoAditivos={p.indicadores.progressoAditivos}
           />
           <IndicadoresCard
             planejamentoConfigurado={p.indicadores.planejamentoConfigurado}
@@ -76,6 +78,8 @@ export default function Cronograma() {
             atividades={p.atividades}
             totalPeso={p.indicadores.totalPeso}
             pesoValido={p.indicadores.pesoValido}
+            totalPesoAditivos={p.indicadores.totalPesoAditivos}
+            progressoAditivos={p.indicadores.progressoAditivos}
             canEdit={p.canEdit}
             onMove={p.moveAtividade}
             onEdit={p.openEdit}

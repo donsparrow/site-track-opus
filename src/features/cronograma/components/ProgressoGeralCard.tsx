@@ -8,24 +8,26 @@ interface Props {
   totalPeso: number;
   pesoValido: boolean;
   temAtividades: boolean;
+  temAditivos?: boolean;
+  progressoAditivos?: number;
 }
 
-export default function ProgressoGeralCard({ progressoGeral, totalPeso, pesoValido, temAtividades }: Props) {
+export default function ProgressoGeralCard({ progressoGeral, totalPeso, pesoValido, temAtividades, temAditivos, progressoAditivos = 0 }: Props) {
   return (
     <Card>
       <CardContent className="pt-6">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-foreground">Progresso da Obra</span>
+            <span className="text-sm font-medium text-foreground">Progresso da Obra (escopo original)</span>
             {temAtividades && !pesoValido && (
               <Badge variant="destructive" className="text-[10px] gap-1">
                 <AlertTriangle className="h-3 w-3" />
-                Pesos: {totalPeso}% (devem somar 100%)
+                Pesos originais: {totalPeso}% (devem somar 100%)
               </Badge>
             )}
             {temAtividades && pesoValido && (
               <Badge variant="outline" className="text-[10px] bg-success/10 text-success border-success/30">
-                Pesos: 100% ✓
+                Pesos originais: 100% ✓
               </Badge>
             )}
           </div>
@@ -33,10 +35,20 @@ export default function ProgressoGeralCard({ progressoGeral, totalPeso, pesoVali
         </div>
         <Progress value={progressoGeral} className="h-4" />
         <p className="text-xs text-muted-foreground mt-2">
-          Obra concluída: {progressoGeral}%
-          {totalPeso > 0 && totalPeso !== 100 && ' (cálculo baseado em média simples — ajuste os pesos para 100%)'}
-          {pesoValido && ' (cálculo ponderado por peso)'}
+          Escopo original concluído: {progressoGeral}%
+          {totalPeso > 0 && ' (ponderado pelos pesos das atividades originais)'}
+          {totalPeso === 0 && temAtividades && ' (média simples — sem pesos nas atividades originais)'}
         </p>
+        {temAditivos && (
+          <div className="mt-4 pt-3 border-t">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-foreground">Progresso dos Aditivos</span>
+              <span className="text-sm font-bold text-primary">{progressoAditivos}%</span>
+            </div>
+            <Progress value={progressoAditivos} className="h-2" />
+            <p className="text-xs text-muted-foreground mt-2">Medido à parte — não entra no % do escopo original.</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

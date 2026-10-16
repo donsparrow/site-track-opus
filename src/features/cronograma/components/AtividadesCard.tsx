@@ -17,13 +17,15 @@ interface Props {
   atividades: Atividade[];
   totalPeso: number;
   pesoValido: boolean;
+  totalPesoAditivos?: number;
+  progressoAditivos?: number;
   canEdit: boolean;
   onMove: (id: string, direction: 'up' | 'down') => void;
   onEdit: (a: Atividade) => void;
   onDelete: (id: string) => void;
 }
 
-export default function AtividadesCard({ atividades, totalPeso, pesoValido, canEdit, onMove, onEdit, onDelete }: Props) {
+export default function AtividadesCard({ atividades, totalPeso, pesoValido, totalPesoAditivos = 0, progressoAditivos = 0, canEdit, onMove, onEdit, onDelete }: Props) {
   const [sortColumn, setSortColumn] = useState<SortColumn>('ordem');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
@@ -166,7 +168,7 @@ export default function AtividadesCard({ atividades, totalPeso, pesoValido, canE
                 ))}
                 <TableRow className="border-t-2">
                   <TableCell></TableCell>
-                  <TableCell className="font-bold text-sm">TOTAL</TableCell>
+                  <TableCell className="font-bold text-sm">TOTAL ORIGINAL</TableCell>
                   <TableCell>
                     <Badge variant={pesoValido ? 'default' : 'destructive'} className="text-xs">
                       {totalPeso}%
@@ -175,6 +177,17 @@ export default function AtividadesCard({ atividades, totalPeso, pesoValido, canE
                   <TableCell colSpan={4}></TableCell>
                   {canEdit && <TableCell></TableCell>}
                 </TableRow>
+                {atividades.some((a) => a.tipo_atividade === 'aditivo') && (
+                  <TableRow>
+                    <TableCell></TableCell>
+                    <TableCell className="font-medium text-sm text-muted-foreground">ADITIVOS (à parte)</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">{totalPesoAditivos}%</Badge>
+                    </TableCell>
+                    <TableCell colSpan={4} className="text-xs text-muted-foreground">Progresso dos aditivos: {progressoAditivos}%</TableCell>
+                    {canEdit && <TableCell></TableCell>}
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
