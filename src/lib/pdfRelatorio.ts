@@ -1,3 +1,4 @@
+import { calcularProgressoOriginal } from './progressoFisico';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { downloadPdf } from './pdfDownload';
@@ -167,14 +168,9 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   }
 
   // Calculate weighted progress (relatório assinado/congelado imprime o número do snapshot)
-  const totalPeso = data.cronograma.reduce((s, c) => s + (c.peso || 0), 0);
   const progressoObra = data.congelado
     ? data.congelado.progresso_geral
-    : data.cronograma.length > 0
-    ? (totalPeso === 100
-      ? Math.round(data.cronograma.reduce((s, c) => s + ((c.peso || 0) * c.percentual_concluido), 0) / 100)
-      : Math.round(data.cronograma.reduce((s, c) => s + c.percentual_concluido, 0) / data.cronograma.length))
-    : 0;
+    : calcularProgressoOriginal(data.cronograma);
   if (data.congelado) data.prazos = { ...data.prazos, percentualExecutado: data.congelado.progresso_fisico };
 
   // =========== HELPER FUNCTIONS ===========

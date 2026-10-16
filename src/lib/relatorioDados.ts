@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { calcBusinessDays } from './dias';
+import { calcularProgressoOriginal, type AtividadeProgresso } from './progressoFisico';
 
 export { calcBusinessDays };
 
@@ -31,14 +32,9 @@ export interface DadosRelatorio {
   congelado?: { progresso_geral: number; progresso_fisico: number } | null;
 }
 
-/** Mesma fórmula da barra "Progresso Geral" do PDF (src/lib/pdfRelatorio.ts). */
-export function calcularProgressoGeralPdf(cronograma: { peso?: number | null; percentual_concluido: number }[]): number {
-  const totalPeso = cronograma.reduce((s, c) => s + (c.peso || 0), 0);
-  return cronograma.length > 0
-    ? (totalPeso === 100
-      ? Math.round(cronograma.reduce((s, c) => s + ((c.peso || 0) * c.percentual_concluido), 0) / 100)
-      : Math.round(cronograma.reduce((s, c) => s + c.percentual_concluido, 0) / cronograma.length))
-    : 0;
+/** Barra "Progresso Geral" do PDF — regra canônica (escopo original). */
+export function calcularProgressoGeralPdf(cronograma: AtividadeProgresso[]): number {
+  return calcularProgressoOriginal(cronograma);
 }
 
 interface SnapshotCongelado {
@@ -197,19 +193,7 @@ async function carregarDadosAoVivo(
   const saldoPrazo = prazoAjustado - diasTrabalhados;
   const percentualTempo = prazoContratual > 0 ? Math.round((diasTrabalhados / prazoContratual) * 100) : 0;
 
-  let percentualExecutado = 0;
-  if (cronogramaAtivs.length > 0) {
-    const totalPeso = cronogramaAtivs.reduce((s: number, c: any) => s + (c.peso || 0), 0);
-    percentualExecutado =
-      totalPeso > 0
-        ? Math.round(
-            cronogramaAtivs.reduce((s: number, c: any) => s + (c.peso || 0) * (c.percentual_concluido || 0), 0) /
-              Math.max(totalPeso, 1),
-          )
-        : Math.round(
-            cronogramaAtivs.reduce((s: number, c: any) => s + (c.percentual_concluido || 0), 0) / cronogramaAtivs.length,
-          );
-  }
+  const percentualExecutado = calcularProgressoOriginal(cronogramaAtivs);
 
   return {
     diarios: dList,
