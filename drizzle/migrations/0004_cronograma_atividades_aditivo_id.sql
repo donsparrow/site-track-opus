@@ -1,0 +1,2 @@
+ALTER TABLE public.cronograma_atividades ADD COLUMN IF NOT EXISTS aditivo_id uuid NULL REFERENCES public.obra_aditivos(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS idx_cronograma_atividades_aditivo_id ON public.cronograma_atividades(aditivo_id);
