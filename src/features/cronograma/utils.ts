@@ -2,6 +2,7 @@ import { differenceInDays, parseISO } from 'date-fns';
 import type { Atividade, Aditivo } from './types';
 import type { StatusObra } from './components/IndicadoresCard';
 import type { GanttData } from './pdf';
+import { calcularProgressoEscopo, calcularProgressoOriginal } from '@/lib/progressoFisico';
 
 /** Dias úteis (seg–sex) entre duas datas, inclusive. */
 export function businessDaysBetween(from: Date, to: Date) {
@@ -75,6 +76,9 @@ export function calcularIndicadores(
     totalPeso,
     pesoValido,
     progressoGeral,
+    progressoAditivos: escopo.aditivo,
+    totalPesoAditivos: escopo.pesoAditivo,
+    temAditivos: escopo.temAditivos,
     diasAditivos,
     prazoEfetivo,
     diasDecorridos,
