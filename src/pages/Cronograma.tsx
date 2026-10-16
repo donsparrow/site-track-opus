@@ -73,7 +73,7 @@ export default function Cronograma() {
             prazoEfetivo={p.indicadores.prazoEfetivo}
             diasAditivos={p.indicadores.diasAditivos}
           />
-          <AditivosCard aditivos={p.aditivos} canEdit={p.canEdit} onDelete={p.setDeleteAditivoId} />
+          <AditivosCard aditivos={p.aditivos} canEdit={p.canEdit} onDelete={p.setDeleteAditivoId} onEdit={p.openEditAditivo} loading={p.loadingAditivo} />
           <AtividadesCard
             atividades={p.atividades}
             totalPeso={p.indicadores.totalPeso}
@@ -106,6 +106,8 @@ export default function Cronograma() {
         form={p.aditivoForm}
         setForm={p.setAditivoForm}
         onSave={p.handleSaveAditivo}
+        editing={!!p.editingAditivo}
+        saving={p.savingAditivo}
       />
 
       <ConfirmarExclusaoDialog

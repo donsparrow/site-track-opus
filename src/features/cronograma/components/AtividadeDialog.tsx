@@ -41,7 +41,7 @@ export default function AtividadeDialog({
             </div>
             <div>
               <Label>Tipo</Label>
-              <Select value={formData.tipo_atividade} onValueChange={v => setFormData(f => ({ ...f, tipo_atividade: v }))}>
+              <Select disabled={!!editingAtividade?.aditivo_id} value={formData.tipo_atividade} onValueChange={v => setFormData(f => ({ ...f, tipo_atividade: v }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="original">Contrato Original</SelectItem>

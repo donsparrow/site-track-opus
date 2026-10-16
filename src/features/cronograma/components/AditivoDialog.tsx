@@ -12,11 +12,13 @@ interface Props {
   form: AditivoFormData;
   setForm: React.Dispatch<React.SetStateAction<AditivoFormData>>;
   onSave: () => void;
+  editing?: boolean;
+  saving?: boolean;
 }
 
 const NOVA_LINHA: AditivoAtividadeForm = { nome_atividade: '', peso: 0, data_inicio: '', data_fim: '' };
 
-export default function AditivoDialog({ open, onOpenChange, form, setForm, onSave }: Props) {
+export default function AditivoDialog({ open, onOpenChange, form, setForm, onSave, editing, saving }: Props) {
   const pesoTotal = (form.atividades ?? []).reduce((s, a) => s + (Number(a.peso) || 0), 0);
   const pesoOk = pesoTotal === 100;
 
@@ -26,10 +28,10 @@ export default function AditivoDialog({ open, onOpenChange, form, setForm, onSav
   const rmLinha = (i: number) => setForm(f => ({ ...f, atividades: (f.atividades ?? []).filter((_, idx) => idx !== i) }));
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={value => { if (!saving) onOpenChange(value); }}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Registrar Aditivo de Prazo / Escopo</DialogTitle>
+          <DialogTitle>{editing ? 'Editar Aditivo de Prazo / Escopo' : 'Registrar Aditivo de Prazo / Escopo'}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
           <div>
@@ -82,8 +84,8 @@ export default function AditivoDialog({ open, onOpenChange, form, setForm, onSav
                   <Input value={a.nome_atividade} onChange={e => updLinha(i, { nome_atividade: e.target.value })} placeholder="Nome da atividade" />
                 </div>
                 <div className="col-span-3 sm:col-span-2">
-                  {i === 0 && <Label className="text-xs">Peso (%)</Label>}
-                  <Input type="number" min={0} max={100} value={a.peso} onChange={e => updLinha(i, { peso: Math.max(0, Number(e.target.value)) })} />
+                  <Label className="text-xs" htmlFor={`aditivo-peso-${i}`}>Peso (%)</Label>
+                  <Input id={`aditivo-peso-${i}`} placeholder="Peso (%)" type="number" min={0} max={100} value={a.peso} onChange={e => updLinha(i, { peso: Math.max(0, Number(e.target.value)) })} />
                 </div>
                 <div className="col-span-4 sm:col-span-3">
                   {i === 0 && <Label className="text-xs">Início</Label>}
@@ -106,8 +108,8 @@ export default function AditivoDialog({ open, onOpenChange, form, setForm, onSav
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-          <Button onClick={onSave}>Salvar Aditivo</Button>
+          <Button variant="outline" disabled={saving} onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button disabled={saving} onClick={onSave}>{saving ? 'Salvando...' : 'Salvar Aditivo'}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
