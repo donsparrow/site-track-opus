@@ -42,10 +42,15 @@ export default function ProgressoGeralCard({ progressoGeral, totalPeso, pesoVali
         {temAditivos && (
           <div className="mt-4 pt-3 border-t">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-foreground">Progresso dos Aditivos</span>
-              <span className="text-sm font-bold text-primary">{progressoAditivos}%</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-foreground">Progresso dos Aditivos</span>
+                <Badge variant="outline" className="text-[10px] bg-warning/10 text-warning border-warning/30">Aditivo</Badge>
+              </div>
+              <span className="text-sm font-bold text-warning">{progressoAditivos}%</span>
             </div>
-            <Progress value={progressoAditivos} className="h-2" />
+            <div className="relative h-2 w-full overflow-hidden rounded-full bg-warning/15">
+              <div className="h-full bg-warning transition-all" style={{ width: `${Math.min(Math.max(progressoAditivos, 0), 100)}%` }} />
+            </div>
             <p className="text-xs text-muted-foreground mt-2">Medido à parte — não entra no % do escopo original.</p>
           </div>
         )}
