@@ -1,3 +1,5 @@
+// @refresh reset
+// Nested mutation hooks must remount during preview updates instead of reusing stale hook slots.
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useCronogramaPage } from '@/features/cronograma/hooks/useCronogramaPage';
