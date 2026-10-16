@@ -49,21 +49,33 @@ export function calcularIndicadores(
   aditivos: Aditivo[],
   prazoContratual: number,
   primeiroDiario: string | null,
+  obraStatus?: string | null,
+  ultimoDiario?: string | null,
+  dataFimPrevista?: string | null,
 ): IndicadoresCronograma {
   const escopo = calcularProgressoEscopo(atividades);
   const totalPeso = escopo.pesoOriginal;
   const pesoValido = totalPeso === 100;
   const progressoGeral = escopo.original;
 
+  const concluida = obraStatus === 'concluida';
   const diasAditivos = aditivos.reduce((s, a) => s + (a.dias_adicionais || 0), 0);
   const prazoEfetivo = prazoContratual + diasAditivos;
-  const diasDecorridos = primeiroDiario ? businessDaysBetween(parseISO(primeiroDiario), new Date()) : 0;
+  // Obra concluída: fim congelado (último diário → data_fim_prevista → sem contagem).
+  const fimConcluida = concluida ? (ultimoDiario || dataFimPrevista || null) : null;
+  const diasDecorridos = !primeiroDiario
+    ? 0
+    : concluida
+      ? (fimConcluida ? businessDaysBetween(parseISO(primeiroDiario), parseISO(fimConcluida)) : 0)
+      : businessDaysBetween(parseISO(primeiroDiario), new Date());
   const prazoConsumido = prazoEfetivo > 0 ? Math.round((diasDecorridos / prazoEfetivo) * 100) : 0;
   const desvio = progressoGeral - prazoConsumido;
   const planejamentoConfigurado = atividades.length > 0;
 
   const statusObra: StatusObra = !planejamentoConfigurado
     ? { label: 'Planejamento pendente', color: 'text-muted-foreground', dot: '⚪', cls: 'border-muted/30 bg-muted/10' }
+    : concluida
+      ? { label: 'Concluída', color: 'text-success', dot: '✅', cls: 'border-success/30 bg-success/10' }
     : !primeiroDiario
       ? { label: 'Não iniciada', color: 'text-muted-foreground', dot: '●', cls: 'border-muted/30 bg-muted/10' }
       : desvio > 5

@@ -37,13 +37,15 @@ export function useCronogramaPage() {
   const atividadesQuery = useCronogramaAtividades(cronograma?.id ?? null);
   const atividades = atividadesQuery.atividades;
   const { aditivos } = useAditivos(obraId);
-  const { prazoContratual, primeiroDiario } = useObraPrazoInfo(obraId);
+  const { prazoContratual, primeiroDiario, ultimoDiario, obraStatus, dataFimPrevista } = useObraPrazoInfo(obraId);
   const empresaConfigQuery = useEmpresaConfigCronograma();
   const mutations = useCronogramaMutations(obraId, cronograma?.id ?? null);
 
   const obraNome = obras.find(o => o.id === obraId)?.nome || '';
   const canEditPeso = isAdmin || isSuperAdmin;
-  const indicadores = calcularIndicadores(atividades, aditivos, prazoContratual, primeiroDiario);
+  const indicadores = calcularIndicadores(
+    atividades, aditivos, prazoContratual, primeiroDiario, obraStatus, ultimoDiario, dataFimPrevista,
+  );
   const ganttData = calcularGanttData(atividades);
 
   // Diálogos
