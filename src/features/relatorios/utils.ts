@@ -1,4 +1,5 @@
 import type { DadosRelatorio, PrazosRelatorio, SnapshotDados } from './types';
+import { calcularProgressoGeralPdf } from '@/lib/relatorioDados';
 
 export const fmt = (d: string) => {
   try { return new Date(d + 'T00:00:00').toLocaleDateString('pt-BR'); } catch { return d; }
@@ -17,8 +18,17 @@ export const dadosVazios: DadosRelatorio = {
   planejamentoConfigurado: false, prazos: prazosVazios,
 };
 
-/** Snapshot do conteúdo atual do relatório, usado na comparação de versões. */
+/** Snapshot do conteúdo atual do relatório, usado na comparação de versões e no congelamento. */
 export function buildSnapshot(dados: DadosRelatorio, periodo: { inicio: string; fim: string }): SnapshotDados {
+  const cronograma = (dados.cronograma || []).map((c) => ({
+    nome_atividade: c.nome_atividade,
+    peso: c.peso ?? null,
+    percentual_concluido: c.percentual_concluido ?? 0,
+    status: c.status,
+    tipo_atividade: c.tipo_atividade ?? null,
+    data_inicio: c.data_inicio ?? null,
+    data_fim: c.data_fim ?? null,
+  }));
   return {
     prazos: dados.prazos,
     periodo,
@@ -29,6 +39,10 @@ export function buildSnapshot(dados: DadosRelatorio, periodo: { inicio: string; 
     ocorrencias_count: dados.ocorrencias.length,
     paralisacoes_count: dados.paralisacoes.length,
     imagens_count: dados.imagens.length,
+    cronograma,
+    progresso_geral: dados.congelado?.progresso_geral ?? calcularProgressoGeralPdf(cronograma),
+    progresso_fisico: dados.prazos.percentualExecutado,
+    prazos_congelados: true,
   };
 }
 

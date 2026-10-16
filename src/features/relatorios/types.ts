@@ -44,6 +44,24 @@ export interface SnapshotDados {
   ocorrencias_count: number;
   paralisacoes_count: number;
   imagens_count: number;
+  /** Cronograma usado no PDF no momento do snapshot. */
+  cronograma?: SnapshotCronogramaItem[];
+  /** Número da barra "Progresso Geral" do PDF. */
+  progresso_geral?: number;
+  /** Número "Progresso Físico" (= prazos.percentualExecutado). */
+  progresso_fisico?: number;
+  /** true quando `prazos` foi capturado no estado congelado (assinatura). */
+  prazos_congelados?: boolean;
+}
+
+export interface SnapshotCronogramaItem {
+  nome_atividade: string;
+  peso: number | null;
+  percentual_concluido: number;
+  status: string;
+  tipo_atividade: string | null;
+  data_inicio: string | null;
+  data_fim: string | null;
 }
 
 export interface PeriodoRelatorio {

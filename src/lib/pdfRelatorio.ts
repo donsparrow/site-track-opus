@@ -46,6 +46,8 @@ interface RelatorioPDFData {
   cronograma: { nome_atividade: string; data_inicio: string | null; data_fim: string | null; percentual_concluido: number; status: string; peso?: number; tipo_atividade?: string }[];
   aditivos?: { descricao: string; dias_adicionais: number; data_aprovacao?: string | null; justificativa?: string | null; responsavel_aprovacao?: string | null }[];
   planejamentoConfigurado?: boolean;
+  /** Relatório assinado: números congelados no snapshot (não recalcular). */
+  congelado?: { progresso_geral: number; progresso_fisico: number } | null;
   assinaturas: any[];
   versao?: number;
   versoes?: { rev: string; data: string; resumo: string }[];
@@ -164,13 +166,16 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     }
   }
 
-  // Calculate weighted progress
+  // Calculate weighted progress (relatório assinado/congelado imprime o número do snapshot)
   const totalPeso = data.cronograma.reduce((s, c) => s + (c.peso || 0), 0);
-  const progressoObra = data.cronograma.length > 0
+  const progressoObra = data.congelado
+    ? data.congelado.progresso_geral
+    : data.cronograma.length > 0
     ? (totalPeso === 100
       ? Math.round(data.cronograma.reduce((s, c) => s + ((c.peso || 0) * c.percentual_concluido), 0) / 100)
       : Math.round(data.cronograma.reduce((s, c) => s + c.percentual_concluido, 0) / data.cronograma.length))
     : 0;
+  if (data.congelado) data.prazos = { ...data.prazos, percentualExecutado: data.congelado.progresso_fisico };
 
   // =========== HELPER FUNCTIONS ===========
 
