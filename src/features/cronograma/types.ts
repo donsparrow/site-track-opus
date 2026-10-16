@@ -39,6 +39,7 @@ export interface AtividadeFormData {
 }
 
 export interface AditivoAtividadeForm {
+  id?: string;
   nome_atividade: string;
   peso: number;
   data_inicio: string;

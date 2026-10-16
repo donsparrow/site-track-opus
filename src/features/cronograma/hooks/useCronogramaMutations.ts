@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import type { TablesInsert } from '@/integrations/supabase/types';
 import { cronogramaKeys, obrasImpactoPrefixes } from '../queryKeys';
 import type { Atividade } from '../types';
+import type { AditivoAtividadeForm } from '../types';
+import { planejarAtividadesAditivo } from '../aditivoSync';
 
 interface SalvarAtividadeInput {
   id?: string;
@@ -128,7 +130,7 @@ export function useCronogramaMutations(obraId: string, cronogramaId: string | nu
       const base = ult?.ordem ?? 0;
       const { error: aErr } = await supabase.from('cronograma_atividades').insert(
         atividades.map((a, i) => ({
-          cronograma_id: cron!.id,
+           cronograma_id: cron.id,
           ordem: base + i + 1,
           nome_atividade: a.nome_atividade,
           peso: a.peso,
@@ -165,5 +167,62 @@ export function useCronogramaMutations(obraId: string, cronogramaId: string | nu
     onError,
   });
 
-  return { salvarAtividade, excluirAtividade, moverAtividade, criarAditivo, excluirAditivo };
+  const editarAditivo = useMutation({
+    mutationFn: async ({ id, payload, atividades }: {
+      id: string;
+      payload: TablesInsert<'obra_aditivos'>;
+      atividades: AditivoAtividadeForm[];
+    }) => {
+      const { data: existentes, error: readError } = await supabase.from('cronograma_atividades')
+        .select('*').eq('aditivo_id', id);
+      if (readError) throw readError;
+      const plano = planejarAtividadesAditivo(id, existentes ?? [], atividades);
+      const { data: aditivo, error } = await supabase.from('obra_aditivos')
+        .update(payload).eq('id', id).eq('obra_id', obraId).select('id').single();
+      if (error) throw error;
+
+      for (const atividade of plano.atualizadas) {
+        const { error: updateError } = await supabase.from('cronograma_atividades')
+          .update(atividade.values).eq('id', atividade.id).eq('aditivo_id', aditivo.id);
+        if (updateError) throw updateError;
+      }
+      if (plano.novas.length > 0) {
+        let { data: cron, error: cronError } = await supabase.from('cronograma')
+          .select('id').eq('obra_id', obraId).maybeSingle();
+        if (cronError) throw cronError;
+        if (!cron) {
+          const { data: novo, error: createError } = await supabase.from('cronograma')
+            .insert({ obra_id: obraId }).select('id').single();
+          if (createError) throw createError;
+          cron = novo;
+        }
+        const cronId = cron.id;
+        const { data: ultima, error: ordemError } = await supabase.from('cronograma_atividades')
+          .select('ordem').eq('cronograma_id', cronId).order('ordem', { ascending: false }).limit(1).maybeSingle();
+        if (ordemError) throw ordemError;
+        const { error: insertError } = await supabase.from('cronograma_atividades').insert(plano.novas.map((a, i) => ({
+          cronograma_id: cronId, ordem: (ultima?.ordem ?? 0) + i + 1,
+          nome_atividade: a.nome_atividade.trim(), peso: a.peso,
+          data_inicio: a.data_inicio || null, data_fim: a.data_fim || null,
+          tipo_atividade: 'aditivo', aditivo_id: id, percentual_concluido: 0, status: 'nao_iniciado',
+        })));
+        if (insertError) throw insertError;
+      }
+      if (plano.removidas.length > 0) {
+        const { error: deleteError } = await supabase.from('cronograma_atividades')
+          .delete().in('id', plano.removidas).eq('aditivo_id', id);
+        if (deleteError) throw deleteError;
+      }
+    },
+    onSuccess: () => toast.success('Aditivo atualizado'),
+    onError,
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: cronogramaKeys.aditivos(obraId) });
+      qc.invalidateQueries({ queryKey: cronogramaKeys.cronograma(obraId) });
+      qc.invalidateQueries({ queryKey: ['cronograma-atividades'] });
+      invalidarImpactoObra();
+    },
+  });
+
+  return { salvarAtividade, excluirAtividade, moverAtividade, criarAditivo, editarAditivo, excluirAditivo };
 }

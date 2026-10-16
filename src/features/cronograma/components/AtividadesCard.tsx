@@ -159,7 +159,7 @@ export default function AtividadesCard({ atividades, totalPeso, pesoValido, tota
                           >
                             <ArrowDown className="h-3 w-3" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => onEdit(a)}><Pencil className="h-3 w-3" /></Button>
+                          <Button variant="ghost" size="icon" onClick={() => onEdit(a)} aria-label={`Editar atividade ${a.nome_atividade}`} title="Editar atividade"><Pencil className="h-3 w-3" /></Button>
                           <Button variant="ghost" size="icon" onClick={() => onDelete(a.id)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
                         </div>
                       </TableCell>

@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import type { Aditivo } from '../types';
 
@@ -10,9 +10,11 @@ interface Props {
   aditivos: Aditivo[];
   canEdit: boolean;
   onDelete: (id: string) => void;
+  onEdit: (aditivo: Aditivo) => void;
+  loading?: boolean;
 }
 
-export default function AditivosCard({ aditivos, canEdit, onDelete }: Props) {
+export default function AditivosCard({ aditivos, canEdit, onDelete, onEdit, loading }: Props) {
   if (aditivos.length === 0) return null;
   return (
     <Card>
@@ -26,7 +28,7 @@ export default function AditivosCard({ aditivos, canEdit, onDelete }: Props) {
                 <TableHead className="w-28">Dias Adicionais</TableHead>
                 <TableHead className="w-32">Data Aprovação</TableHead>
                 <TableHead>Responsável</TableHead>
-                {canEdit && <TableHead className="w-20"></TableHead>}
+                {canEdit && <TableHead className="w-28">Ações</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -41,6 +43,9 @@ export default function AditivosCard({ aditivos, canEdit, onDelete }: Props) {
                   <TableCell className="text-xs">{ad.responsavel_aprovacao || '—'}</TableCell>
                   {canEdit && (
                     <TableCell>
+                      <Button variant="ghost" size="icon" disabled={loading} onClick={() => onEdit(ad)} aria-label={`Editar aditivo ${ad.descricao}`} title="Editar aditivo">
+                        <Pencil className="h-3 w-3" />
+                      </Button>
                       <Button variant="ghost" size="icon" onClick={() => onDelete(ad.id)}>
                         <Trash2 className="h-3 w-3 text-destructive" />
                       </Button>

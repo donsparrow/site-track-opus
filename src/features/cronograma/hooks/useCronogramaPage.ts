@@ -11,7 +11,8 @@ import { useEmpresaConfigCronograma } from './useEmpresaConfigCronograma';
 import { useCronogramaMutations } from './useCronogramaMutations';
 import { calcularIndicadores, calcularGanttData } from '../utils';
 import { exportarCronogramaPdf } from '../pdf';
-import type { Atividade, AtividadeFormData, AditivoFormData } from '../types';
+import type { Aditivo, Atividade, AtividadeFormData, AditivoFormData } from '../types';
+import { supabase } from '@/integrations/supabase/client';
 
 const EMPTY_ATIVIDADE: AtividadeFormData = {
   nome_atividade: '', descricao: '', data_inicio: '', data_fim: '',
@@ -55,6 +56,8 @@ export function useCronogramaPage() {
   const [formData, setFormData] = useState<AtividadeFormData>(EMPTY_ATIVIDADE);
   const [aditivoDialogOpen, setAditivoDialogOpen] = useState(false);
   const [aditivoForm, setAditivoForm] = useState<AditivoFormData>(EMPTY_ADITIVO);
+  const [editingAditivo, setEditingAditivo] = useState<Aditivo | null>(null);
+  const [loadingAditivo, setLoadingAditivo] = useState(false);
   const [deleteAditivoId, setDeleteAditivoId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
@@ -110,7 +113,7 @@ export function useCronogramaPage() {
         percentual_concluido: formData.percentual_concluido,
         status: formData.status,
         peso: formData.peso,
-        tipo_atividade: formData.tipo_atividade,
+        tipo_atividade: editingAtividade?.aditivo_id ? 'aditivo' : formData.tipo_atividade,
         observacoes: formData.observacoes || null,
       },
     });
@@ -131,7 +134,7 @@ export function useCronogramaPage() {
       toast.error('Informe o nome de todas as atividades do aditivo (ou remova as linhas vazias)');
       return;
     }
-    mutations.criarAditivo.mutate({
+    const input = {
       payload: {
         obra_id: obraId,
         descricao: aditivoForm.descricao,
@@ -142,13 +145,19 @@ export function useCronogramaPage() {
         documento_url: aditivoForm.documento_url || null,
       },
       atividades: linhas.map(a => ({
+        id: a.id,
         nome_atividade: a.nome_atividade.trim(),
         peso: Math.max(0, Number(a.peso) || 0),
         data_inicio: a.data_inicio || null,
         data_fim: a.data_fim || null,
       })),
-    });
-    setAditivoDialogOpen(false);
+    };
+    const callbacks = { onSuccess: () => setAditivoDialogOpen(false) };
+    if (editingAditivo) {
+      mutations.editarAditivo.mutate({ id: editingAditivo.id, ...input }, callbacks);
+    } else {
+      mutations.criarAditivo.mutate(input, callbacks);
+    }
   };
 
   const handleDeleteAditivo = () => {
@@ -179,7 +188,27 @@ export function useCronogramaPage() {
     toast.success('PDF exportado com sucesso');
   };
 
-  const openNewAditivo = () => { setAditivoForm(EMPTY_ADITIVO); setAditivoDialogOpen(true); };
+  const openNewAditivo = () => { setEditingAditivo(null); setAditivoForm(EMPTY_ADITIVO); setAditivoDialogOpen(true); };
+
+  const openEditAditivo = async (aditivo: Aditivo) => {
+    setLoadingAditivo(true);
+    try {
+      const { data, error } = await supabase.from('cronograma_atividades')
+        .select('*').eq('aditivo_id', aditivo.id).order('ordem');
+      if (error) throw error;
+      setEditingAditivo(aditivo);
+      setAditivoForm({
+        descricao: aditivo.descricao, dias_adicionais: aditivo.dias_adicionais,
+        data_aprovacao: aditivo.data_aprovacao || '', justificativa: aditivo.justificativa || '',
+        responsavel_aprovacao: aditivo.responsavel_aprovacao || '', documento_url: aditivo.documento_url || '',
+        atividades: (data ?? []).map(a => ({ id: a.id, nome_atividade: a.nome_atividade,
+          peso: a.peso, data_inicio: a.data_inicio || '', data_fim: a.data_fim || '' })),
+      });
+      setAditivoDialogOpen(true);
+    } catch (error) {
+      toast.error('Não foi possível carregar o aditivo: ' + (error instanceof Error ? error.message : 'tente novamente'));
+    } finally { setLoadingAditivo(false); }
+  };
 
   return {
     canEdit, canEditPeso, obras, obraId, obraNome, selecionarObra,
@@ -188,7 +217,9 @@ export function useCronogramaPage() {
     aditivoDialogOpen, setAditivoDialogOpen, aditivoForm, setAditivoForm,
     deleteId, setDeleteId, deleteAditivoId, setDeleteAditivoId,
     importOpen, setImportOpen,
-    openNew, openEdit, openNewAditivo, handleSave, handleDelete,
+    openNew, openEdit, openNewAditivo, openEditAditivo, editingAditivo, loadingAditivo,
+    savingAditivo: mutations.criarAditivo.isPending || mutations.editarAditivo.isPending,
+    handleSave, handleDelete,
     handleSaveAditivo, handleDeleteAditivo, moveAtividade, exportPDF,
   };
 }
