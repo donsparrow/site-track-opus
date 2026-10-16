@@ -385,6 +385,7 @@ export type Database = {
       }
       cronograma_atividades: {
         Row: {
+          aditivo_id: string | null
           created_at: string
           cronograma_id: string
           data_fim: string | null
@@ -401,6 +402,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          aditivo_id?: string | null
           created_at?: string
           cronograma_id: string
           data_fim?: string | null
@@ -417,6 +419,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          aditivo_id?: string | null
           created_at?: string
           cronograma_id?: string
           data_fim?: string | null
@@ -433,6 +436,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "cronograma_atividades_aditivo_id_fkey"
+            columns: ["aditivo_id"]
+            isOneToOne: false
+            referencedRelation: "obra_aditivos"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cronograma_atividades_cronograma_id_fkey"
             columns: ["cronograma_id"]

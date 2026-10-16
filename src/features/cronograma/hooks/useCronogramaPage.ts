@@ -18,7 +18,8 @@ const EMPTY_ATIVIDADE: AtividadeFormData = {
   percentual_concluido: 0, status: 'nao_iniciado', peso: 0, tipo_atividade: 'original', observacoes: '',
 };
 const EMPTY_ADITIVO: AditivoFormData = {
-  descricao: '', dias_adicionais: 0, data_aprovacao: '', justificativa: '', responsavel_aprovacao: '', documento_url: '',
+  descricao: '', dias_adicionais: '', data_aprovacao: '', justificativa: '', responsavel_aprovacao: '', documento_url: '',
+  atividades: [],
 };
 
 /** Orquestra estado de UI + hooks de dados do módulo Cronograma. */
@@ -124,14 +125,28 @@ export function useCronogramaPage() {
 
   const handleSaveAditivo = () => {
     if (!aditivoForm.descricao || !obraId) { toast.error('Informe a descrição do aditivo'); return; }
+    if (aditivoForm.dias_adicionais === '') { toast.error('Informe os dias adicionais (use 0 se não houver)'); return; }
+    const linhas = (aditivoForm.atividades ?? []).filter(a => a.nome_atividade.trim());
+    if (linhas.length !== (aditivoForm.atividades ?? []).length) {
+      toast.error('Informe o nome de todas as atividades do aditivo (ou remova as linhas vazias)');
+      return;
+    }
     mutations.criarAditivo.mutate({
-      obra_id: obraId,
-      descricao: aditivoForm.descricao,
-      dias_adicionais: aditivoForm.dias_adicionais || 0,
-      data_aprovacao: aditivoForm.data_aprovacao || null,
-      justificativa: aditivoForm.justificativa || null,
-      responsavel_aprovacao: aditivoForm.responsavel_aprovacao || null,
-      documento_url: aditivoForm.documento_url || null,
+      payload: {
+        obra_id: obraId,
+        descricao: aditivoForm.descricao,
+        dias_adicionais: Number(aditivoForm.dias_adicionais) || 0,
+        data_aprovacao: aditivoForm.data_aprovacao || null,
+        justificativa: aditivoForm.justificativa || null,
+        responsavel_aprovacao: aditivoForm.responsavel_aprovacao || null,
+        documento_url: aditivoForm.documento_url || null,
+      },
+      atividades: linhas.map(a => ({
+        nome_atividade: a.nome_atividade.trim(),
+        peso: Math.max(0, Number(a.peso) || 0),
+        data_inicio: a.data_inicio || null,
+        data_fim: a.data_fim || null,
+      })),
     });
     setAditivoDialogOpen(false);
   };
