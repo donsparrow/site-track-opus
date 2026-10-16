@@ -1,0 +1,3 @@
+- [ ] Editar aditivos com sincronização dos serviços e preservação do andamento.
+- [ ] Mostrar peso em todas as linhas e conferir edição pela tabela principal.
+- [ ] Executar testes e verificar o fluxo na tela.
