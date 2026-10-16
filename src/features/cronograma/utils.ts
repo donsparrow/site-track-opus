@@ -18,21 +18,22 @@ export function businessDaysBetween(from: Date, to: Date) {
   return count;
 }
 
-/** Progresso ponderado por peso (fallback para média simples quando não há pesos). */
-export function calcularProgressoGeral(atividades: Atividade[], totalPeso: number) {
-  if (atividades.length === 0) return 0;
-  if (totalPeso > 0) {
-    return Math.round(
-      atividades.reduce((sum, a) => sum + (a.peso || 0) * a.percentual_concluido, 0) / 100,
-    );
-  }
-  return Math.round(atividades.reduce((sum, a) => sum + a.percentual_concluido, 0) / atividades.length);
+/** Progresso do ESCOPO ORIGINAL (regra canônica em src/lib/progressoFisico.ts). */
+export function calcularProgressoGeral(atividades: Atividade[], _totalPeso?: number) {
+  return calcularProgressoOriginal(atividades);
 }
 
 export interface IndicadoresCronograma {
+  /** Soma dos pesos das atividades ORIGINAIS. */
   totalPeso: number;
+  /** Pesos originais somam 100. */
   pesoValido: boolean;
+  /** Progresso do escopo original (0–100). */
   progressoGeral: number;
+  /** Progresso próprio dos aditivos (indicador separado). */
+  progressoAditivos: number;
+  totalPesoAditivos: number;
+  temAditivos: boolean;
   diasAditivos: number;
   prazoEfetivo: number;
   diasDecorridos: number;
@@ -48,9 +49,10 @@ export function calcularIndicadores(
   prazoContratual: number,
   primeiroDiario: string | null,
 ): IndicadoresCronograma {
-  const totalPeso = atividades.reduce((sum, a) => sum + (a.peso || 0), 0);
+  const escopo = calcularProgressoEscopo(atividades);
+  const totalPeso = escopo.pesoOriginal;
   const pesoValido = totalPeso === 100;
-  const progressoGeral = calcularProgressoGeral(atividades, totalPeso);
+  const progressoGeral = escopo.original;
 
   const diasAditivos = aditivos.reduce((s, a) => s + (a.dias_adicionais || 0), 0);
   const prazoEfetivo = prazoContratual + diasAditivos;
