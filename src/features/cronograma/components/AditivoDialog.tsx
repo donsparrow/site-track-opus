@@ -17,13 +17,13 @@ interface Props {
 const NOVA_LINHA: AditivoAtividadeForm = { nome_atividade: '', peso: 0, data_inicio: '', data_fim: '' };
 
 export default function AditivoDialog({ open, onOpenChange, form, setForm, onSave }: Props) {
-  const pesoTotal = form.atividades.reduce((s, a) => s + (Number(a.peso) || 0), 0);
+  const pesoTotal = (form.atividades ?? []).reduce((s, a) => s + (Number(a.peso) || 0), 0);
   const pesoOk = pesoTotal === 100;
 
   const updLinha = (i: number, patch: Partial<AditivoAtividadeForm>) =>
-    setForm(f => ({ ...f, atividades: f.atividades.map((a, idx) => (idx === i ? { ...a, ...patch } : a)) }));
-  const addLinha = () => setForm(f => ({ ...f, atividades: [...f.atividades, { ...NOVA_LINHA }] }));
-  const rmLinha = (i: number) => setForm(f => ({ ...f, atividades: f.atividades.filter((_, idx) => idx !== i) }));
+    setForm(f => ({ ...f, atividades: (f.atividades ?? []).map((a, idx) => (idx === i ? { ...a, ...patch } : a)) }));
+  const addLinha = () => setForm(f => ({ ...f, atividades: [...(f.atividades ?? []), { ...NOVA_LINHA }] }));
+  const rmLinha = (i: number) => setForm(f => ({ ...f, atividades: (f.atividades ?? []).filter((_, idx) => idx !== i) }));
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -66,16 +66,16 @@ export default function AditivoDialog({ open, onOpenChange, form, setForm, onSav
           <div className="space-y-2 rounded-md border p-3">
             <div className="flex items-center justify-between gap-2">
               <Label className="text-sm font-semibold">Atividades deste aditivo</Label>
-              {form.atividades.length > 0 && (
+              {(form.atividades ?? []).length > 0 && (
                 <span className={`text-xs font-medium ${pesoOk ? 'text-primary' : 'text-destructive'}`}>
                   Peso do aditivo: {pesoTotal}% {pesoOk ? '✓' : '(recomendado: 100%)'}
                 </span>
               )}
             </div>
-            {form.atividades.length === 0 && (
+            {(form.atividades ?? []).length === 0 && (
               <p className="text-xs text-muted-foreground">Nenhuma atividade. Adicione os serviços que fazem parte deste aditivo.</p>
             )}
-            {form.atividades.map((a, i) => (
+            {(form.atividades ?? []).map((a, i) => (
               <div key={i} className="grid grid-cols-12 gap-2 items-end">
                 <div className="col-span-12 sm:col-span-4">
                   {i === 0 && <Label className="text-xs">Atividade</Label>}

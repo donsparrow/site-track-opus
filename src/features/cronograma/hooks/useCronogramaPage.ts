@@ -126,8 +126,8 @@ export function useCronogramaPage() {
   const handleSaveAditivo = () => {
     if (!aditivoForm.descricao || !obraId) { toast.error('Informe a descrição do aditivo'); return; }
     if (aditivoForm.dias_adicionais === '') { toast.error('Informe os dias adicionais (use 0 se não houver)'); return; }
-    const linhas = aditivoForm.atividades.filter(a => a.nome_atividade.trim());
-    if (linhas.length !== aditivoForm.atividades.length) {
+    const linhas = (aditivoForm.atividades ?? []).filter(a => a.nome_atividade.trim());
+    if (linhas.length !== (aditivoForm.atividades ?? []).length) {
       toast.error('Informe o nome de todas as atividades do aditivo (ou remova as linhas vazias)');
       return;
     }
