@@ -386,6 +386,30 @@ export function useRelatorioMutations() {
         });
       }
 
+      // Congela o estado atual numa versão final ANTES de marcar como assinado.
+      const { data: relAtual } = await supabase
+        .from('relatorios')
+        .select('obra_id, data_inicio, data_fim, status, progresso_fisico, prazo_consumido, dias_trabalhados_snapshot, dias_parados_snapshot')
+        .eq('id', relatorioId)
+        .maybeSingle();
+      if (relAtual && user) {
+        const periodo = { inicio: relAtual.data_inicio || '', fim: relAtual.data_fim || '' };
+        const dadosAtuais = aplicarIndicadoresCongelados(
+          await carregarDadosRelatorio(relAtual.obra_id, periodo.inicio, periodo.fim, { relatorioId }),
+          relAtual,
+        );
+        const versoes = await fetchVersoes(relatorioId);
+        const { error: errVer } = await supabase.from('relatorio_versoes').insert({
+          relatorio_id: relatorioId,
+          numero_versao: versoes.length > 0 ? versoes[0].numero_versao + 1 : 1,
+          criado_por: user.id,
+          status: 'assinado',
+          descricao_alteracao: 'Versão final congelada na assinatura',
+          snapshot_dados: buildSnapshot(dadosAtuais, periodo) as unknown as Json,
+        });
+        if (errVer) throw errVer;
+      }
+
       await supabase.from('relatorios').update({ status: 'assinado' }).eq('id', relatorioId);
       return relatorioId;
     },

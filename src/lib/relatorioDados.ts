@@ -27,14 +27,80 @@ export interface DadosRelatorio {
   aditivos: any[];
   planejamentoConfigurado: boolean;
   prazos: PrazosRelatorio;
+  /** Presente só em relatório assinado com snapshot congelado: números a imprimir sem recalcular. */
+  congelado?: { progresso_geral: number; progresso_fisico: number } | null;
+}
+
+/** Mesma fórmula da barra "Progresso Geral" do PDF (src/lib/pdfRelatorio.ts). */
+export function calcularProgressoGeralPdf(cronograma: { peso?: number | null; percentual_concluido: number }[]): number {
+  const totalPeso = cronograma.reduce((s, c) => s + (c.peso || 0), 0);
+  return cronograma.length > 0
+    ? (totalPeso === 100
+      ? Math.round(cronograma.reduce((s, c) => s + ((c.peso || 0) * c.percentual_concluido), 0) / 100)
+      : Math.round(cronograma.reduce((s, c) => s + c.percentual_concluido, 0) / cronograma.length))
+    : 0;
+}
+
+interface SnapshotCongelado {
+  cronograma: any[];
+  progresso_geral: number;
+  progresso_fisico: number;
+  prazos?: PrazosRelatorio;
+  prazos_congelados?: boolean;
+}
+
+function snapshotUtilizavel(s: any): s is SnapshotCongelado {
+  return !!s && Array.isArray(s.cronograma)
+    && typeof s.progresso_geral === 'number'
+    && typeof s.progresso_fisico === 'number';
+}
+
+/** Relatório assinado → snapshot congelado mais recente; caso contrário null (cálculo ao vivo). */
+async function buscarSnapshotCongelado(relatorioId: string): Promise<SnapshotCongelado | null> {
+  try {
+    const { data: rel } = await supabase.from('relatorios').select('status').eq('id', relatorioId).maybeSingle();
+    if (rel?.status !== 'assinado') return null;
+    const { data: versoes } = await supabase
+      .from('relatorio_versoes')
+      .select('snapshot_dados, numero_versao')
+      .eq('relatorio_id', relatorioId)
+      .not('snapshot_dados', 'is', null)
+      .order('numero_versao', { ascending: false })
+      .limit(1);
+    const snap = versoes?.[0]?.snapshot_dados;
+    return snapshotUtilizavel(snap) ? snap : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
  * Carrega e consolida todos os dados necessários para exibir/gerar um relatório.
  * Usado tanto na tela de edição quanto no download direto pela listagem,
  * garantindo que o PDF seja idêntico nos dois caminhos.
+ * Relatório assinado com snapshot congelado usa cronograma/progresso do snapshot.
  */
 export async function carregarDadosRelatorio(
+  obraId: string,
+  inicio: string,
+  fim: string,
+  opts?: { relatorioId?: string | null },
+): Promise<DadosRelatorio> {
+  const vivo = await carregarDadosAoVivo(obraId, inicio, fim, opts);
+  if (!opts?.relatorioId) return vivo;
+  const snap = await buscarSnapshotCongelado(opts.relatorioId);
+  if (!snap) return vivo;
+  const prazosBase = snap.prazos_congelados && snap.prazos ? snap.prazos : vivo.prazos;
+  return {
+    ...vivo,
+    cronograma: snap.cronograma,
+    planejamentoConfigurado: snap.cronograma.length > 0,
+    prazos: { ...prazosBase, percentualExecutado: snap.progresso_fisico },
+    congelado: { progresso_geral: snap.progresso_geral, progresso_fisico: snap.progresso_fisico },
+  };
+}
+
+async function carregarDadosAoVivo(
   obraId: string,
   inicio: string,
   fim: string,

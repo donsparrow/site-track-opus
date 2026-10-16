@@ -55,6 +55,7 @@ export async function gerarPDFRelatorio({ empresa, obra, periodo, dados, assinat
     cronograma: dados.cronograma,
     aditivos: dados.aditivos,
     planejamentoConfigurado: dados.planejamentoConfigurado,
+    congelado: dados.congelado ?? null,
     assinaturas: await resolveAssinaturas(assinaturas || []),
     versao: v2 && maiorVersao > 0 ? maiorVersao - 1 : revisao,
     versaoLayout,
