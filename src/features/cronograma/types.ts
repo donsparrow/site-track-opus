@@ -38,11 +38,20 @@ export interface AtividadeFormData {
   observacoes: string;
 }
 
+export interface AditivoAtividadeForm {
+  nome_atividade: string;
+  peso: number;
+  data_inicio: string;
+  data_fim: string;
+}
+
 export interface AditivoFormData {
   descricao: string;
-  dias_adicionais: number;
+  /** string vazia = não preenchido (obrigatório; aceita 0). */
+  dias_adicionais: number | '';
   data_aprovacao: string;
   justificativa: string;
   responsavel_aprovacao: string;
   documento_url: string;
+  atividades: AditivoAtividadeForm[];
 }
