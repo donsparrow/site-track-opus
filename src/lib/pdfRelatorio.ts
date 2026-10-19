@@ -30,6 +30,7 @@ interface RelatorioPDFData {
   prazos: {
     contratual: number;
     parados: number;
+    paradosTotal?: number;
     ajustado: number;
     trabalhados: number;
     saldo: number;
@@ -389,7 +390,8 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     ['Status da Obra', statusObra],
     ['Período do Relatório', `${fmt(data.periodo.inicio)} a ${fmt(data.periodo.fim)}`],
     ['Dias Trabalhados', `${data.prazos.trabalhados}`],
-    ['Dias Parados', `${data.prazos.parados}`],
+    ['Dias Parados (período)', `${data.prazos.parados}`],
+    ['Dias Parados (total da obra)', `${data.prazos.paradosTotal ?? data.prazos.parados}`],
     ['Diários Registrados', `${data.diarios.length}`],
   ];
 
@@ -530,25 +532,27 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   });
   y += 22;
 
-  // Second row
+  // Second row (5 columns: os dois campos de paralisação lado a lado)
   const prazoItems2 = [
-    { label: 'Dias Úteis Parados (total da obra)', value: `${data.prazos.parados}` },
+    { label: 'Parados (período)', value: `${data.prazos.parados}` },
+    { label: 'Parados (total da obra)', value: `${data.prazos.paradosTotal ?? data.prazos.parados}` },
     { label: 'Dias Úteis Trabalhados', value: `${data.prazos.trabalhados}` },
     { label: 'Prazo Consumido', value: `${data.prazos.percentualTempo}%`, highlight: true },
     { label: 'Progresso Físico', value: `${data.prazos.percentualExecutado}%`, highlight: true },
   ];
-  const col2W = contentW / 4;
+  const col2W = contentW / 5;
   prazoItems2.forEach((item: any, i: number) => {
     const x = MARGIN + i * col2W;
     doc.setFillColor(245, 247, 250);
     doc.roundedRect(x + 1, y, col2W - 2, 14, 2, 2, 'F');
-    doc.setFontSize(7);
+    doc.setFontSize(6.5);
     doc.setTextColor(100);
     doc.text(item.label, x + col2W / 2, y + 5, { align: 'center' });
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     if (item.highlight) {
-      const clr = i === 3 ? (data.prazos.percentualExecutado >= data.prazos.percentualTempo ? [34, 197, 94] : [239, 68, 68]) : [100, 100, 100];
+      const isFisico = item.label === 'Progresso Físico';
+      const clr = isFisico ? (data.prazos.percentualExecutado >= data.prazos.percentualTempo ? [34, 197, 94] : [239, 68, 68]) : [100, 100, 100];
       doc.setTextColor(clr[0], clr[1], clr[2]);
     } else {
       doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
@@ -725,7 +729,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
       doc.setFont('helvetica', 'italic');
       doc.setTextColor(100);
       doc.text(
-        `Os ${totalDiasParados} dia(s) útil(eis) de paralisação compõem o total de dias parados apresentado no Controle de Prazo.`,
+        `Os ${totalDiasParados} dia(s) útil(eis) de paralisação do período compõem o campo "Parados (período)" do Controle de Prazo; o campo "Parados (total da obra)" acumula paralisações de toda a obra.`,
         MARGIN, y, { maxWidth: contentW },
       );
       doc.setTextColor(0);
