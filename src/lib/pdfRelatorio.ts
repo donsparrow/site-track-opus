@@ -35,7 +35,7 @@ interface RelatorioPDFData {
     saldo: number;
     dataInicioReal: string;
     percentualTempo: number;
-    percentualExecutado: number;
+    percentualExecutado: number; diasAditivos?: number; contratualBase?: number;
   };
   diarios: any[];
   equipe: any[];
