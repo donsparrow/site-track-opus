@@ -77,6 +77,13 @@ export function registerPWA(): void {
     },
     onRegisteredSW(_url, r) {
       registration = r;
+      void r?.update().catch(() => {});
+      if (r) {
+        const interval = window.setInterval(() => void r.update().catch(() => {}), 10 * 60 * 1000);
+        window.addEventListener("pagehide", (event) => {
+          if (!event.persisted) window.clearInterval(interval);
+        });
+      }
     },
   });
 
