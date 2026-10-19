@@ -42,28 +42,21 @@ export default defineConfig(({ mode }) => ({
         cleanupOutdatedCaches: true,
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/~oauth/, /^\/calendario\/callback/, /^\/api\//],
+        // Navigations must reach NetworkFirst, not the precached HTML route.
+        navigateFallbackAllowlist: [],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         runtimeCaching: [
           {
-            urlPattern: ({ request }) => request.mode === "navigate",
+            urlPattern: ({ request, url, sameOrigin }) => sameOrigin && request.mode === "navigate" &&
+              ![/^\/~oauth/, /^\/calendario\/callback/, /^\/api\//].some((pattern) => pattern.test(url.pathname)),
             handler: "NetworkFirst",
-            options: { cacheName: "html-cache", networkTimeoutSeconds: 4 },
-          },
-          {
-            urlPattern: /\.(?:js|css|woff2?)$/,
-            handler: "CacheFirst",
-            options: { cacheName: "asset-cache", expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 } },
+            options: { cacheName: "app-navigation-cache", expiration: { maxEntries: 30 } },
           },
           {
             urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/,
             handler: "CacheFirst",
             options: { cacheName: "image-cache", expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 30 } },
-          },
-          {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/.*$/,
-            handler: "NetworkFirst",
-            options: { cacheName: "supabase-cache", networkTimeoutSeconds: 6 },
           },
         ],
       },
