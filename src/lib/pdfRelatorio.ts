@@ -49,6 +49,8 @@ interface RelatorioPDFData {
   planejamentoConfigurado?: boolean;
   /** Relatório assinado: números congelados no snapshot (não recalcular). */
   congelado?: { progresso_geral: number; progresso_fisico: number } | null;
+  /** Assinado com aditivos congelados no snapshot → usa a seção detalhada. */
+  aditivosCongelados?: boolean;
   assinaturas: any[];
   versao?: number;
   versoes?: { rev: string; data: string; resumo: string }[];
@@ -859,7 +861,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   }
 
   // =========== ADITIVOS ===========
-  if (!data.congelado) {
+  if (!data.congelado || data.aditivosCongelados) {
     renderAditivosDetalhados();
   } else if (data.aditivos && data.aditivos.length > 0) {
     checkPage(30);

@@ -30,6 +30,8 @@ export interface DadosRelatorio {
   prazos: PrazosRelatorio;
   /** Presente só em relatório assinado com snapshot congelado: números a imprimir sem recalcular. */
   congelado?: { progresso_geral: number; progresso_fisico: number } | null;
+  /** true quando os aditivos vieram do snapshot congelado (assinado com detalhe). */
+  aditivosCongelados?: boolean;
 }
 
 /** Barra "Progresso Geral" do PDF — regra canônica (escopo original). */
@@ -43,6 +45,7 @@ interface SnapshotCongelado {
   progresso_fisico: number;
   prazos?: PrazosRelatorio;
   prazos_congelados?: boolean;
+  aditivos?: any[];
 }
 
 function snapshotUtilizavel(s: any): s is SnapshotCongelado {
@@ -87,8 +90,11 @@ export async function carregarDadosRelatorio(
   const snap = await buscarSnapshotCongelado(opts.relatorioId);
   if (!snap) return vivo;
   const prazosBase = snap.prazos_congelados && snap.prazos ? snap.prazos : vivo.prazos;
+  const aditivosCongelados = Array.isArray(snap.aditivos);
   return {
     ...vivo,
+    aditivos: aditivosCongelados ? snap.aditivos! : vivo.aditivos,
+    aditivosCongelados,
     cronograma: snap.cronograma,
     planejamentoConfigurado: snap.cronograma.length > 0,
     prazos: { ...prazosBase, percentualExecutado: snap.progresso_fisico },

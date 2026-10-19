@@ -52,6 +52,17 @@ export interface SnapshotDados {
   progresso_fisico?: number;
   /** true quando `prazos` foi capturado no estado congelado (assinatura). */
   prazos_congelados?: boolean;
+  /** Aditivos congelados na assinatura (ausente em snapshots legados). */
+  aditivos?: SnapshotAditivo[];
+}
+
+export interface SnapshotAditivo {
+  id: string;
+  descricao: string;
+  dias_adicionais: number;
+  data_aprovacao: string | null;
+  responsavel_aprovacao: string | null;
+  justificativa: string | null;
 }
 
 export interface SnapshotCronogramaItem {
@@ -62,6 +73,7 @@ export interface SnapshotCronogramaItem {
   tipo_atividade: string | null;
   data_inicio: string | null;
   data_fim: string | null;
+  aditivo_id?: string | null;
 }
 
 export interface PeriodoRelatorio {
