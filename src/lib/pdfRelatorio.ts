@@ -1,3 +1,4 @@
+import { calcularProgressoEscopo } from './progressoFisico';
 import { calcularProgressoOriginal } from './progressoFisico';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -44,8 +45,8 @@ interface RelatorioPDFData {
   ocorrencias: any[];
   paralisacoes?: { motivo: string; data_inicio: string; data_fim: string | null; total_dias: number | null; diario_id?: string }[];
   imagens: any[];
-  cronograma: { nome_atividade: string; data_inicio: string | null; data_fim: string | null; percentual_concluido: number; status: string; peso?: number; tipo_atividade?: string }[];
-  aditivos?: { descricao: string; dias_adicionais: number; data_aprovacao?: string | null; justificativa?: string | null; responsavel_aprovacao?: string | null }[];
+  cronograma: { nome_atividade: string; data_inicio: string | null; data_fim: string | null; percentual_concluido: number; status: string; peso?: number; tipo_atividade?: string; aditivo_id?: string | null }[];
+  aditivos?: { id?: string; descricao: string; dias_adicionais: number; data_aprovacao?: string | null; justificativa?: string | null; responsavel_aprovacao?: string | null }[];
   planejamentoConfigurado?: boolean;
   /** Relatório assinado: números congelados no snapshot (não recalcular). */
   congelado?: { progresso_geral: number; progresso_fisico: number } | null;
@@ -859,7 +860,9 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   }
 
   // =========== ADITIVOS ===========
-  if (data.aditivos && data.aditivos.length > 0) {
+  if (!data.congelado) {
+    renderAditivosDetalhados();
+  } else if (data.aditivos && data.aditivos.length > 0) {
     checkPage(30);
     y += 4;
     subSec('ADITIVOS DA OBRA');
@@ -887,6 +890,83 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     y += 8;
   }
 
+
+  // Relatório NÃO assinado: seção rica por aditivo (assinado mantém a tabela acima, intocada).
+  function renderAditivosDetalhados() {
+    const aditivos = data.aditivos || [];
+    const diasAditivos = aditivos.reduce((s, a) => s + (a.dias_adicionais || 0), 0);
+    const total = data.prazos.contratual;
+    checkPage(30);
+    y += 4;
+    subSec('ADITIVOS DA OBRA');
+    doc.setFontSize(9.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0);
+    const linhaPrazo = aditivos.length > 0
+      ? `Prazo contratual: ${total - diasAditivos} dias úteis + ${diasAditivos} (aditivos) = ${total} dias úteis`
+      : `Prazo contratual: ${total} dias úteis`;
+    doc.text(linhaPrazo, MARGIN, y);
+    doc.setFont('helvetica', 'normal');
+    y += 7;
+    if (aditivos.length === 0) {
+      doc.setFontSize(9);
+      doc.setTextColor(120);
+      doc.text('Nenhum aditivo registrado.', MARGIN, y);
+      doc.setTextColor(0);
+      y += 8;
+      return;
+    }
+
+    aditivos.forEach((a, idx) => {
+      checkPage(28);
+      doc.setFillColor(245, 247, 250);
+      doc.rect(MARGIN, y - 4, contentW, 7, 'F');
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      const titulo = doc.splitTextToSize(`Aditivo ${idx + 1} — ${a.descricao || '—'}  (+${a.dias_adicionais || 0} dias úteis)`, contentW - 4);
+      doc.text(titulo[0], MARGIN + 2, y + 0.5);
+      y += 6;
+      if (titulo.length > 1) {
+        doc.setFont('helvetica', 'normal');
+        doc.text(titulo.slice(1), MARGIN + 2, y);
+        y += 4.5 * (titulo.length - 1);
+      }
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      const meta: string[] = [];
+      if (a.data_aprovacao) meta.push(`Aprovação: ${fmt(a.data_aprovacao)}`);
+      if (a.responsavel_aprovacao) meta.push(`Responsável: ${a.responsavel_aprovacao}`);
+      if (meta.length) { doc.text(meta.join('   ·   '), MARGIN + 2, y); y += 5; }
+
+      const just = (a.justificativa || '').trim();
+      if (just) {
+        const linhas = doc.splitTextToSize(`Justificativa: ${just}`, contentW - 4);
+        linhas.forEach((l: string) => { checkPage(6); doc.text(l, MARGIN + 2, y); y += 4.5; });
+        y += 1;
+      }
+
+      const ativs = a.id ? data.cronograma.filter(c => c.aditivo_id === a.id) : [];
+      if (ativs.length > 0) {
+        autoTable(doc, {
+          startY: y,
+          head: [['Atividade', 'Peso (%)', 'Progresso (%)']],
+          body: ativs.map(c => [c.nome_atividade || '—', `${c.peso ?? 0}%`, `${c.percentual_concluido ?? 0}%`]),
+          margin: { left: MARGIN, right: MARGIN },
+          styles: { fontSize: 8.5, cellPadding: 2 },
+          headStyles: { fillColor: [BLUE[0], BLUE[1], BLUE[2]], textColor: 255 },
+          columnStyles: { 1: { halign: 'center', cellWidth: 25 }, 2: { halign: 'center', cellWidth: 30 } },
+          theme: 'striped',
+        });
+        y = (doc as any).lastAutoTable.finalY + 5;
+      }
+      const prog = calcularProgressoEscopo(ativs.map(c => ({ ...c, tipo_atividade: 'aditivo' }))).aditivo;
+      checkPage(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Progresso do aditivo: ${prog}%`, MARGIN + 2, y);
+      doc.setFont('helvetica', 'normal');
+      y += 9;
+    });
+  }
 
   const layoutV2 = (data.versaoLayout ?? 1) >= 2;
 
