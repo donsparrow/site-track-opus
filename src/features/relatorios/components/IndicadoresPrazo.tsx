@@ -19,7 +19,7 @@ export default function IndicadoresPrazo({ prazos }: { prazos: PrazosRelatorio }
   const linha2 = [
     { label: 'Início Real', value: prazos.dataInicioReal ? fmt(prazos.dataInicioReal) : 'Não iniciada', icon: Calendar, color: prazos.dataInicioReal ? '' : 'text-destructive' },
     { label: 'Dias Trabalhados', value: `${prazos.trabalhados} dias`, icon: BarChart3, color: '' },
-    { label: 'Dias Parados', value: `${prazos.parados} dias`, icon: Clock, color: prazos.parados > 0 ? 'text-destructive' : '' },
+    { label: 'Dias Parados (total da obra)', value: `${prazos.parados} dias`, icon: Clock, color: prazos.parados > 0 ? 'text-destructive' : '' },
     { label: 'Prazo Ajustado', value: `${prazos.ajustado} dias`, icon: Calendar, color: '' },
   ];
 
