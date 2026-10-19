@@ -67,10 +67,59 @@ export default function DashboardGrid({ widgets, gridConfig, editMode, onLayoutC
     return {
       lg: fullLg,
       md: fullLg.map(l => ({ ...l, w: Math.min(l.w, 10), x: Math.min(l.x, 10 - 1) })),
-      sm: visible.map((w, i) => ({ i: w.id, x: 0, y: i, w: 6, h: Math.max(SIZE_PRESETS[w.size].h, 3), static: isMobile })),
+      sm: visible.map((w, i) => ({ i: w.id, x: 0, y: i, w: 6, h: Math.max(SIZE_PRESETS[w.size].h, 3)})),
     };
-  }, [visible, gridConfig, isMobile]);
+  }, [visible, gridConfig]);
 
+
+  // Mobile order: same as desktop, sorted by (y, x) of saved lg layout; unplaced widgets last.
+  const mobileOrdered = useMemo(() => {
+    const pos = new Map((gridConfig.lg ?? []).map(l => [l.i, l]));
+    const placed = visible.filter(w => pos.has(w.id)).sort((a, b) => {
+      const pa = pos.get(a.id)!, pb = pos.get(b.id)!;
+      return pa.y - pb.y || pa.x - pb.x;
+    });
+    return [...placed, ...visible.filter(w => !pos.has(w.id))];
+  }, [visible, gridConfig.lg]);
+
+  const renderWidget = (w: WidgetInstance) => {
+    const def = WIDGET_REGISTRY[w.type];
+    if (!def) return null;
+    const Comp = def.Component;
+    return (
+      <WidgetFrame
+        editMode={editMode}
+        title={w.config?.title || def.label}
+        headerColor={w.config?.headerColor}
+        hidden={w.hidden}
+        onConfig={() => onConfigWidget(w)}
+        onToggleHidden={() => onToggleHidden(w.id)}
+      >
+        <DashboardErrorBoundary fallbackTitle={`Erro ao carregar "${def.label}"`}>
+          <Comp config={w.config} />
+        </DashboardErrorBoundary>
+      </WidgetFrame>
+    );
+  };
+
+  if (isMobile) {
+    return (
+      <div ref={containerRef} className="grid grid-cols-2 gap-4 w-full">
+        {mobileOrdered.map(w => {
+          const p = SIZE_PRESETS[w.size];
+          return (
+            <div
+              key={w.id}
+              className={w.size === 'small' ? 'col-span-1 min-w-0' : 'col-span-2 min-w-0'}
+              style={{ height: p.h * 70 + (p.h - 1) * 16 }}
+            >
+              {renderWidget(w)}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
 
   return (
     <div ref={containerRef} className="w-full">
@@ -83,32 +132,14 @@ export default function DashboardGrid({ widgets, gridConfig, editMode, onLayoutC
         margin={[16, 16]}
         containerPadding={[0, 0]}
         width={width}
-        isDraggable={editMode && !isMobile}
-        isResizable={editMode && !isMobile}
+        isDraggable={editMode}
+        isResizable={editMode}
         draggableHandle=".drag-handle"
-        onLayoutChange={(cur, all) => { if (!isMobile) onLayoutChange(cur, all); }}
+        onLayoutChange={onLayoutChange}
       >
-        {visible.map(w => {
-          const def = WIDGET_REGISTRY[w.type];
-          if (!def) return <div key={w.id} />;
-          const Comp = def.Component;
-          return (
-            <div key={w.id}>
-              <WidgetFrame
-                editMode={editMode}
-                title={w.config?.title || def.label}
-                headerColor={w.config?.headerColor}
-                hidden={w.hidden}
-                onConfig={() => onConfigWidget(w)}
-                onToggleHidden={() => onToggleHidden(w.id)}
-              >
-                <DashboardErrorBoundary fallbackTitle={`Erro ao carregar "${def.label}"`}>
-                  <Comp config={w.config} />
-                </DashboardErrorBoundary>
-              </WidgetFrame>
-            </div>
-          );
-        })}
+        {visible.map(w => (
+          <div key={w.id}>{renderWidget(w)}</div>
+        ))}
       </Responsive>
     </div>
   );

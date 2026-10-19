@@ -15,7 +15,7 @@ export default function AppLayout() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       {/* Desktop sidebar - hidden on mobile */}
-      <div className="hidden md:block">
+      <div className="hidden lg:block">
         <AppSidebar />
       </div>
 
@@ -23,14 +23,14 @@ export default function AppLayout() {
       <MobileSidebar />
 
       {/* Main content: ml-64 on desktop, no margin + top padding on mobile */}
-      <main className="flex-1 pt-14 md:pt-0 md:ml-64">
+      <main className="flex-1 pt-14 lg:pt-0 lg:ml-64">
         <div className="p-4 md:p-6 lg:p-8">
           <Outlet />
         </div>
       </main>
 
       {/* Footer */}
-      <div className="md:ml-64">
+      <div className="lg:ml-64">
         <GlobalFooter />
       </div>
 

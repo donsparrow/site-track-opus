@@ -20,10 +20,10 @@ export default function Documentacao() {
 
       <Card>
         <CardContent className="pt-6">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
             <label className="text-sm font-medium text-foreground">Obra:</label>
             <Select value={c.obraSelecionada} onValueChange={c.setObraSelecionada} disabled={c.obrasLoading}>
-              <SelectTrigger className="w-80">
+              <SelectTrigger className="w-full sm:w-80">
                 <SelectValue placeholder="Selecione uma obra" />
               </SelectTrigger>
               <SelectContent>
@@ -47,7 +47,7 @@ export default function Documentacao() {
       )}
 
       {c.obraSelecionada && !c.pastasError && (!c.pastasLoading || c.pastas.length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(240px,1fr)_2fr] gap-6">
           <PastasPanel
             pastas={c.pastas}
             loading={c.pastasLoading}
@@ -60,7 +60,7 @@ export default function Documentacao() {
           />
 
           {c.arquivosError ? (
-            <div className="md:col-span-2">
+            <div className="lg:col-span-1">
               <ErroCarregamento message="Não foi possível carregar os arquivos." onRetry={c.refetchArquivos} />
             </div>
           ) : (

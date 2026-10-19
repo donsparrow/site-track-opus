@@ -25,8 +25,8 @@ export default function PastasPanel({
   onExcluirPasta,
 }: Props) {
   return (
-    <Card className="md:col-span-1">
-      <CardHeader className="flex flex-row items-center justify-between pb-3">
+    <Card className="lg:col-span-1">
+      <CardHeader className="flex flex-row flex-wrap gap-2 items-center justify-between pb-3">
         <CardTitle className="text-base">Pastas</CardTitle>
         {canManage && (
           <Button size="sm" variant="outline" onClick={onNovaPasta}>

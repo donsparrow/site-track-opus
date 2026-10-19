@@ -138,7 +138,7 @@ function DashboardInner() {
                   <Plus className="h-4 w-4 mr-2" /> Nova Obra
                 </Button>
               )}
-              <Button onClick={enterEdit} variant="outline">
+              <Button onClick={enterEdit} variant="outline" className="hidden md:inline-flex">
                 <LayoutGrid className="h-4 w-4 mr-2" /> Personalizar Dashboard
               </Button>
               <TooltipProvider>
