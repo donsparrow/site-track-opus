@@ -39,6 +39,13 @@ export interface DadosRelatorio {
   congelado?: { progresso_geral: number; progresso_fisico: number } | null;
   /** true quando os aditivos vieram do snapshot congelado (assinado com detalhe). */
   aditivosCongelados?: boolean;
+  /** Maior % de cada atividade em diários anteriores ao período (chave: chaveAtividadeDiario). */
+  baselineAtividades?: Record<string, number> | null;
+}
+
+/** Chave de agrupamento de registros de diário por atividade. */
+export function chaveAtividadeDiario(a: { cronograma_atividade_id?: string | null; descricao?: string | null }): string {
+  return a.cronograma_atividade_id ? a.cronograma_atividade_id : `d:${(a.descricao || '').trim().toLowerCase()}`;
 }
 
 /** Barra "Progresso Geral" do PDF — regra canônica (escopo original). */
@@ -229,6 +236,37 @@ async function carregarDadosAoVivo(
 
   const percentualExecutado = calcularProgressoOriginal(cronogramaAtivs);
 
+  // Baseline das atividades (X): maior % em diários da obra ANTES do início do período.
+  // Chave = cronograma_atividade_id ou "d:" + descrição. null se não puder ser obtido.
+  let baselineAtividades: Record<string, number> | null = null;
+  const inicioPeriodo = inicio || dList[0]?.data || '';
+  if (inicioPeriodo) {
+    try {
+      const { data: antes, error: e1 } = await supabase
+        .from('diario_obra')
+        .select('id')
+        .eq('obra_id', obraId)
+        .lt('data', inicioPeriodo);
+      if (e1) throw e1;
+      const idsAntes = (antes || []).map((d: any) => d.id);
+      const base: Record<string, number> = {};
+      if (idsAntes.length) {
+        const { data: atAntes, error: e2 } = await supabase
+          .from('diario_atividades')
+          .select('cronograma_atividade_id, descricao, percentual')
+          .in('diario_id', idsAntes);
+        if (e2) throw e2;
+        (atAntes || []).forEach((a: any) => {
+          const k = chaveAtividadeDiario(a);
+          base[k] = Math.max(base[k] ?? 0, Number(a.percentual) || 0);
+        });
+      }
+      baselineAtividades = base;
+    } catch {
+      baselineAtividades = null;
+    }
+  }
+
   return {
     diarios: dList,
     equipe: eq.data || [],
@@ -243,6 +281,7 @@ async function carregarDadosAoVivo(
     cronograma: cronogramaAtivs,
     aditivos,
     planejamentoConfigurado,
+    baselineAtividades,
     prazos: {
       contratual: prazoContratual,
       parados: diasParadosPeriodo,
