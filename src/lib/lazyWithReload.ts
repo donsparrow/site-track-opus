@@ -1,8 +1,9 @@
 import { lazy, type ComponentType } from "react";
+import { resetAppCache } from "./resetAppCache";
 
 const RELOAD_FLAG = "chunk-reload";
 
-function isChunkLoadError(error: unknown): boolean {
+export function isChunkLoadError(error: unknown): boolean {
   const msg = error instanceof Error ? error.message : String(error ?? "");
   return (
     /Failed to fetch dynamically imported module/i.test(msg) ||
@@ -15,12 +16,12 @@ function isChunkLoadError(error: unknown): boolean {
 /** Reloads the page once (guarded by sessionStorage) when a stale chunk fails. */
 function reloadOnce(): boolean {
   try {
-    if (sessionStorage.getItem(RELOAD_FLAG)) return false;
+    if ([RELOAD_FLAG, "boot-reset", "app-boundary-reset"].some((key) => sessionStorage.getItem(key))) return false;
     sessionStorage.setItem(RELOAD_FLAG, "1");
   } catch {
     return false;
   }
-  window.location.reload();
+  void resetAppCache();
   return true;
 }
 

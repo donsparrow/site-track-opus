@@ -48,6 +48,11 @@ export function registerPWA(): void {
   const swOff = new URLSearchParams(window.location.search).get("sw") === "off";
   const previewHost = isPreviewHost(window.location.hostname);
 
+  // Retire only the known obsolete runtime caches from previous releases.
+  if ("caches" in window) {
+    void Promise.allSettled(["html-cache", "asset-cache", "supabase-cache"].map((name) => caches.delete(name)));
+  }
+
   if (!isProd || inIframe || swOff || previewHost) {
     // Refuse — clean up any prior registration that might still serve stale HTML.
     void unregisterMatching();
@@ -77,6 +82,13 @@ export function registerPWA(): void {
     },
     onRegisteredSW(_url, r) {
       registration = r;
+      void r?.update().catch(() => {});
+      if (r) {
+        const interval = window.setInterval(() => void r.update().catch(() => {}), 10 * 60 * 1000);
+        window.addEventListener("pagehide", (event) => {
+          if (!event.persisted) window.clearInterval(interval);
+        });
+      }
     },
   });
 

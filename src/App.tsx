@@ -10,6 +10,7 @@ import PageSkeleton from "@/components/PageSkeleton";
 import { lazyWithReload } from "@/lib/lazyWithReload";
 import Auth from "./pages/Auth";
 import AppLayout from "./components/AppLayout";
+import AppErrorBoundary from "./components/AppErrorBoundary";
 
 const Dashboard = lazyWithReload(() => import("./pages/Dashboard"));
 const ObraDetail = lazyWithReload(() => import("./pages/ObraDetail"));
@@ -47,6 +48,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <AppErrorBoundary>
       <BrowserRouter>
         <AuthProvider>
           <Suspense fallback={<PageSkeleton />}>
@@ -76,6 +78,7 @@ const App = () => (
           </Suspense>
         </AuthProvider>
       </BrowserRouter>
+      </AppErrorBoundary>
     </TooltipProvider>
   </QueryClientProvider>
 );

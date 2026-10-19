@@ -26,6 +26,65 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png?v=2" />
   <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
+  <style>
+    .boot-load-error { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 24px; box-sizing: border-box; text-align: center; font-family: system-ui, sans-serif; }
+    .boot-load-error h1 { font-size: 20px; margin: 0; }
+    .boot-load-error button { font: inherit; padding: 12px 20px; cursor: pointer; }
+  </style>
+  <script>
+    window.addEventListener("error", function (e) {
+      var t = e.target;
+      if (!t || (t.tagName !== "SCRIPT" && t.tagName !== "LINK")) return;
+      if (t.tagName === "LINK" && t.rel !== "stylesheet" && t.rel !== "modulepreload") return;
+      var url;
+      try { url = new URL(t.src || t.href || "", location.href); } catch (_) { return; }
+      if (url.origin !== location.origin || url.pathname.indexOf("/assets/") !== 0) return;
+      function showFallback() {
+        function show() {
+          var root = document.getElementById("root");
+          if (!root || root.hasChildNodes()) return;
+          var main = document.createElement("main");
+          main.setAttribute("data-app-load-error", "");
+          main.className = "boot-load-error bg-background text-foreground";
+          var heading = document.createElement("h1");
+          heading.textContent = "Não foi possível carregar o sistema";
+          var button = document.createElement("button");
+          button.textContent = "Atualizar sistema";
+          button.className = "bg-primary text-primary-foreground rounded-md px-4 py-2";
+          button.onclick = function () {
+            try { ["boot-reset", "chunk-reload", "app-boundary-reset"].forEach(function (k) { sessionStorage.removeItem(k); }); } catch (_) { return; }
+            t.dispatchEvent(new Event("error"));
+          };
+          main.append(heading, button);
+          root.appendChild(main);
+        }
+        if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", show, { once: true });
+        else show();
+      }
+      try {
+        if (["boot-reset", "chunk-reload", "app-boundary-reset"].some(function (k) { return sessionStorage.getItem(k); })) { showFallback(); return; }
+        sessionStorage.setItem("boot-reset", "1");
+      } catch (_) { showFallback(); return; }
+      window.dispatchEvent(new Event("app-cache-reset"));
+      var jobs = [];
+      if (navigator.serviceWorker) jobs.push(navigator.serviceWorker.getRegistrations().then(function (regs) {
+        return Promise.allSettled(regs.filter(function (r) {
+          return [r.active, r.waiting, r.installing].some(function (w) {
+            if (!w) return false;
+            var u = new URL(w.scriptURL);
+            return u.origin === location.origin && (u.pathname === "/sw.js" || u.pathname === "/service-worker.js");
+          });
+        }).map(function (r) { return r.unregister(); }));
+      }));
+      if (window.caches) jobs.push(caches.keys().then(function (keys) {
+        return Promise.allSettled(keys.filter(function (name) {
+          return ["html-cache", "asset-cache", "image-cache", "supabase-cache", "app-navigation-cache"].indexOf(name) !== -1 ||
+            (/(^|-)precache-v\d+-|(^|-)runtime-|(^|-)googleAnalytics-/.test(name) && name.endsWith(location.origin + "/"));
+        }).map(function (name) { return caches.delete(name); }));
+      }));
+      Promise.allSettled(jobs).then(function () { location.reload(); });
+    }, true);
+  </script>
 </head>
 
   <body>
