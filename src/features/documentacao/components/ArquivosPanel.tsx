@@ -101,8 +101,8 @@ export default function ArquivosPanel({
   };
 
   return (
-    <Card className="md:col-span-2">
-      <CardHeader className="flex flex-row items-center justify-between pb-3">
+    <Card>
+      <CardHeader className="flex flex-row flex-wrap gap-2 items-center justify-between pb-3">
         <CardTitle className="text-base">
           {pastaAtual ? `📁 ${pastaAtual.nome_pasta}` : 'Arquivos'}
         </CardTitle>

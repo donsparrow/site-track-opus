@@ -53,7 +53,7 @@ export default function MobileSidebar() {
   });
 
   return (
-    <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-sidebar border-b border-sidebar-border">
+    <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-sidebar border-b border-sidebar-border">
       <div className="flex items-center justify-between h-14 px-4 py-2">
         <div className="flex items-center gap-2">
           <img src={logoSistema} alt="J&A GestãoPro" className="h-9 w-auto max-w-[100px] rounded-lg object-contain p-0.5" />
