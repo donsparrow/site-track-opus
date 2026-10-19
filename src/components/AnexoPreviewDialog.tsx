@@ -50,7 +50,7 @@ export default function AnexoPreviewDialog({ anexo, onOpenChange, onDownload }: 
 
   return (
     <Dialog open={!!anexo} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl w-[96vw] h-[92vh] flex flex-col p-4 gap-3">
+      <DialogContent className="max-w-5xl w-[96vw] h-[92dvh] flex flex-col p-4 gap-3">
         <DialogHeader className="pr-8">
           <DialogTitle className="flex items-center gap-2 text-base">
             <FileText className="h-4 w-4 shrink-0" />
