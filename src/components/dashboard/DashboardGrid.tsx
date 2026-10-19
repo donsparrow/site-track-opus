@@ -52,7 +52,7 @@ export default function DashboardGrid({ widgets, gridConfig, editMode, onLayoutC
     const initial = el.getBoundingClientRect().width;
     if (initial > 0) setWidth(initial);
     return () => ro.disconnect();
-  }, []);
+  }, [isMobile]);
 
   // Drop widgets whose type is no longer registered, so a stale layout never breaks the page
   const safeWidgets = useMemo(() => widgets.filter(w => !!WIDGET_REGISTRY[w.type]), [widgets]);
