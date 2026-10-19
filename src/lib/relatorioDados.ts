@@ -197,7 +197,25 @@ async function carregarDadosAoVivo(
   const diasAditivos = aditivos.reduce((s, a) => s + (a.dias_adicionais || 0), 0);
   const prazoContratual = prazoContratualBase + diasAditivos;
 
-  const diasParados = (pa.data || []).reduce((s: number, p: any) => s + (p.total_dias || 0), 0);
+  // Dias parados cumulativos: paralisações de TODOS os diários da obra até a data fim
+  // do relatório (inclusive), não apenas do período. A lista retornada em `paralisacoes`
+  // continua sendo a do período.
+  let diasParados = 0;
+  if (fim) {
+    const { data: diariosAteFim } = await supabase
+      .from('diario_obra')
+      .select('id')
+      .eq('obra_id', obraId)
+      .lte('data', fim);
+    const idsAteFim = (diariosAteFim || []).map((d: any) => d.id);
+    if (idsAteFim.length) {
+      const { data: paralAteFim } = await supabase
+        .from('diario_paralisacoes')
+        .select('total_dias')
+        .in('diario_id', idsAteFim);
+      diasParados = (paralAteFim || []).reduce((s: number, p: any) => s + (p.total_dias || 0), 0);
+    }
+  }
   const diasTrabalhados = dataInicioReal && fim ? calcBusinessDays(dataInicioReal, fim) : 0;
   const prazoAjustado = prazoContratual + diasParados;
   const saldoPrazo = prazoAjustado - diasTrabalhados;

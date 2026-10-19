@@ -532,7 +532,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   // Second row
   const prazoItems2 = [
-    { label: 'Dias Úteis Parados', value: `${data.prazos.parados}` },
+    { label: 'Dias Úteis Parados (total da obra)', value: `${data.prazos.parados}` },
     { label: 'Dias Úteis Trabalhados', value: `${data.prazos.trabalhados}` },
     { label: 'Prazo Consumido', value: `${data.prazos.percentualTempo}%`, highlight: true },
     { label: 'Progresso Físico', value: `${data.prazos.percentualExecutado}%`, highlight: true },
