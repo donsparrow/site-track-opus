@@ -525,9 +525,9 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   const fmtDate = (d: string) => { try { return new Date(d + 'T00:00:00').toLocaleDateString('pt-BR'); } catch { return d; } };
   const prazoItems = [
     { label: 'Início Real', value: data.prazos.dataInicioReal ? fmtDate(data.prazos.dataInicioReal) : 'Não iniciada' },
-    { label: 'Prazo Contratual', value: (data.prazos.diasAditivos ?? 0) > 0 ? `${data.prazos.contratualBase ?? data.prazos.contratual - (data.prazos.diasAditivos ?? 0)} + ${data.prazos.diasAditivos} (aditivo) = ${data.prazos.contratual} dias úteis` : `${data.prazos.contratual} dias úteis` },
-    { label: 'Prazo Ajustado', value: `${data.prazos.ajustado} dias úteis` },
-    { label: 'Saldo de Prazo', value: `${data.prazos.saldo} dias úteis` },
+    { label: 'Prazo Contratual (dias úteis)', value: (data.prazos.diasAditivos ?? 0) > 0 ? `${data.prazos.contratualBase ?? data.prazos.contratual - (data.prazos.diasAditivos ?? 0)} + ${data.prazos.diasAditivos} (aditivo) = ${data.prazos.contratual}` : `${data.prazos.contratual}` },
+    { label: 'Prazo Ajustado (dias úteis)', value: `${data.prazos.ajustado}` },
+    { label: 'Saldo de Prazo (dias úteis)', value: `${data.prazos.saldo}` },
   ];
 
   prazoItems.forEach((item, i) => {
