@@ -292,6 +292,9 @@ function MonthGrid({
           })}
         </div>
         <WeekDayList days={[activeDay]} events={events} onEventClick={onEventClick} />
+        <Button variant="outline" className="w-full" onClick={() => onDayClick(activeDay)}>
+          Novo evento neste dia
+        </Button>
       </div>
       <div className="hidden md:block">
       <div className="grid grid-cols-7 mb-2">
