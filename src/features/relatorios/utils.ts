@@ -28,6 +28,15 @@ export function buildSnapshot(dados: DadosRelatorio, periodo: { inicio: string; 
     tipo_atividade: c.tipo_atividade ?? null,
     data_inicio: c.data_inicio ?? null,
     data_fim: c.data_fim ?? null,
+    aditivo_id: c.aditivo_id ?? null,
+  }));
+  const aditivos = (dados.aditivos || []).map((a) => ({
+    id: a.id,
+    descricao: a.descricao ?? '',
+    dias_adicionais: a.dias_adicionais ?? 0,
+    data_aprovacao: a.data_aprovacao ?? null,
+    responsavel_aprovacao: a.responsavel_aprovacao ?? null,
+    justificativa: a.justificativa ?? null,
   }));
   return {
     prazos: dados.prazos,
@@ -43,6 +52,7 @@ export function buildSnapshot(dados: DadosRelatorio, periodo: { inicio: string; 
     progresso_geral: dados.congelado?.progresso_geral ?? calcularProgressoGeralPdf(cronograma),
     progresso_fisico: dados.prazos.percentualExecutado,
     prazos_congelados: true,
+    aditivos,
   };
 }
 
