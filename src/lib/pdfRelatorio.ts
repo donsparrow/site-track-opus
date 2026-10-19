@@ -501,12 +501,16 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
           if (idx === descLines.length - 1) {
             let cx = (idx === 0 ? x0 : x0 + 2) + doc.getTextWidth(ln);
             doc.setFont('helvetica', 'normal');
+            doc.setTextColor(55, 65, 81);
             doc.text(nums, cx, y);
             cx += doc.getTextWidth(nums);
-            doc.setTextColor(22, 163, 74);
+            doc.setTextColor(29, 78, 216);
             doc.text(ganho, cx, y);
             cx += doc.getTextWidth(ganho);
-            if (concl) doc.text(concl, cx, y);
+            if (concl) {
+              doc.setTextColor(22, 163, 74);
+              doc.text(concl, cx, y);
+            }
             doc.setTextColor(0);
           } else {
             y += lh;
