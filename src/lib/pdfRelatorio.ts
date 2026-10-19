@@ -893,6 +893,8 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   // Relatório NÃO assinado: seção rica por aditivo (assinado mantém a tabela acima, intocada).
   function renderAditivosDetalhados() {
     const aditivos = data.aditivos || [];
+    // Sem aditivos: não renderiza nada (nem título, nem linha de prazo, nem frase de aviso).
+    if (aditivos.length === 0) return;
     const diasAditivos = aditivos.reduce((s, a) => s + (a.dias_adicionais || 0), 0);
     const total = data.prazos.contratual;
     checkPage(30);
@@ -901,20 +903,10 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     doc.setFontSize(9.5);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(0);
-    const linhaPrazo = aditivos.length > 0
-      ? `Prazo contratual: ${total - diasAditivos} dias úteis + ${diasAditivos} (aditivos) = ${total} dias úteis`
-      : `Prazo contratual: ${total} dias úteis`;
-    doc.text(linhaPrazo, MARGIN, y);
+    doc.text(`Prazo contratual: ${total - diasAditivos} dias úteis + ${diasAditivos} (aditivos) = ${total} dias úteis`, MARGIN, y);
     doc.setFont('helvetica', 'normal');
     y += 7;
-    if (aditivos.length === 0) {
-      doc.setFontSize(9);
-      doc.setTextColor(120);
-      doc.text('Nenhum aditivo registrado.', MARGIN, y);
-      doc.setTextColor(0);
-      y += 8;
-      return;
-    }
+
 
     aditivos.forEach((a, idx) => {
       checkPage(28);
