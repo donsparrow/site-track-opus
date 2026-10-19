@@ -23,6 +23,31 @@ interface Props {
 export default function TabelaDespesas({
   despesas, anexos, canEdit, isAdmin, onNovaDespesa, onEditarDespesa, onExcluirDespesa, onAnexar, onPreviewAnexo,
 }: Props) {
+  const renderActions = (d: DespesaComObra) => (
+    <div className="flex items-center gap-1">
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEditarDespesa(d)} title="Editar">
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        {isAdmin && (
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive"
+                            onClick={() => onExcluirDespesa(d.id)} title="Excluir">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
+  );
+
+  const renderAttachments = (d: DespesaComObra) => (
+    <div className="flex items-center gap-1">
+                      <AnexosInline anexos={anexos} registroId={d.id} tipoRegistro="despesa" onPreview={onPreviewAnexo} />
+                      {canEdit && (
+                        <Button size="icon" variant="ghost" className="h-6 w-6 ml-1" onClick={() => onAnexar(d.id)} title="Anexar arquivo">
+                          <Upload className="h-3.5 w-3.5 text-muted-foreground" />
+                        </Button>
+                      )}
+                    </div>
+  );
+
   return (
     <>
       <div className="flex justify-between items-center mb-4">
@@ -35,7 +60,8 @@ export default function TabelaDespesas({
       </div>
       <Card>
         <CardContent className="p-0">
-          <Table>
+          <div className="hidden md:block">
+<Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Descrição</TableHead>
@@ -70,28 +96,11 @@ export default function TabelaDespesas({
                     {d.manutencao_id ? String(d.manutencao_id).substring(0, 8) + '…' : '—'}
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-1">
-                      <AnexosInline anexos={anexos} registroId={d.id} tipoRegistro="despesa" onPreview={onPreviewAnexo} />
-                      {canEdit && (
-                        <Button size="icon" variant="ghost" className="h-6 w-6 ml-1" onClick={() => onAnexar(d.id)} title="Anexar arquivo">
-                          <Upload className="h-3.5 w-3.5 text-muted-foreground" />
-                        </Button>
-                      )}
-                    </div>
+                    {renderAttachments(d)}
                   </TableCell>
                   {canEdit && (
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEditarDespesa(d)} title="Editar">
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        {isAdmin && (
-                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive"
-                            onClick={() => onExcluirDespesa(d.id)} title="Excluir">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        )}
-                      </div>
+                      {renderActions(d)}
                     </TableCell>
                   )}
                 </TableRow>
@@ -105,6 +114,17 @@ export default function TabelaDespesas({
               )}
             </TableBody>
           </Table>
+</div>
+<div className="md:hidden space-y-3 p-3">
+ {despesas.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma despesa cadastrada</p>}
+ {despesas.map((d) => (
+ <Card key={d.id}><CardContent className="p-4 space-y-3">
+ <h3 className="font-semibold break-words">{d.descricao}</h3>
+ <div className="space-y-1 text-sm break-words"><p>Obra: {d.obras?.nome || '—'}</p><p className="text-destructive font-medium">Valor: {fmt(Number(d.valor))}</p><p>Vencimento: {fmtData(d.data_vencimento)}</p></div>
+ {renderAttachments(d)}{canEdit && renderActions(d)}
+ </CardContent></Card>
+ ))}
+ </div>
         </CardContent>
       </Card>
     </>

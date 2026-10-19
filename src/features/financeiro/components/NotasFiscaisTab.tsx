@@ -17,6 +17,29 @@ interface Props {
 }
 
 export default function NotasFiscaisTab({ anexos, receitas, despesas, onExportar, onPreviewAnexo }: Props) {
+  const documentos = anexos.flatMap((a) => {
+                const receita = receitas.find((r) => r.id === a.registro_id);
+                const despesa = despesas.find((d) => d.id === a.registro_id);
+                if (!receita && !despesa) return [];
+                const isReceita = a.tipo_registro === 'receita';
+                const valor = isReceita ? Number(receita?.valor_total || 0) : Number(despesa?.valor || 0);
+                const data = isReceita ? receita?.created_at?.split('T')[0] : despesa?.data;
+    return [{ a, receita, despesa, isReceita, valor, data }];
+  });
+
+  const renderActions = (a: FinanceiroAnexo) => (
+    <div className="flex items-center gap-1">
+                        <Button size="icon" variant="ghost" className="h-7 w-7" title="Visualizar"
+                          onClick={() => onPreviewAnexo({ url: a.url_arquivo, nome: a.nome_arquivo, tipo: a.tipo_anexo })}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" title="Baixar"
+                          onClick={() => downloadAnexo(a.url_arquivo, a.nome_arquivo)}>
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
+  );
+
   return (
     <>
       <div className="flex justify-between items-center mb-4">
@@ -27,7 +50,8 @@ export default function NotasFiscaisTab({ anexos, receitas, despesas, onExportar
       </div>
       <Card>
         <CardContent className="p-0">
-          <Table>
+          <div className="hidden md:block">
+<Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Tipo</TableHead>
@@ -41,13 +65,7 @@ export default function NotasFiscaisTab({ anexos, receitas, despesas, onExportar
               </TableRow>
             </TableHeader>
             <TableBody>
-              {anexos.map((a) => {
-                const receita = receitas.find((r) => r.id === a.registro_id);
-                const despesa = despesas.find((d) => d.id === a.registro_id);
-                if (!receita && !despesa) return null;
-                const isReceita = a.tipo_registro === 'receita';
-                const valor = isReceita ? Number(receita?.valor_total || 0) : Number(despesa?.valor || 0);
-                const data = isReceita ? receita?.created_at?.split('T')[0] : despesa?.data;
+              {documentos.map(({ a, receita, despesa, isReceita, valor, data }) => {
                 return (
                   <TableRow key={a.id}>
                     <TableCell>
@@ -65,16 +83,7 @@ export default function NotasFiscaisTab({ anexos, receitas, despesas, onExportar
                       <Badge variant="outline">{a.tipo_anexo === 'nota_fiscal' ? '📄 Nota Fiscal' : '💳 Boleto'}</Badge>
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button size="icon" variant="ghost" className="h-7 w-7" title="Visualizar"
-                          onClick={() => onPreviewAnexo({ url: a.url_arquivo, nome: a.nome_arquivo, tipo: a.tipo_anexo })}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button size="icon" variant="ghost" className="h-7 w-7" title="Baixar"
-                          onClick={() => downloadAnexo(a.url_arquivo, a.nome_arquivo)}>
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      {renderActions(a)}
                     </TableCell>
                   </TableRow>
                 );
@@ -88,6 +97,17 @@ export default function NotasFiscaisTab({ anexos, receitas, despesas, onExportar
               )}
             </TableBody>
           </Table>
+</div>
+<div className="md:hidden space-y-3 p-3">
+{documentos.map(({ a, receita, despesa, isReceita, valor, data }) => <Card key={a.id}><CardContent className="p-4 space-y-2">
+<h3 className="font-semibold break-words">{(receita || despesa)?.descricao || '—'}</h3>
+<p className="text-sm break-words">Obra: {(receita || despesa)?.obras?.nome || '—'}</p>
+<p className="text-sm">{isReceita ? 'Receita' : 'Despesa'}: {fmt(valor)} · {fmtData(data)}</p>
+<p className="text-sm break-words">{a.tipo_anexo === 'nota_fiscal' ? 'Nota Fiscal' : 'Boleto'}: {a.nome_arquivo}</p>
+{renderActions(a)}
+</CardContent></Card>)}
+{anexos.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Nenhum documento anexado encontrado</p>}
+</div>
         </CardContent>
       </Card>
     </>

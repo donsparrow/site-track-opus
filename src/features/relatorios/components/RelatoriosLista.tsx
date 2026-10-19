@@ -18,35 +18,8 @@ interface Props {
 }
 
 export default function RelatoriosLista({ relatorios, podeEditar, podeExcluir, onBaixar, onVisualizar, onEditar, onExcluir }: Props) {
-  return (
-    <Card>
-      <CardContent className="pt-6">
-        {relatorios.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">Nenhum relatório encontrado</p>
-        ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Obra</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Período</TableHead>
-                <TableHead>Criado em</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {relatorios.map((r) => (
-                <TableRow key={r.id}>
-                  <TableCell className="font-medium">{r.obras?.nome || '—'}</TableCell>
-                  <TableCell>{r.obras?.clientes?.nome || '—'}</TableCell>
-                  <TableCell className="text-sm">
-                    {r.data_inicio ? fmt(r.data_inicio) : '—'} a {r.data_fim ? fmt(r.data_fim) : '—'}
-                  </TableCell>
-                  <TableCell className="text-sm">{new Date(r.created_at).toLocaleDateString('pt-BR')}</TableCell>
-                  <TableCell><Badge variant={statusVariant(r.status)}>{(r.status || '').toUpperCase()}</Badge></TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
+  const renderActions = (r: RelatorioComObra) => (
+    <div className="flex gap-1">
                       <Button size="sm" variant="ghost" onClick={() => onBaixar(r)} title="Baixar PDF">
                         <Download className="h-4 w-4" />
                       </Button>
@@ -86,11 +59,56 @@ export default function RelatoriosLista({ relatorios, podeEditar, podeExcluir, o
                         </AlertDialog>
                       )}
                     </div>
+  );
+
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        {relatorios.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">Nenhum relatório encontrado</p>
+        ) : (
+          <>
+          <div className="hidden md:block">
+<Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Obra</TableHead>
+                <TableHead>Cliente</TableHead>
+                <TableHead>Período</TableHead>
+                <TableHead>Criado em</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {relatorios.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell className="font-medium">{r.obras?.nome || '—'}</TableCell>
+                  <TableCell>{r.obras?.clientes?.nome || '—'}</TableCell>
+                  <TableCell className="text-sm">
+                    {r.data_inicio ? fmt(r.data_inicio) : '—'} a {r.data_fim ? fmt(r.data_fim) : '—'}
+                  </TableCell>
+                  <TableCell className="text-sm">{new Date(r.created_at).toLocaleDateString('pt-BR')}</TableCell>
+                  <TableCell><Badge variant={statusVariant(r.status)}>{(r.status || '').toUpperCase()}</Badge></TableCell>
+                  <TableCell>
+                    {renderActions(r)}
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
+</div>
+<div className="md:hidden space-y-3 p-3">
+ {relatorios.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Nenhum relatório encontrado</p>}
+ {relatorios.map((r) => (
+ <Card key={r.id}><CardContent className="p-4 space-y-3">
+ <h3 className="font-semibold break-words">{r.obras?.nome || '—'}</h3>
+ <div className="space-y-1 text-sm break-words"><p>Cliente: {r.obras?.clientes?.nome || '—'}</p><p>Período: {r.data_inicio ? fmt(r.data_inicio) : '—'} a {r.data_fim ? fmt(r.data_fim) : '—'}</p><Badge variant={statusVariant(r.status)}>{(r.status || '').toUpperCase()}</Badge></div>
+ {renderActions(r)}
+ </CardContent></Card>
+ ))}
+ </div>
+          </>
         )}
       </CardContent>
     </Card>
