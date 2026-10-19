@@ -526,7 +526,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     doc.text(item.label, x + colW / 2, y + 5, { align: 'center' });
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(i === 3 ? prazoStatusClr[0] : BLUE[0], i === 3 ? prazoStatusClr[1] : BLUE[1], i === 3 ? prazoStatusClr[2] : BLUE[2]);
+    doc.setTextColor(BLUE[0], BLUE[1], BLUE[2]);
     doc.text(item.value, x + colW / 2, y + 13, { align: 'center' });
     doc.setFont('helvetica', 'normal');
   });
