@@ -47,6 +47,11 @@ export default function IndicadoresPrazo({ prazos }: { prazos: PrazosRelatorio }
             <div>
               <p className="text-sm font-display text-muted-foreground mb-1">Prazo Contratual (dias úteis)</p>
               <span className="text-2xl font-bold">{prazos.contratual}</span>
+              {(prazos.diasAditivos ?? 0) > 0 && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  sendo {prazos.contratualBase ?? prazos.contratual - (prazos.diasAditivos ?? 0)} contratual + {prazos.diasAditivos} de aditivo
+                </p>
+              )}
             </div>
             <span className="text-sm text-muted-foreground">(definido na aba Obras)</span>
             {prazos.dataInicioReal ? (

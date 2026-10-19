@@ -35,7 +35,7 @@ interface RelatorioPDFData {
     saldo: number;
     dataInicioReal: string;
     percentualTempo: number;
-    percentualExecutado: number;
+    percentualExecutado: number; diasAditivos?: number; contratualBase?: number;
   };
   diarios: any[];
   equipe: any[];
@@ -525,7 +525,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   const fmtDate = (d: string) => { try { return new Date(d + 'T00:00:00').toLocaleDateString('pt-BR'); } catch { return d; } };
   const prazoItems = [
     { label: 'Início Real', value: data.prazos.dataInicioReal ? fmtDate(data.prazos.dataInicioReal) : 'Não iniciada' },
-    { label: 'Prazo Contratual', value: `${data.prazos.contratual} dias úteis` },
+    { label: 'Prazo Contratual', value: (data.prazos.diasAditivos ?? 0) > 0 ? `${data.prazos.contratualBase ?? data.prazos.contratual - (data.prazos.diasAditivos ?? 0)} + ${data.prazos.diasAditivos} (aditivo) = ${data.prazos.contratual} dias úteis` : `${data.prazos.contratual} dias úteis` },
     { label: 'Prazo Ajustado', value: `${data.prazos.ajustado} dias úteis` },
     { label: 'Saldo de Prazo', value: `${data.prazos.saldo} dias úteis` },
   ];
@@ -916,7 +916,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
       doc.rect(MARGIN, y - 4, contentW, 7, 'F');
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      const titulo = doc.splitTextToSize(`Aditivo ${idx + 1} — ${a.descricao || '—'}  (+${a.dias_adicionais || 0} dias úteis)`, contentW - 4);
+      const titulo = doc.splitTextToSize((() => { const d = String(a.descricao || '').trim(); return !d || /^aditivo/i.test(d) ? `Aditivo ${idx + 1} (+${a.dias_adicionais || 0} dias úteis)` : `Aditivo ${idx + 1} — ${d} (+${a.dias_adicionais || 0} dias úteis)`; })(), contentW - 4);
       doc.text(titulo[0], MARGIN + 2, y + 0.5);
       y += 6;
       if (titulo.length > 1) {
