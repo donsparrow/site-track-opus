@@ -475,18 +475,45 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
         y += 5;
       }
       itens.forEach(i => {
-        checkPage(6);
-        doc.setFontSize(9);
-        doc.setFont('helvetica', 'bold');
-        const txt = `• ${i.desc}: ${i.x}% -> ${i.y}% (+${i.y - i.x}% no período)`;
-        doc.text(txt, MARGIN + 2, y);
-        if (i.x < 100 && i.y >= 100) {
-          const w = doc.getTextWidth(txt);
-          doc.setTextColor(22, 163, 74);
-          doc.text('  (concluída neste período)', MARGIN + 2 + w, y);
-          doc.setTextColor(0);
-        }
+        const x0 = MARGIN + 2;
+        const maxW = contentW - 2;
+        const nums = `: ${i.x}% -> ${i.y}% `;
+        const ganho = `(+${i.y - i.x}% no período)`;
+        const concl = i.x < 100 && i.y >= 100 ? '  (concluída neste período)' : '';
+        let fs = 9;
         doc.setFont('helvetica', 'normal');
+        doc.setFontSize(fs);
+        let tailW = doc.getTextWidth(nums + ganho + concl);
+        if (tailW > maxW * 0.6) {
+          fs = 8;
+          doc.setFontSize(fs);
+          tailW = doc.getTextWidth(nums + ganho + concl);
+        }
+        doc.setFont('helvetica', 'bold');
+        const descLines: string[] = doc.splitTextToSize(`• ${i.desc}`, Math.max(maxW - tailW, maxW * 0.4));
+        const lh = fs === 9 ? 4.5 : 4;
+        checkPage(descLines.length * lh + 2);
+        descLines.forEach((ln, idx) => {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(fs);
+          doc.setTextColor(0);
+          doc.text(ln, idx === 0 ? x0 : x0 + 2, y);
+          if (idx === descLines.length - 1) {
+            let cx = (idx === 0 ? x0 : x0 + 2) + doc.getTextWidth(ln);
+            doc.setFont('helvetica', 'normal');
+            doc.text(nums, cx, y);
+            cx += doc.getTextWidth(nums);
+            doc.setTextColor(22, 163, 74);
+            doc.text(ganho, cx, y);
+            cx += doc.getTextWidth(ganho);
+            if (concl) doc.text(concl, cx, y);
+            doc.setTextColor(0);
+          } else {
+            y += lh;
+          }
+        });
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
         y += 5;
       });
     } else {
