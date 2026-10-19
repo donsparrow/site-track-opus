@@ -34,10 +34,32 @@
       var url;
       try { url = new URL(t.src || t.href || "", location.href); } catch (_) { return; }
       if (url.origin !== location.origin || url.pathname.indexOf("/assets/") !== 0) return;
+      function showFallback() {
+        function show() {
+          var root = document.getElementById("root");
+          if (!root || root.hasChildNodes()) return;
+          var main = document.createElement("main");
+          main.setAttribute("data-app-load-error", "");
+          main.className = "min-h-screen flex flex-col items-center justify-center gap-5 bg-background text-foreground p-6 text-center";
+          var heading = document.createElement("h1");
+          heading.textContent = "Não foi possível carregar o sistema";
+          var button = document.createElement("button");
+          button.textContent = "Atualizar sistema";
+          button.className = "bg-primary text-primary-foreground rounded-md px-4 py-2";
+          button.onclick = function () {
+            try { ["boot-reset", "chunk-reload", "app-boundary-reset"].forEach(function (k) { sessionStorage.removeItem(k); }); } catch (_) { return; }
+            t.dispatchEvent(new Event("error"));
+          };
+          main.append(heading, button);
+          root.appendChild(main);
+        }
+        if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", show, { once: true });
+        else show();
+      }
       try {
-        if (["boot-reset", "chunk-reload", "app-boundary-reset"].some(function (k) { return sessionStorage.getItem(k); })) return;
+        if (["boot-reset", "chunk-reload", "app-boundary-reset"].some(function (k) { return sessionStorage.getItem(k); })) { showFallback(); return; }
         sessionStorage.setItem("boot-reset", "1");
-      } catch (_) { return; }
+      } catch (_) { showFallback(); return; }
       window.dispatchEvent(new Event("app-cache-reset"));
       var jobs = [];
       if (navigator.serviceWorker) jobs.push(navigator.serviceWorker.getRegistrations().then(function (regs) {
