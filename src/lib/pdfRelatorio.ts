@@ -534,8 +534,8 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
   // Second row (5 columns: os dois campos de paralisação lado a lado)
   const prazoItems2 = [
-    { label: 'Dias Úteis Parados (período)', value: `${data.prazos.parados}` },
-    { label: 'Dias Úteis Parados (total da obra)', value: `${data.prazos.paradosTotal ?? data.prazos.parados}` },
+    { label: 'Parados (período)', value: `${data.prazos.parados}` },
+    { label: 'Parados (total da obra)', value: `${data.prazos.paradosTotal ?? data.prazos.parados}` },
     { label: 'Dias Úteis Trabalhados', value: `${data.prazos.trabalhados}` },
     { label: 'Prazo Consumido', value: `${data.prazos.percentualTempo}%`, highlight: true },
     { label: 'Progresso Físico', value: `${data.prazos.percentualExecutado}%`, highlight: true },
@@ -545,7 +545,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     const x = MARGIN + i * col2W;
     doc.setFillColor(245, 247, 250);
     doc.roundedRect(x + 1, y, col2W - 2, 14, 2, 2, 'F');
-    doc.setFontSize(7);
+    doc.setFontSize(6.5);
     doc.setTextColor(100);
     doc.text(item.label, x + col2W / 2, y + 5, { align: 'center' });
     doc.setFontSize(11);
