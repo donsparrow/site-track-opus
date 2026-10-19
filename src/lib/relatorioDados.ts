@@ -281,6 +281,7 @@ async function carregarDadosAoVivo(
     cronograma: cronogramaAtivs,
     aditivos,
     planejamentoConfigurado,
+    baselineAtividades,
     prazos: {
       contratual: prazoContratual,
       parados: diasParadosPeriodo,
