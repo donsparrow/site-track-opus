@@ -54,7 +54,7 @@ export default function Usuarios() {
           <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground">Usuários</h1>
           <p className="text-muted-foreground mt-1">Gerenciamento de acessos, permissões e vinculação com obras</p>
         </div>
-        <Button onClick={() => setNovoOpen(true)}>
+        <Button onClick={() => setNovoOpen(true)} className="w-full sm:w-auto">
           <Plus className="h-4 w-4 mr-2" />
           Novo Usuário
         </Button>

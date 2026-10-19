@@ -128,7 +128,7 @@ export default function Clientes() {
           <p className="text-muted-foreground mt-1">Gerenciamento de clientes e condomínios</p>
         </div>
         {canCreate && (
-          <Button onClick={openNew} className="bg-accent text-accent-foreground hover:bg-accent/90">
+          <Button onClick={openNew} className="w-full sm:w-auto bg-accent text-accent-foreground hover:bg-accent/90">
             <Plus className="h-4 w-4 mr-2" /> Novo Cliente
           </Button>
         )}

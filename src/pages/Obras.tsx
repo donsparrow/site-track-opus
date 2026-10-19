@@ -105,7 +105,7 @@ export default function Obras() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl md:text-3xl font-display font-bold">Obras</h1>
         {canCreate && (
-          <Button onClick={() => setNovaObraOpen(true)} className="bg-accent text-accent-foreground hover:bg-accent/90">
+          <Button onClick={() => setNovaObraOpen(true)} className="w-full sm:w-auto bg-accent text-accent-foreground hover:bg-accent/90">
             <Plus className="h-4 w-4 mr-2" /> Nova Obra
           </Button>
         )}

@@ -58,7 +58,7 @@ export default function Relatorios() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8">
         <h1 className="text-2xl md:text-3xl font-display font-bold">Relatórios</h1>
         {podeCriar && (
-          <Button onClick={() => abrir(null, false)} className="bg-accent text-accent-foreground hover:bg-accent/90">
+          <Button onClick={() => abrir(null, false)} className="w-full sm:w-auto bg-accent text-accent-foreground hover:bg-accent/90">
             <FileText className="h-4 w-4 mr-2" />Novo Relatório
           </Button>
         )}
