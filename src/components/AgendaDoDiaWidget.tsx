@@ -164,7 +164,7 @@ export default function AgendaDoDiaWidget() {
                     key={key}
                     onClick={() => navigate("/calendario")}
                     className={cn(
-                      "relative aspect-square text-xs rounded-md flex items-center justify-center transition-colors",
+                      "relative aspect-square max-md:min-h-0 max-md:p-0 text-xs rounded-md flex items-center justify-center transition-colors",
                       !inMonth && "text-muted-foreground/40",
                       inMonth && !isCurrent && "hover:bg-accent",
                       isCurrent && "bg-primary text-primary-foreground font-bold"

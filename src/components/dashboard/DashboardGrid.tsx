@@ -64,9 +64,12 @@ export default function DashboardGrid({ widgets, gridConfig, editMode, onLayoutC
     return {
       lg: fullLg,
       md: fullLg.map(l => ({ ...l, w: Math.min(l.w, 10), x: Math.min(l.x, 10 - 1) })),
-      sm: visible.map((w, i) => ({ i: w.id, x: 0, y: i * 3, w: 6, h: SIZE_PRESETS[w.size].h })),
+      sm: visible.map((w, i) => ({ i: w.id, x: 0, y: i, w: 6, h: Math.max(SIZE_PRESETS[w.size].h, 3), static: true })),
     };
   }, [visible, gridConfig]);
+
+  // Mobile (< md): stacked, full-width, read-only; sm layout is derived at runtime, never persisted.
+  const isMobile = width < 768;
 
   return (
     <div ref={containerRef} className="w-full">
@@ -79,10 +82,10 @@ export default function DashboardGrid({ widgets, gridConfig, editMode, onLayoutC
         margin={[16, 16]}
         containerPadding={[0, 0]}
         width={width}
-        isDraggable={editMode}
-        isResizable={editMode}
+        isDraggable={editMode && !isMobile}
+        isResizable={editMode && !isMobile}
         draggableHandle=".drag-handle"
-        onLayoutChange={onLayoutChange}
+        onLayoutChange={(cur, all) => { if (!isMobile) onLayoutChange(cur, all); }}
       >
         {visible.map(w => {
           const def = WIDGET_REGISTRY[w.type];
