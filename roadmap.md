@@ -1,6 +1,6 @@
 - [x] Editar aditivos com sincronização dos serviços e preservação do andamento.
 - [x] Mostrar peso em todas as linhas e conferir edição pela tabela principal.
 - [x] Executar testes e verificar o fluxo na tela.
-- [ ] Corrigir cache e recuperação de falhas de carregamento, mantendo o PWA.
-- [ ] Verificar testes e recuperação automática sem ciclos de recarga.
+- [x] Corrigir cache e recuperação de falhas de carregamento, mantendo o PWA.
+- [x] Verificar testes e recuperação automática sem ciclos de recarga.
 - [ ] Verificar duas versões publicadas (aguarda publicação autorizada).

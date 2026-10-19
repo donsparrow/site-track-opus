@@ -26,6 +26,11 @@
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png?v=2" />
   <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
+  <style>
+    .boot-load-error { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 24px; box-sizing: border-box; text-align: center; font-family: system-ui, sans-serif; }
+    .boot-load-error h1 { font-size: 20px; margin: 0; }
+    .boot-load-error button { font: inherit; padding: 12px 20px; cursor: pointer; }
+  </style>
   <script>
     window.addEventListener("error", function (e) {
       var t = e.target;
@@ -40,7 +45,7 @@
           if (!root || root.hasChildNodes()) return;
           var main = document.createElement("main");
           main.setAttribute("data-app-load-error", "");
-          main.className = "min-h-screen flex flex-col items-center justify-center gap-5 bg-background text-foreground p-6 text-center";
+          main.className = "boot-load-error bg-background text-foreground";
           var heading = document.createElement("h1");
           heading.textContent = "Não foi possível carregar o sistema";
           var button = document.createElement("button");

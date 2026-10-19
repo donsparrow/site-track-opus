@@ -40,11 +40,9 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         cleanupOutdatedCaches: true,
-        navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/~oauth/, /^\/calendario\/callback/, /^\/api\//],
-        // Navigations must reach NetworkFirst, not the precached HTML route.
-        navigateFallbackAllowlist: [],
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
+        // HTML must not be intercepted by precache, including direct / navigations.
+        // NetworkFirst below also provides offline HTML for previously visited pages.
+        globPatterns: ["**/*.{js,css,ico,png,svg,woff,woff2}"],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         runtimeCaching: [
           {
