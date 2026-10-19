@@ -101,7 +101,7 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
     <div>
       <div className="flex items-center gap-3 mb-8">
         <Button variant="outline" onClick={onVoltar}><List className="h-4 w-4 mr-2" />Voltar à Lista</Button>
-        <h1 className="text-3xl font-display font-bold">
+        <h1 className="text-2xl md:text-3xl font-display font-bold">
           {readOnly ? 'Visualizar Relatório' : (relatorioId ? 'Editar Relatório' : 'Novo Relatório')}
         </h1>
         {readOnly && <Badge variant="secondary" className="text-sm">Somente leitura</Badge>}

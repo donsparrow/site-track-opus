@@ -74,7 +74,7 @@ export default function Ferramentas() {
     <div>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Ferramentas</h1>
+          <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground">Ferramentas</h1>
           <p className="text-muted-foreground mt-1">Controle de equipamentos</p>
         </div>
         {canEdit && (

@@ -286,7 +286,7 @@ export default function ObraDetail() {
 
       <div className="flex items-start justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-display font-bold">{obra.nome}</h1>
+          <h1 className="text-2xl md:text-3xl font-display font-bold">{obra.nome}</h1>
           <div className="flex items-center gap-3 mt-1 flex-wrap">
             <Badge variant="secondary">{statusLabels[obra.status] || obra.status}</Badge>
             {obra.clientes?.nome && <span className="text-sm text-muted-foreground">{obra.clientes.nome}</span>}

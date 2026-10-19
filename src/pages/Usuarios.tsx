@@ -49,9 +49,9 @@ export default function Usuarios() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Usuários</h1>
+          <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground">Usuários</h1>
           <p className="text-muted-foreground mt-1">Gerenciamento de acessos, permissões e vinculação com obras</p>
         </div>
         <Button onClick={() => setNovoOpen(true)}>

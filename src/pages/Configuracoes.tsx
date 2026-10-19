@@ -96,7 +96,7 @@ export default function Configuracoes() {
 
   return (
     <div>
-      <h1 className="text-3xl font-display font-bold mb-8">Configurações da Empresa</h1>
+      <h1 className="text-2xl md:text-3xl font-display font-bold mb-8">Configurações da Empresa</h1>
       <Card className="max-w-2xl">
         <CardHeader><CardTitle className="font-display flex items-center gap-2"><Settings className="h-5 w-5" />Dados da Empresa</CardTitle></CardHeader>
         <CardContent>

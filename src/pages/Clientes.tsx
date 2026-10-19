@@ -122,9 +122,9 @@ export default function Clientes() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Clientes</h1>
+          <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground">Clientes</h1>
           <p className="text-muted-foreground mt-1">Gerenciamento de clientes e condomínios</p>
         </div>
         {canCreate && (
