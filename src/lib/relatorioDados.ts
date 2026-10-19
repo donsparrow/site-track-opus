@@ -14,6 +14,10 @@ export interface PrazosRelatorio {
   dataInicioReal: string;
   percentualTempo: number;
   percentualExecutado: number;
+  /** Soma dos dias de aditivos (ausente em snapshots antigos). */
+  diasAditivos?: number;
+  /** Prazo contratual sem aditivos (ausente em snapshots antigos). */
+  contratualBase?: number;
 }
 
 export interface DadosRelatorio {
@@ -224,6 +228,8 @@ async function carregarDadosAoVivo(
       dataInicioReal,
       percentualTempo,
       percentualExecutado,
+      diasAditivos,
+      contratualBase: prazoContratual - diasAditivos,
     },
   };
 }
