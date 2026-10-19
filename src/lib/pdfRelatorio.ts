@@ -42,6 +42,7 @@ interface RelatorioPDFData {
   diarios: any[];
   equipe: any[];
   atividades: any[];
+  baselineAtividades?: Record<string, number> | null;
   materiais: any[];
   ocorrencias: any[];
   paralisacoes?: { motivo: string; data_inicio: string; data_fim: string | null; total_dias: number | null; diario_id?: string }[];
