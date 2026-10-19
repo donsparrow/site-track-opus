@@ -68,7 +68,7 @@ export function CabecalhoDiario({ diario, editMode, canEditDelete, onEnterEdit, 
         <CardHeader className="pb-3">
           {editMode ? (
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs">Data</Label>
                   <Input type="date" value={form.data} max={hojeLocal()} disabled={!!diario.relatorio_id} onChange={(e) => setForm({ ...form, data: e.target.value })} />
@@ -88,7 +88,7 @@ export function CabecalhoDiario({ diario, editMode, canEditDelete, onEnterEdit, 
                   </Select>
                 </div>
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <Label className="text-xs">Temperatura</Label>
                   <Input placeholder="Ex: 28°C" value={form.temperatura} onChange={(e) => setForm({ ...form, temperatura: e.target.value })} />

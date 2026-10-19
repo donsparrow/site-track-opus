@@ -27,7 +27,7 @@ export default function CronogramaHeader({
       </div>
       <div className="flex gap-2">
         <Select value={obraId} onValueChange={onSelectObra}>
-          <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-full sm:w-[200px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             {obras.map(o => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
           </SelectContent>

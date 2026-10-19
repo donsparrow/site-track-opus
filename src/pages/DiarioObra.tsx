@@ -33,7 +33,7 @@ export default function DiarioObra() {
 
   return (
     <div>
-      <h1 className="text-3xl font-display font-bold mb-8">Diário de Obra</h1>
+      <h1 className="text-2xl md:text-3xl font-display font-bold mb-8">Diário de Obra</h1>
 
       <div className="flex gap-4 mb-6">
         <div className="max-w-sm flex-1">

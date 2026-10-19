@@ -38,7 +38,7 @@ export default function AditivoDialog({ open, onOpenChange, form, setForm, onSav
             <Label>Descrição *</Label>
             <Input value={form.descricao} onChange={e => setForm(f => ({ ...f, descricao: e.target.value }))} placeholder="Ex: Recuperação estrutural adicional" />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label>Dias Adicionais (úteis) *</Label>
               <Input

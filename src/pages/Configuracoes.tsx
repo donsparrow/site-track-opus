@@ -96,27 +96,27 @@ export default function Configuracoes() {
 
   return (
     <div>
-      <h1 className="text-3xl font-display font-bold mb-8">Configurações da Empresa</h1>
+      <h1 className="text-2xl md:text-3xl font-display font-bold mb-8">Configurações da Empresa</h1>
       <Card className="max-w-2xl">
         <CardHeader><CardTitle className="font-display flex items-center gap-2"><Settings className="h-5 w-5" />Dados da Empresa</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={handleSave} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><Label>Nome da Empresa *</Label><Input value={form.nome_empresa} onChange={e => setForm({ ...form, nome_empresa: e.target.value })} required /></div>
               <div><Label>CNPJ</Label><Input value={form.cnpj} onChange={e => setForm({ ...form, cnpj: e.target.value })} /></div>
             </div>
             <div><Label>Endereço</Label><Input value={form.endereco} onChange={e => setForm({ ...form, endereco: e.target.value })} /></div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><Label>Telefone</Label><Input value={form.telefone} onChange={e => setForm({ ...form, telefone: e.target.value })} /></div>
               <div><Label>Email</Label><Input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div><Label>Site</Label><Input value={form.site} onChange={e => setForm({ ...form, site: e.target.value })} placeholder="www.engenhariajf.com.br" /></div>
               <div><Label>Instagram</Label><Input value={form.instagram} onChange={e => setForm({ ...form, instagram: e.target.value })} placeholder="@engenhariajf" /></div>
             </div>
             <div className="border-t pt-4 mt-4">
               <h3 className="text-sm font-semibold text-muted-foreground mb-3">Responsável Legal</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div><Label>Nome do Responsável Legal</Label><Input value={form.responsavel_legal} onChange={e => setForm({ ...form, responsavel_legal: e.target.value })} placeholder="Nome completo" /></div>
                 <div><Label>CPF do Responsável Legal</Label><Input value={form.cpf_responsavel_legal} onChange={e => setForm({ ...form, cpf_responsavel_legal: e.target.value })} placeholder="000.000.000-00" /></div>
               </div>

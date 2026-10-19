@@ -38,7 +38,7 @@ export function DiarioDetalhe({
       />
 
       <Tabs defaultValue="equipe">
-        <TabsList className="grid grid-cols-6 w-full">
+        <TabsList className="flex w-full overflow-x-auto justify-start md:grid md:grid-cols-6">
           <TabsTrigger value="equipe" className="text-xs"><Users className="h-3 w-3 mr-1" />Equipe</TabsTrigger>
           <TabsTrigger value="atividades" className="text-xs"><Wrench className="h-3 w-3 mr-1" />Atividades</TabsTrigger>
           <TabsTrigger value="materiais" className="text-xs"><Package className="h-3 w-3 mr-1" />Materiais</TabsTrigger>

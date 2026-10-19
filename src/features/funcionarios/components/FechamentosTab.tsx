@@ -149,7 +149,7 @@ export default function FechamentosTab({
         <div className="space-y-1">
           <Label className="text-xs">Funcionário</Label>
           <Select value={funcionarioId ?? ''} onValueChange={(v) => onChangeFuncionario(v)}>
-            <SelectTrigger className="w-[240px]"><SelectValue placeholder="Selecione o funcionário" /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-[240px]"><SelectValue placeholder="Selecione o funcionário" /></SelectTrigger>
             <SelectContent>
               {funcionarios.map((f) => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
             </SelectContent>

@@ -90,7 +90,7 @@ export default function LancamentosTab({
             value={filtroFuncionario ?? TODOS}
             onValueChange={(v) => onChangeFiltro(v === TODOS ? null : v)}
           >
-            <SelectTrigger className="w-[220px]"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-[220px]"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value={TODOS}>Todos</SelectItem>
               {funcionarios.map((f) => <SelectItem key={f.id} value={f.id}>{f.nome}</SelectItem>)}
@@ -99,11 +99,11 @@ export default function LancamentosTab({
         </div>
         <div className="space-y-1">
           <Label className="text-xs">De</Label>
-          <Input type="date" className="w-[160px]" value={inicio} onChange={(e) => onChangePeriodo(e.target.value, fim)} />
+          <Input type="date" className="w-full sm:w-[160px]" value={inicio} onChange={(e) => onChangePeriodo(e.target.value, fim)} />
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Até</Label>
-          <Input type="date" className="w-[160px]" value={fim} onChange={(e) => onChangePeriodo(inicio, e.target.value)} />
+          <Input type="date" className="w-full sm:w-[160px]" value={fim} onChange={(e) => onChangePeriodo(inicio, e.target.value)} />
         </div>
         {canEdit && (
           <Button className="ml-auto" onClick={() => setAberto((v) => !v)}>

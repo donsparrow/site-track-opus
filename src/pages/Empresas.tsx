@@ -240,7 +240,7 @@ export default function Empresas() {
           </DialogHeader>
           {selected && (
             <div className="space-y-3 text-sm">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div><span className="text-muted-foreground">CNPJ:</span> {selected.cnpj || '—'}</div>
                 <div><span className="text-muted-foreground">Email:</span> {selected.email || '—'}</div>
                 <div><span className="text-muted-foreground">Plano:</span> <Badge variant="secondary" className="capitalize">{selected.plano}</Badge></div>

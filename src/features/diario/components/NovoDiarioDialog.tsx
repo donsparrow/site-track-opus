@@ -58,13 +58,13 @@ export function NovoDiarioDialog({ open, onOpenChange, saving, onSubmit }: Props
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label>Temperatura</Label>
               <Input placeholder="Ex: 28°C" value={form.temperatura} onChange={(e) => setForm({ ...form, temperatura: e.target.value })} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label>Horário Início</Label>
               <Input type="time" value={form.horario_inicio} onChange={(e) => setForm({ ...form, horario_inicio: e.target.value })} />

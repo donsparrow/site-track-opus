@@ -102,10 +102,10 @@ export default function Obras() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-display font-bold">Obras</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl md:text-3xl font-display font-bold">Obras</h1>
         {canCreate && (
-          <Button onClick={() => setNovaObraOpen(true)} className="bg-accent text-accent-foreground hover:bg-accent/90">
+          <Button onClick={() => setNovaObraOpen(true)} className="w-full sm:w-auto bg-accent text-accent-foreground hover:bg-accent/90">
             <Plus className="h-4 w-4 mr-2" /> Nova Obra
           </Button>
         )}
@@ -178,7 +178,7 @@ export default function Obras() {
                 <Label>Endereço *</Label>
                 <Input value={editObra.endereco || ''} onChange={e => setEditObra({ ...editObra, endereco: e.target.value })} />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>Responsável Técnico *</Label>
                   <Input value={editObra.responsavel_tecnico || ''} onChange={e => setEditObra({ ...editObra, responsavel_tecnico: e.target.value })} />
@@ -210,7 +210,7 @@ export default function Obras() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>Data de Início *</Label>
                   <Input type="date" value={editObra.data_inicio || ''} onChange={e => handleEditDateChange('data_inicio', e.target.value)} />

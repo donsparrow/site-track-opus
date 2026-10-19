@@ -73,7 +73,7 @@ export default function FuncionarioFormDialog({ open, onOpenChange, funcionario,
             <Input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Nome completo" />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Função</Label>
               <Input value={funcao} onChange={(e) => setFuncao(e.target.value)} placeholder="Pedreiro" />
@@ -84,7 +84,7 @@ export default function FuncionarioFormDialog({ open, onOpenChange, funcionario,
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label>Valor da diária (R$)</Label>
               <Input type="number" min="0" step="0.01" value={valorDiaria} onChange={(e) => setValorDiaria(e.target.value)} />
