@@ -7,7 +7,10 @@ export { calcBusinessDays };
 
 export interface PrazosRelatorio {
   contratual: number;
+  /** Dias parados no período do relatório. */
   parados: number;
+  /** Dias parados cumulativos de toda a obra até o fim do relatório (ausente em snapshots antigos). */
+  paradosTotal?: number;
   ajustado: number;
   trabalhados: number;
   saldo: number;
@@ -197,10 +200,13 @@ async function carregarDadosAoVivo(
   const diasAditivos = aditivos.reduce((s, a) => s + (a.dias_adicionais || 0), 0);
   const prazoContratual = prazoContratualBase + diasAditivos;
 
-  // Dias parados cumulativos: paralisações de TODOS os diários da obra até a data fim
-  // do relatório (inclusive), não apenas do período. A lista retornada em `paralisacoes`
-  // continua sendo a do período.
-  let diasParados = 0;
+  // Dias parados NO PERÍODO: paralisações dos diários do relatório (lista `pa`).
+  const diasParadosPeriodo = (pa.data || []).reduce((s: number, p: any) => s + (p.total_dias || 0), 0);
+
+  // Dias parados TOTAL da obra (cumulativo): paralisações de TODOS os diários da obra até a
+  // data fim do relatório (inclusive), não apenas do período. A lista retornada em
+  // `paralisacoes` continua sendo a do período.
+  let diasParadosTotal = 0;
   if (fim) {
     const { data: diariosAteFim } = await supabase
       .from('diario_obra')
@@ -213,11 +219,11 @@ async function carregarDadosAoVivo(
         .from('diario_paralisacoes')
         .select('total_dias')
         .in('diario_id', idsAteFim);
-      diasParados = (paralAteFim || []).reduce((s: number, p: any) => s + (p.total_dias || 0), 0);
+      diasParadosTotal = (paralAteFim || []).reduce((s: number, p: any) => s + (p.total_dias || 0), 0);
     }
   }
   const diasTrabalhados = dataInicioReal && fim ? calcBusinessDays(dataInicioReal, fim) : 0;
-  const prazoAjustado = prazoContratual + diasParados;
+  const prazoAjustado = prazoContratual + diasParadosTotal;
   const saldoPrazo = prazoAjustado - diasTrabalhados;
   const percentualTempo = prazoContratual > 0 ? Math.round((diasTrabalhados / prazoContratual) * 100) : 0;
 
@@ -239,7 +245,8 @@ async function carregarDadosAoVivo(
     planejamentoConfigurado,
     prazos: {
       contratual: prazoContratual,
-      parados: diasParados,
+      parados: diasParadosPeriodo,
+      paradosTotal: diasParadosTotal,
       ajustado: prazoAjustado,
       trabalhados: diasTrabalhados,
       saldo: saldoPrazo,
