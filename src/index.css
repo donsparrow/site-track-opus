@@ -147,7 +147,7 @@
   body {
     -webkit-text-size-adjust: 100%;
   }
-  @media (pointer: coarse) {
+  @media (pointer: coarse) and (max-width: 767px) {
     [data-mobile-touch] {
       min-height: 44px;
     }

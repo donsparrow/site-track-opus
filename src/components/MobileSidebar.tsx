@@ -54,9 +54,9 @@ export default function MobileSidebar() {
 
   return (
     <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-sidebar border-b border-sidebar-border">
-      <div className="flex items-center justify-between px-4 py-3">
+      <div className="flex items-center justify-between h-14 px-4 py-2">
         <div className="flex items-center gap-2">
-          <img src={logoSistema} alt="J&A GestãoPro" className="h-12 w-auto max-w-[100px] rounded-lg object-contain p-0.5" />
+          <img src={logoSistema} alt="J&A GestãoPro" className="h-9 w-auto max-w-[100px] rounded-lg object-contain p-0.5" />
           <h1 className="font-display text-sm font-bold text-sidebar-foreground">{empresaNome}</h1>
         </div>
 
@@ -66,8 +66,8 @@ export default function MobileSidebar() {
               <Menu className="h-6 w-6" />
             </button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-72 p-0 bg-sidebar border-sidebar-border">
-            <div className="flex items-center gap-3 px-6 py-5 border-b border-sidebar-border">
+          <SheetContent side="left" className="w-72 p-0 bg-sidebar border-sidebar-border flex flex-col h-full">
+            <div className="flex items-center gap-3 px-6 py-5 border-b shrink-0 border-sidebar-border">
               <img src={logoSistema} alt="J&A GestãoPro" className="h-10 w-auto max-w-[80px] rounded-lg object-contain" />
               <div>
                 <h1 className="font-display text-base font-bold text-sidebar-foreground">{empresaNome}</h1>
@@ -75,7 +75,7 @@ export default function MobileSidebar() {
               </div>
             </div>
 
-            <nav className="flex-1 px-3 py-4 space-y-1">
+            <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
               {visibleItems.map(({ to, label, icon: Icon }) => (
                 <NavLink
                   key={to}
@@ -96,7 +96,7 @@ export default function MobileSidebar() {
               ))}
             </nav>
 
-            <div className="border-t border-sidebar-border px-3 py-4">
+            <div className="shrink-0 border-t border-sidebar-border px-3 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
               <div className="mb-3 px-3">
                 <p className="text-xs text-sidebar-foreground/60 truncate">{user?.email}</p>
               </div>
