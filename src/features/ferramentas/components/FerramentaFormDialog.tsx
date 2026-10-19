@@ -62,7 +62,7 @@ export default function FerramentaFormDialog({ open, onOpenChange, editFerrament
           <DialogTitle>{editFerramenta ? 'Editar Ferramenta' : 'Nova Ferramenta'}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-2">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Nome do Equipamento *</Label>
               <Input value={values.nome} onChange={(e) => setValues((v) => ({ ...v, nome: e.target.value }))} placeholder="Ex: Furadeira Bosch" />
@@ -72,7 +72,7 @@ export default function FerramentaFormDialog({ open, onOpenChange, editFerrament
               <Input value={values.numeroCadastro} onChange={(e) => setValues((v) => ({ ...v, numeroCadastro: e.target.value }))} placeholder="Ex: FER-001" />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Tipo</Label>
               <Select

@@ -178,7 +178,7 @@ export default function Obras() {
                 <Label>Endereço *</Label>
                 <Input value={editObra.endereco || ''} onChange={e => setEditObra({ ...editObra, endereco: e.target.value })} />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>Responsável Técnico *</Label>
                   <Input value={editObra.responsavel_tecnico || ''} onChange={e => setEditObra({ ...editObra, responsavel_tecnico: e.target.value })} />
@@ -210,7 +210,7 @@ export default function Obras() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label>Data de Início *</Label>
                   <Input type="date" value={editObra.data_inicio || ''} onChange={e => handleEditDateChange('data_inicio', e.target.value)} />

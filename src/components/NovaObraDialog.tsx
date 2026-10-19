@@ -94,7 +94,7 @@ export default function NovaObraDialog({ open, onOpenChange, onCreated }: Props)
             <Label>Endereço</Label>
             <Input value={endereco} onChange={(e) => setEndereco(e.target.value)} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label>Responsável Técnico</Label>
               <Input value={responsavel} onChange={(e) => setResponsavel(e.target.value)} />
@@ -128,7 +128,7 @@ export default function NovaObraDialog({ open, onOpenChange, onCreated }: Props)
             <Label>CREA/CAU</Label>
             <Input value={creaCau} onChange={(e) => setCreaCau(e.target.value)} placeholder="Ex: CREA-MG 123456/D" />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label>Data de Início *</Label>
               <Input type="date" value={dataInicio} onChange={(e) => {

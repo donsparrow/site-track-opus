@@ -34,7 +34,7 @@ export default function AtividadeDialog({
           <DialogTitle>{editingAtividade ? 'Editar Atividade' : 'Nova Atividade'}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label>Nome da Atividade</Label>
               <Input value={formData.nome_atividade} onChange={e => setFormData(f => ({ ...f, nome_atividade: e.target.value }))} />
@@ -54,7 +54,7 @@ export default function AtividadeDialog({
             <Label>Descrição (opcional)</Label>
             <Textarea rows={2} value={formData.descricao} onChange={e => setFormData(f => ({ ...f, descricao: e.target.value }))} />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label>Data Início</Label>
               <Input type="date" value={formData.data_inicio} onChange={e => setFormData(f => ({ ...f, data_inicio: e.target.value }))} />
@@ -64,7 +64,7 @@ export default function AtividadeDialog({
               <Input type="date" value={formData.data_fim} onChange={e => setFormData(f => ({ ...f, data_fim: e.target.value }))} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label>Progresso (%)</Label>
               <Input type="number" min={0} max={100} value={formData.percentual_concluido} onChange={e => setFormData(f => ({ ...f, percentual_concluido: Math.min(100, Math.max(0, Number(e.target.value))) }))} />
