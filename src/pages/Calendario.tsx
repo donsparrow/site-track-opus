@@ -257,8 +257,9 @@ function MonthGrid({
   onEventClick: (e: GoogleEvent) => void;
   onDayClick: (d: Date) => void;
 }) {
-  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-  const activeDay = selectedDay && isSameMonth(selectedDay, cursor) ? selectedDay : cursor;
+  const [selection, setSelection] = useState<{ day: Date; month: string } | null>(null);
+  const monthKey = format(cursor, "yyyy-MM");
+  const activeDay = selection?.month === monthKey ? selection.day : cursor;
   const days: Date[] = [];
   for (let d = range.start; d <= range.end; d = addDays(d, 1)) days.push(d);
   const weekdays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -279,7 +280,7 @@ function MonthGrid({
                 aria-label={format(d, "EEEE, d 'de' MMMM yyyy", { locale: ptBR })}
                 aria-pressed={selected}
                 aria-current={isSameDay(d, new Date()) ? "date" : undefined}
-                onClick={() => setSelectedDay(d)}
+                onClick={() => setSelection({ day: d, month: monthKey })}
                 className={`relative flex aspect-square min-h-0 min-w-0 items-center justify-center rounded-md text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                   selected ? "bg-primary text-primary-foreground" : "hover:bg-accent"
                 } ${!isSameMonth(d, cursor) ? "opacity-40" : ""}`}
