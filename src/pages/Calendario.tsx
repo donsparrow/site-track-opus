@@ -166,8 +166,8 @@ export default function Calendario() {
       </div>
 
       {/* Toolbar */}
-      <Card className="p-3 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
+      <Card className="p-3 flex flex-col sm:flex-row flex-wrap items-center justify-between gap-3">
+        <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
           <Button variant="outline" size="icon" onClick={() => navigateCursor(-1)}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -175,23 +175,23 @@ export default function Calendario() {
           <Button variant="outline" size="icon" onClick={() => navigateCursor(1)}>
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <span className="ml-2 font-semibold capitalize">{title}</span>
+          <span className="ml-2 min-w-0 font-semibold capitalize max-sm:text-sm max-sm:break-words">{title}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
+        <div className="flex w-full flex-col items-center gap-2 sm:w-auto sm:flex-row">
+          <div className="relative w-full sm:w-auto">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
               placeholder="Buscar eventos"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-7 h-9 w-48"
+              className="pl-7 h-9 w-full sm:w-48"
             />
           </div>
-          <Tabs value={view} onValueChange={(v) => setView(v as ViewMode)}>
-            <TabsList>
-              <TabsTrigger value="month">Mês</TabsTrigger>
-              <TabsTrigger value="week">Semana</TabsTrigger>
-              <TabsTrigger value="day">Dia</TabsTrigger>
+          <Tabs className="w-full sm:w-auto" value={view} onValueChange={(v) => setView(v as ViewMode)}>
+            <TabsList className="w-full sm:w-auto">
+              <TabsTrigger className="flex-1 sm:flex-none" value="month">Mês</TabsTrigger>
+              <TabsTrigger className="flex-1 sm:flex-none" value="week">Semana</TabsTrigger>
+              <TabsTrigger className="flex-1 sm:flex-none" value="day">Dia</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -257,11 +257,43 @@ function MonthGrid({
   onEventClick: (e: GoogleEvent) => void;
   onDayClick: (d: Date) => void;
 }) {
+  const [selection, setSelection] = useState<{ day: Date; month: string } | null>(null);
+  const monthKey = format(cursor, "yyyy-MM");
+  const activeDay = selection?.month === monthKey ? selection.day : cursor;
   const days: Date[] = [];
   for (let d = range.start; d <= range.end; d = addDays(d, 1)) days.push(d);
   const weekdays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
   return (
-    <div>
+    <>
+      <div className="space-y-4 md:hidden">
+        <div className="grid grid-cols-7 gap-1">
+          {weekdays.map(w => (
+            <div key={w} className="py-2 text-center text-xs font-semibold text-muted-foreground">{w}</div>
+          ))}
+          {days.map(d => {
+            const dayEvent = events.find(e => isSameDay(eventStart(e), d));
+            const selected = isSameDay(d, activeDay);
+            return (
+              <button
+                key={d.toISOString()}
+                type="button"
+                aria-label={format(d, "EEEE, d 'de' MMMM yyyy", { locale: ptBR })}
+                aria-pressed={selected}
+                aria-current={isSameDay(d, new Date()) ? "date" : undefined}
+                onClick={() => setSelection({ day: d, month: monthKey })}
+                className={`relative flex aspect-square min-h-0 min-w-0 items-center justify-center rounded-md text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                  selected ? "bg-primary text-primary-foreground" : "hover:bg-accent"
+                } ${!isSameMonth(d, cursor) ? "opacity-40" : ""}`}
+              >
+                {format(d, "d")}
+                {dayEvent && <span className="absolute bottom-1 h-1 w-1 rounded-full" style={{ background: eventColor(dayEvent) }} />}
+              </button>
+            );
+          })}
+        </div>
+        <WeekDayList days={[activeDay]} events={events} onEventClick={onEventClick} />
+      </div>
+      <div className="hidden md:block">
       <div className="grid grid-cols-7 mb-2">
         {weekdays.map(w => (
           <div key={w} className="text-xs font-semibold text-muted-foreground text-center py-2">{w}</div>
@@ -305,7 +337,8 @@ function MonthGrid({
           );
         })}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -345,7 +378,7 @@ function WeekDayList({
                     <div className="w-1 self-stretch rounded-full" style={{ background: eventColor(e) }} />
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{e.summary ?? "(sem título)"}</div>
-                      <div className="text-xs text-muted-foreground flex items-center gap-3 mt-0.5">
+                      <div className="text-xs text-muted-foreground flex items-center gap-3 mt-0.5 max-md:flex-wrap max-md:gap-1">
                         <span>
                           {e.start.dateTime
                             ? `${format(eventStart(e), "HH:mm")} – ${format(eventEnd(e), "HH:mm")}`

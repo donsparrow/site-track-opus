@@ -286,7 +286,7 @@ export default function ObraDetail() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-display font-bold">{obra.nome}</h1>
+          <h1 className="text-2xl md:text-3xl font-display font-bold break-words">{obra.nome}</h1>
           <div className="flex items-center gap-3 mt-1 flex-wrap">
             <Badge variant="secondary">{statusLabels[obra.status] || obra.status}</Badge>
             {obra.clientes?.nome && <span className="text-sm text-muted-foreground">{obra.clientes.nome}</span>}
@@ -299,7 +299,7 @@ export default function ObraDetail() {
             )}
           </div>
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap w-full sm:w-auto">
           <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={exportingPdf}>
             <Download className="h-4 w-4 mr-1" /> {exportingPdf ? 'Exportando...' : 'Exportar PDF'}
           </Button>
@@ -318,7 +318,7 @@ export default function ObraDetail() {
       </div>
 
       {/* Prazo + Financial summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8 [&>*]:min-w-0 max-md:gap-3 max-md:[&_p]:truncate">
         <Card>
           <CardContent className="pt-4 pb-4">
             <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Prazo Contratual</p>

@@ -34,6 +34,55 @@ export default function TabelaReceitas({
 }: Props) {
   const { parcelas } = useParcelas(expandedReceita);
 
+  const renderActions = (r: ReceitaComObra) => (
+    <div className="flex items-center gap-1">
+                          <Button size="icon" variant="ghost" className="h-7 w-7"
+                            onClick={(e) => { e.stopPropagation(); onEditarReceita(r); }} title="Editar">
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          {isAdmin && (
+                            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive"
+                              onClick={(e) => { e.stopPropagation(); onExcluirReceita(r.id); }} title="Excluir">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
+  );
+
+  const renderAttachments = (r: ReceitaComObra) => (
+    <div className="flex items-center gap-1">
+                        <AnexosInline anexos={anexos} registroId={r.id} tipoRegistro="receita" onPreview={onPreviewAnexo} />
+                        {canEdit && (
+                          <Button size="icon" variant="ghost" className="h-6 w-6 ml-1"
+                            onClick={(e) => { e.stopPropagation(); onAnexar(r.id); }} title="Anexar arquivo">
+                            <Upload className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        )}
+                      </div>
+  );
+
+  const renderParcelaActions = (p: Parcela) => {
+    const st = statusParcela(p);
+    return (
+    <div className="flex items-center gap-1">
+                                        {st !== 'recebido' && (
+                                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onReceberParcela(p)}>
+                                            <Check className="h-3 w-3 mr-1" /> Receber
+                                          </Button>
+                                        )}
+                                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEditarParcela(p)} title="Editar">
+                                          <Pencil className="h-3.5 w-3.5" />
+                                        </Button>
+                                        {isAdmin && (
+                                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive"
+                                            onClick={() => onExcluirParcela(p)} title="Excluir">
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                          </Button>
+                                        )}
+                                      </div>
+    );
+  };
+
   return (
     <>
       <div className="flex justify-between items-center mb-4">
@@ -46,7 +95,8 @@ export default function TabelaReceitas({
       </div>
       <Card>
         <CardContent className="p-0">
-          <Table>
+          <div className="hidden md:block">
+<Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-8"></TableHead>
@@ -72,30 +122,11 @@ export default function TabelaReceitas({
                     <TableCell className="capitalize">{r.forma_pagamento}</TableCell>
                     <TableCell className="data-tech">{r.numero_parcelas}x</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <AnexosInline anexos={anexos} registroId={r.id} tipoRegistro="receita" onPreview={onPreviewAnexo} />
-                        {canEdit && (
-                          <Button size="icon" variant="ghost" className="h-6 w-6 ml-1"
-                            onClick={(e) => { e.stopPropagation(); onAnexar(r.id); }} title="Anexar arquivo">
-                            <Upload className="h-3.5 w-3.5 text-muted-foreground" />
-                          </Button>
-                        )}
-                      </div>
+                      {renderAttachments(r)}
                     </TableCell>
                     {canEdit && (
                       <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button size="icon" variant="ghost" className="h-7 w-7"
-                            onClick={(e) => { e.stopPropagation(); onEditarReceita(r); }} title="Editar">
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          {isAdmin && (
-                            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive"
-                              onClick={(e) => { e.stopPropagation(); onExcluirReceita(r.id); }} title="Excluir">
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          )}
-                        </div>
+                        {renderActions(r)}
                       </TableCell>
                     )}
                   </TableRow>
@@ -131,22 +162,7 @@ export default function TabelaReceitas({
                                   </TableCell>
                                   {canEdit && (
                                     <TableCell>
-                                      <div className="flex items-center gap-1">
-                                        {st !== 'recebido' && (
-                                          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onReceberParcela(p)}>
-                                            <Check className="h-3 w-3 mr-1" /> Receber
-                                          </Button>
-                                        )}
-                                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEditarParcela(p)} title="Editar">
-                                          <Pencil className="h-3.5 w-3.5" />
-                                        </Button>
-                                        {isAdmin && (
-                                          <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive"
-                                            onClick={() => onExcluirParcela(p)} title="Excluir">
-                                            <Trash2 className="h-3.5 w-3.5" />
-                                          </Button>
-                                        )}
-                                      </div>
+                                      {renderParcelaActions(p)}
                                     </TableCell>
                                   )}
                                 </TableRow>
@@ -168,6 +184,26 @@ export default function TabelaReceitas({
               )}
             </TableBody>
           </Table>
+</div>
+<div className="md:hidden space-y-3 p-3">
+ {receitas.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma receita cadastrada</p>}
+ {receitas.map((r) => (
+ <Card key={r.id}><CardContent className="p-4 space-y-3">
+ <h3 className="font-semibold break-words">{r.descricao}</h3>
+ <div className="space-y-1 text-sm break-words"><p>Obra: {r.obras?.nome || '—'}</p><p className="text-success font-medium">Valor: {fmt(Number(r.valor_total))}</p><p className="capitalize">{r.forma_pagamento} · {r.numero_parcelas}x</p></div>
+ {renderAttachments(r)}{canEdit && renderActions(r)}
+<Button variant="outline" size="sm" aria-expanded={expandedReceita === r.id} onClick={() => onToggleReceita(r.id)}>{expandedReceita === r.id ? 'Ocultar parcelas' : 'Ver parcelas'}</Button>{expandedReceita === r.id && <div className="space-y-2">
+{parcelas.map(p => <Card key={p.id}><CardContent className="p-3 space-y-2">
+<h4 className="font-medium">Parcela {p.numero_parcela} — {fmt(Number(p.valor))}</h4>
+<p className="text-sm">Vencimento: {fmtData(p.data_vencimento)}</p>
+<p className="text-sm">Recebimento: {fmtData(p.data_recebimento)}</p>
+<p className="text-sm capitalize">{p.forma_pagamento || '—'} · {statusParcela(p)}</p>
+{canEdit && renderParcelaActions(p)}
+</CardContent></Card>)}
+</div>}
+ </CardContent></Card>
+ ))}
+ </div>
         </CardContent>
       </Card>
     </>

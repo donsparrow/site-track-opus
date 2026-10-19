@@ -100,6 +100,17 @@ export default function Obras() {
     setEditObra(updated);
   };
 
+  const renderActions = (obra: (typeof obras)[number]) => (
+    <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => openEdit(obra)}>
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleDelete(obra.id)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -113,7 +124,8 @@ export default function Obras() {
 
       <Card>
         <CardContent className="p-0">
-          <Table>
+          <div className="hidden md:block">
+<Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
@@ -143,20 +155,24 @@ export default function Obras() {
                   </TableCell>
                   {canManage && (
                     <TableCell>
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => openEdit(obra)}>
-                          <Pencil className="h-3 w-3" />
-                        </Button>
-                        <Button size="sm" variant="destructive" onClick={() => handleDelete(obra.id)}>
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
+                      {renderActions(obra)}
                     </TableCell>
                   )}
                 </TableRow>
               ))}
             </TableBody>
           </Table>
+</div>
+<div className="md:hidden space-y-3 p-3">
+ {obras.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma obra cadastrada</p>}
+ {obras.map((obra) => (
+ <Card key={obra.id}><CardContent className="p-4 space-y-3">
+ <h3 className="font-semibold break-words">{obra.nome}</h3>
+ <div className="space-y-1 text-sm break-words"><p>Cliente: {obra.clientes?.nome || '—'}</p><p>Endereço: {obra.endereco || '—'}</p><Badge variant="outline">{statusLabels[obra.status] || obra.status}</Badge></div>
+ {canManage && renderActions(obra)}
+ </CardContent></Card>
+ ))}
+ </div>
         </CardContent>
       </Card>
 

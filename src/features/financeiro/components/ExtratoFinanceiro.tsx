@@ -240,7 +240,8 @@ export default function ExtratoFinanceiro({ parcelasRecebidas, despesas }: Extra
 
       <Card>
         <CardContent className="p-0">
-          <Table>
+          <div className="hidden md:block">
+<Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Data</TableHead>
@@ -292,6 +293,17 @@ export default function ExtratoFinanceiro({ parcelasRecebidas, despesas }: Extra
               )}
             </TableBody>
           </Table>
+</div>
+<div className="md:hidden space-y-3 p-3">
+{dataInicio && <Card><CardContent className="p-4 text-sm">Saldo anterior ao período: {fmt(saldoAnterior)}</CardContent></Card>}
+{extrato.map((item, idx) => <Card key={idx}><CardContent className="p-4 space-y-2">
+<h3 className="font-semibold break-words">{item.descricao}</h3>
+<p className="text-sm text-muted-foreground break-words">{item.obra} · {new Date(item.data + 'T00:00:00').toLocaleDateString('pt-BR')}</p>
+<p className={`font-medium ${item.tipo === 'receita' ? 'text-success' : 'text-destructive'}`}>{item.tipo === 'receita' ? 'Receita: +' : 'Despesa: -'}{fmt(item.valor)}</p>
+<p className={`text-sm font-bold ${item.saldo < 0 ? 'text-destructive' : ''}`}>Saldo: {fmt(item.saldo)}</p>
+</CardContent></Card>)}
+{extrato.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma movimentação encontrada</p>}
+</div>
         </CardContent>
       </Card>
     </div>

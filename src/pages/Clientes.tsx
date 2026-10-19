@@ -120,6 +120,19 @@ export default function Clientes() {
     setDeleteDialogOpen(true);
   };
 
+  const renderActions = (c: (typeof clientes)[number]) => (
+    <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => openEdit(c)}>
+                            <Pencil className="h-4 w-4 mr-1" /> Editar
+                          </Button>
+                          {canDelete && (
+                            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => openDelete(c)}>
+                              <Trash2 className="h-4 w-4 mr-1" /> Excluir
+                            </Button>
+                          )}
+                        </div>
+  );
+
   return (
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8">
@@ -148,7 +161,8 @@ export default function Clientes() {
       ) : (
         <Card>
           <CardContent className="p-0">
-            <Table>
+            <div className="hidden md:block">
+<Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
@@ -169,22 +183,24 @@ export default function Clientes() {
                     <TableCell>{c.email || '—'}</TableCell>
                     {canEditCliente && (
                       <TableCell>
-                        <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => openEdit(c)}>
-                            <Pencil className="h-4 w-4 mr-1" /> Editar
-                          </Button>
-                          {canDelete && (
-                            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => openDelete(c)}>
-                              <Trash2 className="h-4 w-4 mr-1" /> Excluir
-                            </Button>
-                          )}
-                        </div>
+                        {renderActions(c)}
                       </TableCell>
                     )}
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+</div>
+<div className="md:hidden space-y-3 p-3">
+ {clientes.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Nenhum cliente cadastrado</p>}
+ {clientes.map((c) => (
+ <Card key={c.id}><CardContent className="p-4 space-y-3">
+ <h3 className="font-semibold break-words">{c.nome}</h3>
+ <div className="space-y-1 text-sm break-words"><p>CPF/CNPJ: {c.cpf_cnpj || '—'}</p><p>Telefone: {c.telefone || '—'}</p><p>E-mail: {c.email || '—'}</p></div>
+ {canEditCliente && renderActions(c)}
+ </CardContent></Card>
+ ))}
+ </div>
           </CardContent>
         </Card>
       )}
