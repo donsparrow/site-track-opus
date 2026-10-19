@@ -1,4 +1,3 @@
-import { calcularProgressoEscopo } from './progressoFisico';
 import { calcularProgressoOriginal } from './progressoFisico';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
