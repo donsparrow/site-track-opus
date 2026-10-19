@@ -391,7 +391,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     ['Período do Relatório', `${fmt(data.periodo.inicio)} a ${fmt(data.periodo.fim)}`],
     ['Dias Trabalhados', `${data.prazos.trabalhados}`],
     ['Dias Parados (período)', `${data.prazos.parados}`],
-    ['Dias Parados (total da obra)', `${data.prazos.paradosTotal ?? data.prazos.parados}`],
+    ['Dias Parados (total da obra)', `${Math.max(0, data.prazos.ajustado - data.prazos.contratual)}`],
     ['Diários Registrados', `${data.diarios.length}`],
   ];
 
@@ -535,7 +535,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   // Second row (5 columns: os dois campos de paralisação lado a lado)
   const prazoItems2 = [
     { label: 'Parados (período)', value: `${data.prazos.parados}` },
-    { label: 'Parados (total da obra)', value: `${data.prazos.paradosTotal ?? data.prazos.parados}` },
+    { label: 'Parados (total da obra)', value: `${Math.max(0, data.prazos.ajustado - data.prazos.contratual)}` },
     { label: 'Dias Úteis Trabalhados', value: `${data.prazos.trabalhados}` },
     { label: 'Prazo Consumido', value: `${data.prazos.percentualTempo}%`, highlight: true },
     { label: 'Progresso Físico', value: `${data.prazos.percentualExecutado}%`, highlight: true },
