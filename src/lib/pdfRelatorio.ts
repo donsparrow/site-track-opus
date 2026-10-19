@@ -3,6 +3,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { downloadPdf } from './pdfDownload';
 import { resolveAnexoUrl } from './anexoUrl';
+import { chaveAtividadeDiario } from './relatorioDados';
 
 interface RelatorioPDFData {
   empresa: {
@@ -448,20 +449,60 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     doc.setFont('helvetica', 'normal');
     y += 5;
 
-    // Get unique activities with their latest progress
-    const actMap = new Map<string, number>();
-    data.diarios.forEach(d => {
-      data.atividades.filter(a => a.diario_id === d.id).forEach(a => {
-        actMap.set(a.descricao, a.percentual || 0);
+    const baseline = data.baselineAtividades;
+    if (baseline) {
+      // Avanço no período: X (antes) -> Y (maior % no período)
+      const periodo = new Map<string, { desc: string; y: number }>();
+      data.atividades.forEach((a: any) => {
+        const k = chaveAtividadeDiario(a);
+        const perc = Number(a.percentual) || 0;
+        const cur = periodo.get(k);
+        if (!cur) periodo.set(k, { desc: a.descricao, y: perc });
+        else if (perc > cur.y) cur.y = perc;
       });
-    });
-
-    Array.from(actMap.entries()).slice(0, 8).forEach(([desc, perc]) => {
-      checkPage(6);
-      doc.setFontSize(9);
-      doc.text(`• ${desc}: ${perc}%`, MARGIN + 2, y);
-      y += 5;
-    });
+      const itens = Array.from(periodo.entries())
+        .map(([k, v]) => ({ desc: v.desc, x: baseline[k] ?? 0, y: v.y }))
+        .filter(i => i.y > i.x)
+        .sort((a, b) => (b.y - b.x) - (a.y - a.x))
+        .slice(0, 8);
+      if (itens.length === 0) {
+        checkPage(6);
+        doc.setFontSize(9);
+        doc.setTextColor(100);
+        doc.text('Nenhuma atividade com avanço registrado no período.', MARGIN + 2, y);
+        doc.setTextColor(0);
+        y += 5;
+      }
+      itens.forEach(i => {
+        checkPage(6);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'bold');
+        const txt = `• ${i.desc}: ${i.x}% -> ${i.y}% (+${i.y - i.x}% no período)`;
+        doc.text(txt, MARGIN + 2, y);
+        if (i.x < 100 && i.y >= 100) {
+          const w = doc.getTextWidth(txt);
+          doc.setTextColor(22, 163, 74);
+          doc.text('  (concluída neste período)', MARGIN + 2 + w, y);
+          doc.setTextColor(0);
+        }
+        doc.setFont('helvetica', 'normal');
+        y += 5;
+      });
+    } else {
+      // Fallback: % reportado (comportamento anterior)
+      const actMap = new Map<string, number>();
+      data.diarios.forEach(d => {
+        data.atividades.filter(a => a.diario_id === d.id).forEach(a => {
+          actMap.set(a.descricao, a.percentual || 0);
+        });
+      });
+      Array.from(actMap.entries()).slice(0, 8).forEach(([desc, perc]) => {
+        checkPage(6);
+        doc.setFontSize(9);
+        doc.text(`• ${desc}: ${perc}%`, MARGIN + 2, y);
+        y += 5;
+      });
+    }
     y += 3;
   }
 
