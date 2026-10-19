@@ -433,21 +433,6 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   }
   y += 8;
 
-  // Progress bar
-  checkPage(15);
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Progresso da Obra:', MARGIN, y);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`${progressoObra}%`, MARGIN + 40, y);
-  y += 4;
-  const pBarW = contentW;
-  doc.setFillColor(229, 231, 235);
-  doc.roundedRect(MARGIN, y, pBarW, 5, 1.5, 1.5, 'F');
-  if (progressoObra > 0) {
-    doc.setFillColor(BLUE[0], BLUE[1], BLUE[2]);
-    doc.roundedRect(MARGIN, y, pBarW * (progressoObra / 100), 5, 1.5, 1.5, 'F');
-  }
   y += 10;
 
   // Main activities summary
