@@ -729,7 +729,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
       doc.setFont('helvetica', 'italic');
       doc.setTextColor(100);
       doc.text(
-        `Os ${totalDiasParados} dia(s) útil(eis) de paralisação do período compõem o campo "Dias Úteis Parados (período)" do Controle de Prazo; o campo "(total da obra)" acumula paralisações de toda a obra.`,
+        `Os ${totalDiasParados} dia(s) útil(eis) de paralisação do período compõem o campo "Parados (período)" do Controle de Prazo; o campo "Parados (total da obra)" acumula paralisações de toda a obra.`,
         MARGIN, y, { maxWidth: contentW },
       );
       doc.setTextColor(0);
