@@ -40,6 +40,10 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         cleanupOutdatedCaches: true,
+        // Disable the plugin's default navigateFallback ("index.html"): HTML is
+        // NOT precached, so createHandlerBoundToURL("index.html") would throw
+        // at SW startup. Navigations are served by the NetworkFirst rule below.
+        navigateFallback: undefined,
         // HTML must not be intercepted by precache, including direct / navigations.
         // NetworkFirst below also provides offline HTML for previously visited pages.
         globPatterns: ["**/*.{js,css,ico,png,svg,woff,woff2}"],
