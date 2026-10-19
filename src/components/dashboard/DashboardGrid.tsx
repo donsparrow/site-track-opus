@@ -5,6 +5,7 @@ import 'react-resizable/css/styles.css';
 import WidgetFrame from './WidgetFrame';
 import DashboardErrorBoundary from './DashboardErrorBoundary';
 import { WIDGET_REGISTRY } from './widgetRegistry';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { SIZE_PRESETS, WidgetInstance, GridLayoutItem } from '@/types/dashboard';
 
 type RglItem = GridLayoutItem;
@@ -32,6 +33,8 @@ function packDefault(widgets: WidgetInstance[]): GridLayoutItem[] {
 }
 
 export default function DashboardGrid({ widgets, gridConfig, editMode, onLayoutChange, onConfigWidget, onToggleHidden }: Props) {
+  // Screen (not container) width < 768px: stacked, read-only, sm layout derived and never persisted.
+  const isMobile = useIsMobile();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [width, setWidth] = useState<number>(1200);
 
@@ -64,12 +67,10 @@ export default function DashboardGrid({ widgets, gridConfig, editMode, onLayoutC
     return {
       lg: fullLg,
       md: fullLg.map(l => ({ ...l, w: Math.min(l.w, 10), x: Math.min(l.x, 10 - 1) })),
-      sm: visible.map((w, i) => ({ i: w.id, x: 0, y: i, w: 6, h: Math.max(SIZE_PRESETS[w.size].h, 3), static: true })),
+      sm: visible.map((w, i) => ({ i: w.id, x: 0, y: i, w: 6, h: Math.max(SIZE_PRESETS[w.size].h, 3), static: isMobile })),
     };
-  }, [visible, gridConfig]);
+  }, [visible, gridConfig, isMobile]);
 
-  // Mobile (< md): stacked, full-width, read-only; sm layout is derived at runtime, never persisted.
-  const isMobile = width < 768;
 
   return (
     <div ref={containerRef} className="w-full">
