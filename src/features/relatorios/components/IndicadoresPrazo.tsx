@@ -7,6 +7,7 @@ import { fmt, getSmartStatus } from '../utils';
 export default function IndicadoresPrazo({ prazos }: { prazos: PrazosRelatorio }) {
   const smartStatus = getSmartStatus(prazos);
   const desvioPct = prazos.percentualExecutado - prazos.percentualTempo;
+  const paradosTotal = Math.max(0, prazos.ajustado - prazos.contratual);
   const saldoColor = prazos.saldo > 0 ? 'text-success' : prazos.saldo < 0 ? 'text-destructive' : 'text-foreground';
 
   const linha1 = [
@@ -20,7 +21,7 @@ export default function IndicadoresPrazo({ prazos }: { prazos: PrazosRelatorio }
     { label: 'Início Real', value: prazos.dataInicioReal ? fmt(prazos.dataInicioReal) : 'Não iniciada', icon: Calendar, color: prazos.dataInicioReal ? '' : 'text-destructive' },
     { label: 'Dias Trabalhados', value: `${prazos.trabalhados} dias`, icon: BarChart3, color: '' },
     { label: 'Dias Parados (período)', value: `${prazos.parados} dias`, icon: Clock, color: prazos.parados > 0 ? 'text-destructive' : '' },
-    { label: 'Dias Parados (total da obra)', value: `${prazos.paradosTotal ?? prazos.parados} dias`, icon: Clock, color: (prazos.paradosTotal ?? prazos.parados) > 0 ? 'text-destructive' : '' },
+    { label: 'Dias Parados (total da obra)', value: `${paradosTotal} dias`, icon: Clock, color: paradosTotal > 0 ? 'text-destructive' : '' },
     { label: 'Prazo Ajustado', value: `${prazos.ajustado} dias`, icon: Calendar, color: '' },
   ];
 
