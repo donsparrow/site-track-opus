@@ -148,7 +148,7 @@ async function carregarDadosAoVivo(
   if (cronData) {
     const { data: cr } = await supabase
       .from('cronograma_atividades')
-      .select('nome_atividade, data_inicio, data_fim, percentual_concluido, status, peso, tipo_atividade')
+      .select('nome_atividade, data_inicio, data_fim, percentual_concluido, status, peso, tipo_atividade, aditivo_id')
       .eq('cronograma_id', cronData.id)
       .order('ordem');
     cronogramaAtivs = cr || [];
