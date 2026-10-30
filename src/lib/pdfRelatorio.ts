@@ -115,6 +115,53 @@ async function loadImageAsDataUrl(url: string): Promise<string | null> {
   }
 }
 
+const FOTO_LADO_MAXIMO = 1600;
+
+/**
+ * Carrega uma foto do diário e devolve um JPEG redimensionado (máx. 1600 px no
+ * lado maior, sem ampliar as menores). Fundo branco pintado antes do desenho,
+ * já que JPEG não preserva transparência. Retorna null em qualquer erro.
+ */
+async function loadFotoComprimida(url: string): Promise<string | null> {
+  try {
+    return await new Promise<string | null>((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.onload = () => {
+        try {
+          const larguraOriginal = img.naturalWidth;
+          const alturaOriginal = img.naturalHeight;
+          if (!larguraOriginal || !alturaOriginal) {
+            resolve(null);
+            return;
+          }
+          const maiorLado = Math.max(larguraOriginal, alturaOriginal);
+          const escala =
+            maiorLado > FOTO_LADO_MAXIMO ? FOTO_LADO_MAXIMO / maiorLado : 1;
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(larguraOriginal * escala));
+          canvas.height = Math.max(1, Math.round(alturaOriginal * escala));
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', 0.8));
+          } else {
+            resolve(null);
+          }
+        } catch {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  } catch {
+    return null;
+  }
+}
+
 async function loadImageAsPngDataUrl(url: string): Promise<string | null> {
   if (url.startsWith('data:')) return url;
   try {
@@ -1096,11 +1143,11 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
           const xPos = MARGIN + col * (imgW + 8);
           try {
             const resolvedUrl = (await resolveAnexoUrl(img.url)) || img.url;
-            const imgDataUrl = await loadImageAsDataUrl(resolvedUrl);
+            const imgDataUrl = await loadFotoComprimida(resolvedUrl);
             if (imgDataUrl) {
               doc.setDrawColor(200);
               doc.rect(xPos, y, imgW, imgH);
-              doc.addImage(imgDataUrl, 'PNG', xPos + 0.5, y + 0.5, imgW - 1, imgH - 1);
+              doc.addImage(imgDataUrl, 'JPEG', xPos + 0.5, y + 0.5, imgW - 1, imgH - 1);
             }
           } catch {
             doc.setDrawColor(200);
@@ -1144,11 +1191,11 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
         try {
           const resolvedUrl = (await resolveAnexoUrl(img.url)) || img.url;
-          const imgDataUrl = await loadImageAsDataUrl(resolvedUrl);
+          const imgDataUrl = await loadFotoComprimida(resolvedUrl);
           if (imgDataUrl) {
             doc.setDrawColor(200);
             doc.rect(xPos, y, imgW, imgH);
-            doc.addImage(imgDataUrl, 'PNG', xPos + 0.5, y + 0.5, imgW - 1, imgH - 1);
+            doc.addImage(imgDataUrl, 'JPEG', xPos + 0.5, y + 0.5, imgW - 1, imgH - 1);
           }
         } catch {
           doc.setDrawColor(200);
