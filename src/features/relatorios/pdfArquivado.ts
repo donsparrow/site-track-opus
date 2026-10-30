@@ -189,8 +189,10 @@ export async function baixarPdfArquivado(registro: PdfArquivado, fileName: strin
 }
 
 /**
- * Fluxo de download de relatório assinado: entrega o arquivo guardado; se não
- * houver (ou falhar), arquiva um novo e baixa. Retorna false se nada deu certo
+ * Fluxo de download de relatório assinado: entrega o arquivo guardado. Se já
+ * existe registro vigente, o download é obrigatório — falha dele é reportada e
+ * NUNCA gera um novo arquivamento. Só quando não há registro vigente é que se
+ * arquiva um novo e baixa. Retorna false apenas se esse arquivamento falhar
  * (o chamador decide o fallback de gerar sem arquivar).
  */
 export async function baixarPdfAssinadoOuArquivar({
@@ -209,7 +211,7 @@ export async function baixarPdfAssinadoOuArquivar({
       await baixarPdfArquivado(registro, fileName);
       return true;
     } catch {
-      // Arquivo indisponível: cai no arquivamento posterior abaixo.
+      throw new Error('Não foi possível baixar o PDF arquivado. Verifique a conexão e tente novamente.');
     }
   }
   try {
