@@ -6,8 +6,8 @@ import type { Json } from '@/integrations/supabase/types';
 import { relatoriosPrefixes } from '../queryKeys';
 import { gerarPDFRelatorio } from '../pdf';
 import {
-  arquivarPdfAssinado, baixarBlob, baixarPdfArquivado, buscarUltimoPdfArquivado,
-  excluirPdfArquivado as excluirPdfArquivadoFn, getVersaoLayout, montarArgsPdf, nomeArquivoPdf,
+  arquivarPdfAssinado, baixarPdfAssinadoOuArquivar,
+  excluirPdfArquivado as excluirPdfArquivadoFn, getVersaoLayout, montarArgsPdf,
   type PdfArquivado,
 } from '../pdfArquivado';
 import { aplicarIndicadoresCongelados, calcularIndicadores } from '../indicadores';
@@ -305,7 +305,6 @@ export function useRelatorioMutations() {
   const baixarDaLista = useMutation({
     mutationFn: async ({ relatorio, empresa }: DownloadListaInput) => {
       toast.info('Preparando PDF...');
-      const fileName = nomeArquivoPdf(relatorio.obras?.nome || 'relatorio');
 
       if (relatorio.status === 'assinado') {
         const ok = await baixarPdfAssinadoOuArquivar({
