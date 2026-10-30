@@ -307,14 +307,13 @@ export function useRelatorioMutations() {
       toast.info('Preparando PDF...');
 
       if (relatorio.status === 'assinado') {
-        const ok = await baixarPdfAssinadoOuArquivar({
+        const resultado = await baixarPdfAssinadoOuArquivar({
           relatorioId: relatorio.id,
           empresa,
           nomeObra: relatorio.obras?.nome || 'relatorio',
         });
-        if (ok) return relatorio.id;
-        toast.warning('PDF gerado, mas não foi possível arquivá-lo.');
-        // Fallback: gera e baixa como antes, sem arquivar.
+        toastResultadoDownload(resultado);
+        return { relatorioId: relatorio.id, toastFeito: true };
       }
 
       const args = await montarArgsPdf(relatorio, empresa);
@@ -329,11 +328,11 @@ export function useRelatorioMutations() {
         });
       }
 
-      return relatorio.id;
+      return { relatorioId: relatorio.id, toastFeito: false };
     },
-    onSuccess: (relatorioId) => {
+    onSuccess: ({ relatorioId, toastFeito }) => {
       invalidateRelatorio(relatorioId);
-      toast.success('PDF baixado!');
+      if (!toastFeito) toast.success('PDF baixado!');
     },
     onError: (e: Error) => toast.error('Erro ao baixar PDF: ' + e.message),
   });
@@ -435,13 +434,12 @@ export function useRelatorioMutations() {
   const baixarAssinado = useMutation({
     mutationFn: async ({ relatorioId, empresa, nomeObra }: { relatorioId: string; empresa: EmpresaConfig | null; nomeObra: string }) => {
       toast.info('Preparando PDF...');
-      const ok = await baixarPdfAssinadoOuArquivar({ relatorioId, empresa, nomeObra });
-      if (!ok) throw new Error('Não foi possível obter o PDF arquivado');
+      const resultado = await baixarPdfAssinadoOuArquivar({ relatorioId, empresa, nomeObra });
+      toastResultadoDownload(resultado);
       return relatorioId;
     },
     onSuccess: (relatorioId) => {
       qc.invalidateQueries({ queryKey: ['relatorio-pdfs-arquivados', relatorioId] });
-      toast.success('PDF baixado!');
     },
     onError: (e: Error) => toast.error('Erro ao baixar PDF: ' + e.message),
   });
