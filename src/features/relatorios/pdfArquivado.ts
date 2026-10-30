@@ -21,6 +21,7 @@ export function nomeArquivoPdf(nomeObra: string): string {
   const hoje = new Date();
   const dataFormatada = `${String(hoje.getDate()).padStart(2, '0')}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${hoje.getFullYear()}`;
   const nome = nomeObra.toLowerCase().replace(/\s+/g, '_').normalize('NFD').replace(/[̀-ͯ]/g, '');
+  // eslint-disable-next-line no-misleading-character-class
   return `relatorio_${nome}_${dataFormatada}.pdf`;
 }
 
