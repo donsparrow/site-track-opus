@@ -304,6 +304,10 @@ async function carregarDadosAoVivo(
       percentualExecutado,
       diasAditivos,
       contratualBase: prazoContratual - diasAditivos,
+      decorridos: diasDecorridos,
+      percentualContrato: prog.contrato,
+      percentualAditivos: prog.aditivos,
+      progressoPorAditivo: prog.porAditivo,
     },
   };
 }
