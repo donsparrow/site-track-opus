@@ -45,7 +45,7 @@ export default function AtividadeDialog({
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="original">Contrato Original</SelectItem>
-                  <SelectItem value="aditivo">Aditivo</SelectItem>
+                  {editingAtividade?.tipo_atividade === 'aditivo' && <SelectItem value="aditivo">Aditivo</SelectItem>}
                 </SelectContent>
               </Select>
             </div>

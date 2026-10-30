@@ -42,7 +42,7 @@ export default function AditivoDialog({ open, onOpenChange, form, setForm, onSav
             <div>
               <Label>Dias Adicionais (úteis) *</Label>
               <Input
-                type="number" min={0} placeholder="0 se não houver"
+                type="number" min={1} placeholder="Ex.: 10"
                 value={form.dias_adicionais}
                 onChange={e => setForm(f => ({ ...f, dias_adicionais: e.target.value === '' ? '' : Math.max(0, Number(e.target.value)) }))}
               />
