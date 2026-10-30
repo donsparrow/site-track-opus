@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { diarioKeys } from '../queryKeys';
-import { cronogramaStatus, mapLegacyStatus, percentualToStatus, totalDiasParalisacao } from '../utils';
+import { cronogramaStatus, mapLegacyStatus, percentualToStatus } from '../utils';
 import type { DiarioDetalhado, DiarioFormValues } from '../types';
 import { uploadAnexoComProgresso } from '../upload';
 import { calcBusinessDays } from '@/lib/dias';
@@ -99,6 +99,7 @@ export function useDiarioMutations({ obraId, diarioId }: Options) {
     onSuccess: () => {
       toast.success('Diário criado com dados do último registro!');
       invalidateLista();
+      qc.invalidateQueries({ queryKey: ['obra-prazo-cronograma', obraId] });
     },
     onError: failDuplicado,
   });
@@ -152,6 +153,7 @@ export function useDiarioMutations({ obraId, diarioId }: Options) {
     onSuccess: () => {
       toast.success('Diário excluído!');
       invalidateLista();
+      qc.invalidateQueries({ queryKey: ['obra-prazo-cronograma', obraId] });
     },
     onError: fail,
   });
@@ -457,6 +459,7 @@ export function useDiarioMutations({ obraId, diarioId }: Options) {
       if (error) throw error;
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['obra-prazo-cronograma', obraId] });
       toast.success('Adicionado!');
       invalidateDetail();
     },
@@ -484,6 +487,7 @@ export function useDiarioMutations({ obraId, diarioId }: Options) {
       if (error) throw error;
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['obra-prazo-cronograma', obraId] });
       toast.success('Removido!');
       invalidateDetail();
     },
