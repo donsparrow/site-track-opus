@@ -115,6 +115,52 @@ async function loadImageAsDataUrl(url: string): Promise<string | null> {
   }
 }
 
+const LOGO_LADO_MAXIMO = 600;
+
+/**
+ * Carrega o logotipo e devolve um PNG redimensionado (máx. 600 px no lado
+ * maior, sem ampliar as menores). Nenhum fundo é pintado, então a
+ * transparência original é preservada. Retorna null em qualquer erro.
+ */
+async function loadLogoReduzido(url: string): Promise<string | null> {
+  try {
+    return await new Promise<string | null>((resolve) => {
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.onload = () => {
+        try {
+          const larguraOriginal = img.naturalWidth;
+          const alturaOriginal = img.naturalHeight;
+          if (!larguraOriginal || !alturaOriginal) {
+            resolve(null);
+            return;
+          }
+          const maiorLado = Math.max(larguraOriginal, alturaOriginal);
+          const escala =
+            maiorLado > LOGO_LADO_MAXIMO ? LOGO_LADO_MAXIMO / maiorLado : 1;
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, Math.round(larguraOriginal * escala));
+          canvas.height = Math.max(1, Math.round(alturaOriginal * escala));
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/png'));
+          } else {
+            resolve(null);
+          }
+        } catch {
+          resolve(null);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = url;
+    });
+  } catch {
+    return null;
+  }
+}
+
 const FOTO_LADO_MAXIMO = 1600;
 
 /**
@@ -212,7 +258,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   let logoNatH = 0;
   if (emp.logo_url) {
     const resolvedLogo = (await resolveAnexoUrl(emp.logo_url)) || emp.logo_url;
-    logoDataUrl = await loadImageAsDataUrl(resolvedLogo);
+    logoDataUrl = await loadLogoReduzido(resolvedLogo);
     if (logoDataUrl) {
       await new Promise<void>((resolve) => {
         const tmpImg = new Image();
@@ -246,7 +292,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
         let logoW = logoMaxH * ratio;
         let logoH = logoMaxH;
         if (logoW > logoMaxW) { logoW = logoMaxW; logoH = logoMaxW / ratio; }
-        doc.addImage(logoDataUrl, 'PNG', MARGIN, 6, logoW, logoH);
+        doc.addImage(logoDataUrl, 'PNG', MARGIN, 6, logoW, logoH, 'logo-empresa', 'FAST');
         hx = MARGIN + logoW + 4;
       } catch { /* skip */ }
     }
@@ -345,7 +391,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   let coverY = 40;
   if (logoDataUrl) {
     try {
-      doc.addImage(logoDataUrl, 'PNG', pageW / 2 - 20, coverY, 40, 40);
+      doc.addImage(logoDataUrl, 'PNG', pageW / 2 - 20, coverY, 40, 40, 'logo-empresa', 'FAST');
       coverY += 48;
     } catch { coverY += 10; }
   }
