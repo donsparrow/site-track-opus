@@ -44,6 +44,7 @@ O status da obra (Adiantada / Em Dia / Atrasada) passa a descontar os dias parad
   - nova chamada de `calcularIndicadores`;
   - validação de pelo menos 1 dia em `handleSaveAditivo`.
 - Ajustes de tela em `ProgressoGeralCard.tsx` e `IndicadoresCard.tsx`, e só as props dos cards em `Cronograma.tsx`.
+- O `ProgressoGeralCard` recebe a nova prop `obraConcluida: boolean`, passada pelo `Cronograma.tsx`. O alerta de vínculo só aparece quando `obraConcluida === false`.
 - `AditivoDialog.tsx`: só o campo Dias Adicionais muda (`min=1`, placeholder "Ex.: 10").
 - `AtividadeDialog.tsx`: só o Select de tipo muda.
 - `useDiarioMutations.ts`:
@@ -53,4 +54,4 @@ O status da obra (Adiantada / Em Dia / Atrasada) passa a descontar os dias parad
 
 ## Validação
 - Rodar os testes com vitest, incluindo `prazoObra.test.ts`.
-- Conferir o Cronograma de uma obra sem aditivo e de uma com aditivo (Espíndula). Na Espíndula, as 8 atividades antigas sem vínculo devem gerar o aviso amarelo.
+- Conferir o Cronograma de uma obra sem aditivo e de uma com aditivo (Espíndula). Na Espíndula, que está concluída, o aviso não deve aparecer, e as atividades sem vínculo continuam fora do cálculo.
