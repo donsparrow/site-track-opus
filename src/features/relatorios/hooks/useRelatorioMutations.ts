@@ -8,7 +8,7 @@ import { gerarPDFRelatorio } from '../pdf';
 import {
   arquivarPdfAssinado, baixarPdfAssinadoOuArquivar,
   excluirPdfArquivado as excluirPdfArquivadoFn, getVersaoLayout, montarArgsPdf,
-  type PdfArquivado,
+  type PdfArquivado, type ResultadoDownload,
 } from '../pdfArquivado';
 import { aplicarIndicadoresCongelados, calcularIndicadores } from '../indicadores';
 import { buildSnapshot, detectChanges, revLabel } from '../utils';
@@ -19,6 +19,17 @@ import type {
 import { useRelatoriosScope } from './useObrasRelatorios';
 
 /* ---------- leituras auxiliares usadas apenas dentro das mutations ---------- */
+
+/** Toast conforme a origem do PDF entregue ao usuário. */
+function toastResultadoDownload(resultado: ResultadoDownload): void {
+  if (resultado === 'original') {
+    toast.success('PDF original arquivado baixado.');
+  } else if (resultado === 'arquivado_agora') {
+    toast.success('PDF gerado e arquivado.');
+  } else {
+    toast.warning('Não foi possível usar a cópia arquivada. Este PDF foi gerado agora e não é o original arquivado. Tente novamente mais tarde para obter o original.');
+  }
+}
 
 async function fetchVersoes(relatorioId: string): Promise<RelatorioVersao[]> {
   const { data } = await supabase
