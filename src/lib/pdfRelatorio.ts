@@ -1096,11 +1096,11 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
           const xPos = MARGIN + col * (imgW + 8);
           try {
             const resolvedUrl = (await resolveAnexoUrl(img.url)) || img.url;
-            const imgDataUrl = await loadImageAsDataUrl(resolvedUrl);
+            const imgDataUrl = await loadFotoComprimida(resolvedUrl);
             if (imgDataUrl) {
               doc.setDrawColor(200);
               doc.rect(xPos, y, imgW, imgH);
-              doc.addImage(imgDataUrl, 'PNG', xPos + 0.5, y + 0.5, imgW - 1, imgH - 1);
+              doc.addImage(imgDataUrl, 'JPEG', xPos + 0.5, y + 0.5, imgW - 1, imgH - 1);
             }
           } catch {
             doc.setDrawColor(200);
@@ -1144,11 +1144,11 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
 
         try {
           const resolvedUrl = (await resolveAnexoUrl(img.url)) || img.url;
-          const imgDataUrl = await loadImageAsDataUrl(resolvedUrl);
+          const imgDataUrl = await loadFotoComprimida(resolvedUrl);
           if (imgDataUrl) {
             doc.setDrawColor(200);
             doc.rect(xPos, y, imgW, imgH);
-            doc.addImage(imgDataUrl, 'PNG', xPos + 0.5, y + 0.5, imgW - 1, imgH - 1);
+            doc.addImage(imgDataUrl, 'JPEG', xPos + 0.5, y + 0.5, imgW - 1, imgH - 1);
           }
         } catch {
           doc.setDrawColor(200);
