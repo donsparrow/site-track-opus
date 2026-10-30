@@ -58,22 +58,28 @@ export default function Cronograma() {
       ) : (
         <>
           <ProgressoGeralCard
-            progressoGeral={p.indicadores.progressoGeral}
+            progressoGlobal={p.indicadores.progressoGlobal}
+            progressoContrato={p.indicadores.progressoContrato}
+            progressoPorAditivo={p.indicadores.progressoPorAditivo}
+            atividadesAditivoSemVinculo={p.indicadores.atividadesAditivoSemVinculo}
+            obraConcluida={p.obraStatus === 'concluida'}
             totalPeso={p.indicadores.totalPeso}
             pesoValido={p.indicadores.pesoValido}
             temAtividades={p.atividades.length > 0}
             temAditivos={p.indicadores.temAditivos}
-            progressoAditivos={p.indicadores.progressoAditivos}
           />
           <IndicadoresCard
             planejamentoConfigurado={p.indicadores.planejamentoConfigurado}
             statusObra={p.indicadores.statusObra}
-            progressoGeral={p.indicadores.progressoGeral}
+            progressoGlobal={p.indicadores.progressoGlobal}
             prazoConsumido={p.indicadores.prazoConsumido}
             desvio={p.indicadores.desvio}
             diasDecorridos={p.indicadores.diasDecorridos}
             prazoEfetivo={p.indicadores.prazoEfetivo}
             diasAditivos={p.indicadores.diasAditivos}
+            diasParados={p.indicadores.diasParados}
+            diasConsumidos={p.indicadores.diasConsumidos}
+            diasSemDiario={p.indicadores.diasSemDiario}
           />
           <AditivosCard aditivos={p.aditivos} canEdit={p.canEdit} onDelete={p.setDeleteAditivoId} onEdit={p.openEditAditivo} loading={p.loadingAditivo} />
           <AtividadesCard

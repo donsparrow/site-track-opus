@@ -10,16 +10,22 @@ export interface StatusObra {
 interface Props {
   planejamentoConfigurado: boolean;
   statusObra: StatusObra;
-  progressoGeral: number;
+  progressoGlobal: number;
   prazoConsumido: number;
   desvio: number;
   diasDecorridos: number;
   prazoEfetivo: number;
   diasAditivos: number;
+  diasParados: number;
+  diasConsumidos: number;
+  diasSemDiario: string[];
 }
 
+const ddmm = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`;
+
 export default function IndicadoresCard({
-  planejamentoConfigurado, statusObra, progressoGeral, prazoConsumido, desvio, diasDecorridos, prazoEfetivo, diasAditivos,
+  planejamentoConfigurado, statusObra, progressoGlobal, prazoConsumido, desvio, diasDecorridos, prazoEfetivo, diasAditivos,
+  diasParados, diasConsumidos, diasSemDiario,
 }: Props) {
   return (
     <Card className={`border ${statusObra.cls}`}>
@@ -40,14 +46,14 @@ export default function IndicadoresCard({
                 <div>
                   <p className={`font-bold text-lg ${statusObra.color}`}>{statusObra.label}</p>
                   <p className="text-xs text-muted-foreground">
-                    Executado: {progressoGeral}% • Prazo Consumido: {prazoConsumido}% • Desvio: {desvio > 0 ? '+' : ''}{desvio}%
+                    Executado: {progressoGlobal}% • Prazo Consumido: {prazoConsumido}% • Desvio: {desvio > 0 ? '+' : ''}{desvio}%
                   </p>
                 </div>
               </div>
               <div className="grid grid-cols-4 gap-3 md:gap-4 text-center">
                 <div>
-                  <p className="text-[10px] text-muted-foreground">Executado</p>
-                  <p className="text-sm font-bold">{progressoGeral}%</p>
+                  <p className="text-[10px] text-muted-foreground">Executado (global)</p>
+                  <p className="text-sm font-bold">{progressoGlobal}%</p>
                 </div>
                 <div>
                   <p className="text-[10px] text-muted-foreground">Prazo</p>
@@ -58,8 +64,12 @@ export default function IndicadoresCard({
                   <p className={`text-sm font-bold ${statusObra.color}`}>{desvio > 0 ? '+' : ''}{desvio}%</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground">Prazo {diasAditivos > 0 ? `(+${diasAditivos} aditivo)` : '(dias úteis)'}</p>
-                  <p className="text-sm font-bold">{diasDecorridos}/{prazoEfetivo || '—'}</p>
+                  <p className="text-[10px] text-muted-foreground">Dias úteis consumidos</p>
+                  <p className="text-sm font-bold">{diasConsumidos}/{prazoEfetivo || '—'}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {diasDecorridos} decorridos − {diasParados} parados
+                    {diasAditivos > 0 && ` • inclui +${diasAditivos} de aditivo`}
+                  </p>
                 </div>
               </div>
             </div>
@@ -74,11 +84,19 @@ export default function IndicadoresCard({
               <div className="flex items-center gap-2 text-xs">
                 <span className="w-20 text-muted-foreground">Executado</span>
                 <div className="flex-1 h-3 bg-muted rounded overflow-hidden">
-                  <div className={`h-full ${desvio > 5 ? 'bg-success' : desvio >= -5 ? 'bg-warning' : 'bg-destructive'}`} style={{ width: `${Math.min(progressoGeral, 100)}%` }} />
+                  <div className={`h-full ${desvio > 5 ? 'bg-success' : desvio >= -5 ? 'bg-warning' : 'bg-destructive'}`} style={{ width: `${Math.min(progressoGlobal, 100)}%` }} />
                 </div>
-                <span className="w-10 text-right font-medium">{progressoGeral}%</span>
+                <span className="w-10 text-right font-medium">{progressoGlobal}%</span>
               </div>
             </div>
+            {diasSemDiario.length > 0 && (
+              <div className="mt-3 rounded-md border border-warning/30 bg-warning/10 px-3 py-2 text-xs text-warning">
+                ⚠ {diasSemDiario.length} dia(s) útil(eis) sem diário registrado:{' '}
+                {diasSemDiario.slice(0, 10).map(ddmm).join(', ')}
+                {diasSemDiario.length > 10 && ` e mais ${diasSemDiario.length - 10}`}.
+                {' '}Esses dias contam como prazo consumido.
+              </div>
+            )}
           </>
         )}
       </CardContent>
