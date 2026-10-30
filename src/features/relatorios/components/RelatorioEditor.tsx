@@ -12,6 +12,7 @@ import { BarChart3, Download, History, List, PenTool, Save } from 'lucide-react'
 import { useRelatorioDados, useRelatorioDetail } from '../hooks/useRelatorioDetail';
 import { useRelatorioHistorico } from '../hooks/useRelatorioHistorico';
 import { useRelatorioMutations } from '../hooks/useRelatorioMutations';
+import { useAuth } from '@/contexts/AuthContext';
 import { usePeriodoSugerido } from '../hooks/usePeriodoSugerido';
 import type { EmpresaConfig, ObraRelatorio, RelatorioComObra } from '../types';
 import { revLabel } from '../utils';
@@ -91,6 +92,11 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
   const handleGerarPdf = () => {
     if (!obraData) { toast.error('Selecione uma obra e consolide os dados'); return; }
     if (!empresa) toast.info('Dados da empresa não configurados. O PDF será gerado sem cabeçalho/logo.');
+    // Relatório assinado: entrega o PDF arquivado, nunca regenera.
+    if (relatorioId && detail.relatorio?.status === 'assinado') {
+      m.baixarAssinado.mutate({ relatorioId, empresa, nomeObra: obraData.nome });
+      return;
+    }
     m.gerarPdf.mutate(
       { relatorioId, empresa, obra: obraData, periodo: { inicio, fim }, dados: dadosExibicao, revisaoPdf },
       { onSuccess: (res) => setRevisaoPdf(res.novaRevisao) },
@@ -163,8 +169,8 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
                 <Save className="h-4 w-4 mr-2" />{m.salvar.isPending ? 'Salvando...' : 'Salvar Relatório'}
               </Button>
             )}
-            <Button onClick={handleGerarPdf} disabled={m.gerarPdf.isPending} className="bg-accent text-accent-foreground hover:bg-accent/90">
-              <Download className="h-4 w-4 mr-2" />{m.gerarPdf.isPending ? 'Gerando...' : 'Gerar PDF'}
+            <Button onClick={handleGerarPdf} disabled={m.gerarPdf.isPending || m.baixarAssinado.isPending} className="bg-accent text-accent-foreground hover:bg-accent/90">
+              <Download className="h-4 w-4 mr-2" />{m.gerarPdf.isPending || m.baixarAssinado.isPending ? 'Gerando...' : 'Gerar PDF'}
             </Button>
             {podeEditar && !readOnly && (
               <Button variant="outline" onClick={() => setSignOpen(true)}><PenTool className="h-4 w-4 mr-2" />Assinar</Button>
@@ -190,7 +196,15 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
               {carregando ? <RelatorioSkeleton rows={6} /> : <RegistrosTab dados={dadosExibicao} />}
             </TabsContent>
             <TabsContent value="assinaturas">
-              <AssinaturasTab assinaturas={detail.assinaturas} assinaturaUrls={detail.assinaturaUrls} />
+              <AssinaturasTab
+                assinaturas={detail.assinaturas}
+                assinaturaUrls={detail.assinaturaUrls}
+                relatorioId={relatorioId}
+                relatorioStatus={detail.relatorio?.status}
+                isAdmin={isAdmin}
+                empresa={empresa}
+                nomeObra={obraData?.nome || 'relatorio'}
+              />
             </TabsContent>
             <TabsContent value="versoes">
               <HistoricoVersoes versoes={historico.versoes} nomesUsuarios={historico.nomesUsuarios} loading={historico.isPending} />
@@ -205,7 +219,7 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
         saving={m.assinar.isPending}
         onConfirm={(values) => {
           if (!relatorioId) return;
-          m.assinar.mutate({ relatorioId, ...values }, { onSuccess: () => setSignOpen(false) });
+          m.assinar.mutate({ relatorioId, empresa, ...values }, { onSuccess: () => setSignOpen(false) });
         }}
       />
     </div>
