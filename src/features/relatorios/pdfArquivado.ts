@@ -20,7 +20,7 @@ export async function getVersaoLayout(relatorioId: string | null): Promise<numbe
 export function nomeArquivoPdf(nomeObra: string): string {
   const hoje = new Date();
   const dataFormatada = `${String(hoje.getDate()).padStart(2, '0')}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${hoje.getFullYear()}`;
-  const nome = nomeObra.toLowerCase().replace(/\s+/g, '_').normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const nome = nomeObra.toLowerCase().replace(/\s+/g, '_').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   return `relatorio_${nome}_${dataFormatada}.pdf`;
 }
 
