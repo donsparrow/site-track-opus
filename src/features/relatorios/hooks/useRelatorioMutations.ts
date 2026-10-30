@@ -5,6 +5,10 @@ import { carregarDadosRelatorio } from '@/lib/relatorioDados';
 import type { Json } from '@/integrations/supabase/types';
 import { relatoriosPrefixes } from '../queryKeys';
 import { gerarPDFRelatorio } from '../pdf';
+import {
+  arquivarPdfAssinado, baixarBlob, baixarPdfArquivado, buscarUltimoPdfArquivado,
+  excluirPdfArquivado as excluirPdfArquivadoFn, getVersaoLayout, montarArgsPdf, nomeArquivoPdf,
+} from '../pdfArquivado';
 import { aplicarIndicadoresCongelados, calcularIndicadores } from '../indicadores';
 import { buildSnapshot, detectChanges, revLabel } from '../utils';
 import type {
@@ -14,13 +18,6 @@ import type {
 import { useRelatoriosScope } from './useObrasRelatorios';
 
 /* ---------- leituras auxiliares usadas apenas dentro das mutations ---------- */
-
-/** Versão do layout do PDF (1 = legado). Sem relatório salvo → layout novo. */
-async function getVersaoLayout(relatorioId: string | null): Promise<number> {
-  if (!relatorioId) return 2;
-  const { data } = await supabase.from('relatorios').select('versao_layout').eq('id', relatorioId).maybeSingle();
-  return (data as { versao_layout?: number } | null)?.versao_layout ?? 1;
-}
 
 async function fetchVersoes(relatorioId: string): Promise<RelatorioVersao[]> {
   const { data } = await supabase
@@ -81,6 +78,7 @@ interface AssinarInput {
   nome: string;
   cargo: string;
   tipo: string;
+  empresa: EmpresaConfig | null;
 }
 
 interface DownloadListaInput {
