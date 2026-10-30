@@ -39,15 +39,16 @@ export function useCronogramaPage() {
   const atividadesQuery = useCronogramaAtividades(cronograma?.id ?? null);
   const atividades = atividadesQuery.atividades;
   const { aditivos } = useAditivos(obraId);
-  const { prazoContratual, primeiroDiario, ultimoDiario, obraStatus, dataFimPrevista } = useObraPrazoInfo(obraId);
+  const { prazoContratual, primeiroDiario, ultimoDiario, obraStatus, dataFimPrevista, paralisacoes, datasDiarios } = useObraPrazoInfo(obraId);
   const empresaConfigQuery = useEmpresaConfigCronograma();
   const mutations = useCronogramaMutations(obraId, cronograma?.id ?? null);
 
   const obraNome = obras.find(o => o.id === obraId)?.nome || '';
   const canEditPeso = isAdmin || isSuperAdmin;
-  const indicadores = calcularIndicadores(
+  const indicadores = calcularIndicadores({
     atividades, aditivos, prazoContratual, primeiroDiario, obraStatus, ultimoDiario, dataFimPrevista,
-  );
+    paralisacoes, datasDiarios,
+  });
   const ganttData = calcularGanttData(atividades);
 
   // Diálogos
@@ -128,7 +129,7 @@ export function useCronogramaPage() {
 
   const handleSaveAditivo = () => {
     if (!aditivoForm.descricao || !obraId) { toast.error('Informe a descrição do aditivo'); return; }
-    if (aditivoForm.dias_adicionais === '') { toast.error('Informe os dias adicionais (use 0 se não houver)'); return; }
+    if (aditivoForm.dias_adicionais === '' || Number(aditivoForm.dias_adicionais) < 1) { toast.error('Informe os dias adicionais do aditivo (mínimo 1 dia útil).'); return; }
     const linhas = (aditivoForm.atividades ?? []).filter(a => a.nome_atividade.trim());
     if (linhas.length !== (aditivoForm.atividades ?? []).length) {
       toast.error('Informe o nome de todas as atividades do aditivo (ou remova as linhas vazias)');
@@ -220,6 +221,7 @@ export function useCronogramaPage() {
     openNew, openEdit, openNewAditivo, openEditAditivo, editingAditivo, loadingAditivo,
     savingAditivo: mutations.criarAditivo.isPending || mutations.editarAditivo.isPending,
     handleSave, handleDelete,
+    obraStatus,
     handleSaveAditivo, handleDeleteAditivo, moveAtividade, exportPDF,
   };
 }

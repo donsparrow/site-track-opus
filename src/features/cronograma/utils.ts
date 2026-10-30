@@ -3,21 +3,11 @@ import type { Atividade, Aditivo } from './types';
 import type { StatusObra } from './components/IndicadoresCard';
 import type { GanttData } from './pdf';
 import { calcularProgressoEscopo, calcularProgressoOriginal } from '@/lib/progressoFisico';
-
-/** Dias úteis (seg–sex) entre duas datas, inclusive. */
-export function businessDaysBetween(from: Date, to: Date) {
-  let count = 0;
-  const cur = new Date(from);
-  cur.setHours(0, 0, 0, 0);
-  const end = new Date(to);
-  end.setHours(0, 0, 0, 0);
-  while (cur <= end) {
-    const dow = cur.getDay();
-    if (dow !== 0 && dow !== 6) count++;
-    cur.setDate(cur.getDate() + 1);
-  }
-  return count;
-}
+import { calcBusinessDays } from '@/lib/dias';
+import { hojeLocal } from '@/lib/dataLocal';
+import {
+  calcularProgressoGlobal, calcularPrazoConsumido, datasUteisParadas, diasUteisSemDiario, type ProgressoPorAditivo,
+} from '@/lib/prazoObra';
 
 /** Progresso do ESCOPO ORIGINAL (regra canônica em src/lib/progressoFisico.ts). */
 export function calcularProgressoGeral(atividades: Atividade[], _totalPeso?: number) {
@@ -29,48 +19,69 @@ export interface IndicadoresCronograma {
   totalPeso: number;
   /** Pesos originais somam 100. */
   pesoValido: boolean;
-  /** Progresso do escopo original (0–100). */
+  /** Progresso do escopo original (0–100). Mantido para o PDF do cronograma. */
   progressoGeral: number;
-  /** Progresso próprio dos aditivos (indicador separado). */
+  progressoContrato: number;
+  /** Contrato + aditivos, ponderado pelos dias de cada um. */
+  progressoGlobal: number;
+  progressoPorAditivo: ProgressoPorAditivo[];
+  atividadesAditivoSemVinculo: number;
+  /** Progresso combinado dos aditivos, ponderado pelos dias. */
   progressoAditivos: number;
   totalPesoAditivos: number;
   temAditivos: boolean;
   diasAditivos: number;
   prazoEfetivo: number;
   diasDecorridos: number;
+  diasParados: number;
+  diasConsumidos: number;
+  diasSemDiario: string[];
   prazoConsumido: number;
   desvio: number;
   planejamentoConfigurado: boolean;
   statusObra: StatusObra;
 }
 
-export function calcularIndicadores(
-  atividades: Atividade[],
-  aditivos: Aditivo[],
-  prazoContratual: number,
-  primeiroDiario: string | null,
-  obraStatus?: string | null,
-  ultimoDiario?: string | null,
-  dataFimPrevista?: string | null,
-): IndicadoresCronograma {
+export interface CalcularIndicadoresParams {
+  atividades: Atividade[];
+  aditivos: Aditivo[];
+  prazoContratual: number;
+  primeiroDiario: string | null;
+  obraStatus?: string | null;
+  ultimoDiario?: string | null;
+  dataFimPrevista?: string | null;
+  paralisacoes?: { data_inicio: string; data_fim?: string | null }[];
+  datasDiarios?: string[];
+}
+
+function ontemLocal(): string {
+  const d = new Date(hojeLocal() + 'T00:00:00');
+  d.setDate(d.getDate() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+export function calcularIndicadores({
+  atividades, aditivos, prazoContratual, primeiroDiario, obraStatus, ultimoDiario, dataFimPrevista,
+  paralisacoes = [], datasDiarios = [],
+}: CalcularIndicadoresParams): IndicadoresCronograma {
   const escopo = calcularProgressoEscopo(atividades);
   const totalPeso = escopo.pesoOriginal;
   const pesoValido = totalPeso === 100;
-  const progressoGeral = escopo.original;
+  const prog = calcularProgressoGlobal(atividades, aditivos, prazoContratual);
 
   const concluida = obraStatus === 'concluida';
   const diasAditivos = aditivos.reduce((s, a) => s + (a.dias_adicionais || 0), 0);
   const prazoEfetivo = prazoContratual + diasAditivos;
-  // Obra concluída: fim congelado (último diário → data_fim_prevista → sem contagem).
+  // Obra concluída: fim congelado (último diário → data_fim_prevista); ativa: hoje.
   const fimConcluida = concluida ? (ultimoDiario || dataFimPrevista || null) : null;
-  const diasDecorridos = !primeiroDiario
-    ? 0
-    : concluida
-      ? (fimConcluida ? businessDaysBetween(parseISO(primeiroDiario), parseISO(fimConcluida)) : 0)
-      : businessDaysBetween(parseISO(primeiroDiario), new Date());
-  const prazoConsumido = prazoEfetivo > 0 ? Math.round((diasDecorridos / prazoEfetivo) * 100) : 0;
-  const desvio = progressoGeral - prazoConsumido;
+  const dataCorte = concluida ? fimConcluida : hojeLocal();
+  const diasDecorridos = !primeiroDiario || !dataCorte ? 0 : calcBusinessDays(primeiroDiario, dataCorte);
+  const diasParados = primeiroDiario && dataCorte ? datasUteisParadas(paralisacoes, primeiroDiario, dataCorte).size : 0;
+  const consumo = calcularPrazoConsumido(diasDecorridos, diasParados, prazoEfetivo);
+  const prazoConsumido = consumo.percentual;
+  const desvio = prog.global - prazoConsumido;
   const planejamentoConfigurado = atividades.length > 0;
+  const diasSemDiario = !concluida && primeiroDiario ? diasUteisSemDiario(datasDiarios, primeiroDiario, ontemLocal()) : [];
 
   const statusObra: StatusObra = !planejamentoConfigurado
     ? { label: 'Planejamento pendente', color: 'text-muted-foreground', dot: '⚪', cls: 'border-muted/30 bg-muted/10' }
@@ -87,13 +98,20 @@ export function calcularIndicadores(
   return {
     totalPeso,
     pesoValido,
-    progressoGeral,
-    progressoAditivos: escopo.aditivo,
+    progressoGeral: prog.contrato,
+    progressoContrato: prog.contrato,
+    progressoGlobal: prog.global,
+    progressoPorAditivo: prog.porAditivo,
+    atividadesAditivoSemVinculo: prog.atividadesSemVinculo,
+    progressoAditivos: prog.aditivos,
     totalPesoAditivos: escopo.pesoAditivo,
-    temAditivos: escopo.temAditivos,
+    temAditivos: escopo.temAditivos || aditivos.length > 0,
     diasAditivos,
     prazoEfetivo,
     diasDecorridos,
+    diasParados,
+    diasConsumidos: consumo.diasConsumidos,
+    diasSemDiario,
     prazoConsumido,
     desvio,
     planejamentoConfigurado,
