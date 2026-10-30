@@ -183,7 +183,8 @@ export function useCronogramaPage() {
       empresaConfig: empresaConfig ?? null,
       obraNome,
       atividades,
-      progressoGeral: indicadores.progressoGeral,
+      progressoGeral: indicadores.progressoGlobal,
+      progressoContrato: indicadores.temAditivos ? indicadores.progressoContrato : undefined,
       ganttData,
     });
     toast.success('PDF exportado com sucesso');
