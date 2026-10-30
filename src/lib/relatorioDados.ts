@@ -216,9 +216,9 @@ async function carregarDadosAoVivo(
   const prazoContratual = prazoBase + diasAditivos;
 
   // Dias parados NO PERÍODO: datas úteis distintas das paralisações dos diários do relatório.
-  const inicioPeriodo = inicio || dList[0]?.data || dataInicioReal;
+  const inicioParados = inicio || dList[0]?.data || dataInicioReal;
   const diasParadosPeriodo =
-    inicioPeriodo && fim ? datasUteisParadas(pa.data || [], inicioPeriodo, fim).size : 0;
+    inicioParados && fim ? datasUteisParadas(pa.data || [], inicioParados, fim).size : 0;
 
   // Dias parados TOTAL da obra (cumulativo até o fim do relatório), datas úteis distintas.
   let diasParadosTotal = 0;
