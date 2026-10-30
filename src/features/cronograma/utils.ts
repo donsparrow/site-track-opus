@@ -9,21 +9,6 @@ import {
   calcularProgressoGlobal, calcularPrazoConsumido, datasUteisParadas, diasUteisSemDiario, type ProgressoPorAditivo,
 } from '@/lib/prazoObra';
 
-/** Dias úteis (seg–sex) entre duas datas, inclusive. */
-export function businessDaysBetween(from: Date, to: Date) {
-  let count = 0;
-  const cur = new Date(from);
-  cur.setHours(0, 0, 0, 0);
-  const end = new Date(to);
-  end.setHours(0, 0, 0, 0);
-  while (cur <= end) {
-    const dow = cur.getDay();
-    if (dow !== 0 && dow !== 6) count++;
-    cur.setDate(cur.getDate() + 1);
-  }
-  return count;
-}
-
 /** Progresso do ESCOPO ORIGINAL (regra canônica em src/lib/progressoFisico.ts). */
 export function calcularProgressoGeral(atividades: Atividade[], _totalPeso?: number) {
   return calcularProgressoOriginal(atividades);
