@@ -1,6 +1,13 @@
 import { supabase } from '@/integrations/supabase/client';
 import { calcBusinessDays } from './dias';
 import { calcularProgressoOriginal, type AtividadeProgresso } from './progressoFisico';
+import {
+  prazoContratualBase,
+  datasUteisParadas,
+  calcularPrazoConsumido,
+  calcularProgressoGlobal,
+  type ProgressoPorAditivo,
+} from './prazoObra';
 
 export { calcBusinessDays };
 
@@ -21,6 +28,12 @@ export interface PrazosRelatorio {
   diasAditivos?: number;
   /** Prazo contratual sem aditivos (ausente em snapshots antigos). */
   contratualBase?: number;
+  /** Dias úteis do início real até o fim do relatório. */
+  decorridos?: number;
+  /** % do escopo original (presença = "dado novo"). */
+  percentualContrato?: number;
+  percentualAditivos?: number;
+  progressoPorAditivo?: ProgressoPorAditivo[];
 }
 
 export interface DadosRelatorio {
@@ -192,12 +205,7 @@ async function carregarDadosAoVivo(
     .eq('id', obraId)
     .maybeSingle();
 
-  const prazoContratualBase =
-    obra?.prazo_contratual_dias && obra.prazo_contratual_dias > 0
-      ? obra.prazo_contratual_dias
-      : obra?.data_inicio && obra?.data_fim_prevista
-        ? calcBusinessDays(obra.data_inicio, obra.data_fim_prevista)
-        : 0;
+  const prazoBase = prazoContratualBase(obra || {});
 
   const { data: aditivosRows } = await supabase
     .from('obra_aditivos' as any)
@@ -205,16 +213,16 @@ async function carregarDadosAoVivo(
     .eq('obra_id', obraId);
   const aditivos = (aditivosRows as any[]) || [];
   const diasAditivos = aditivos.reduce((s, a) => s + (a.dias_adicionais || 0), 0);
-  const prazoContratual = prazoContratualBase + diasAditivos;
+  const prazoContratual = prazoBase + diasAditivos;
 
-  // Dias parados NO PERÍODO: paralisações dos diários do relatório (lista `pa`).
-  const diasParadosPeriodo = (pa.data || []).reduce((s: number, p: any) => s + (p.total_dias || 0), 0);
+  // Dias parados NO PERÍODO: datas úteis distintas das paralisações dos diários do relatório.
+  const inicioPeriodo = inicio || dList[0]?.data || dataInicioReal;
+  const diasParadosPeriodo =
+    inicioPeriodo && fim ? datasUteisParadas(pa.data || [], inicioPeriodo, fim).size : 0;
 
-  // Dias parados TOTAL da obra (cumulativo): paralisações de TODOS os diários da obra até a
-  // data fim do relatório (inclusive), não apenas do período. A lista retornada em
-  // `paralisacoes` continua sendo a do período.
+  // Dias parados TOTAL da obra (cumulativo até o fim do relatório), datas úteis distintas.
   let diasParadosTotal = 0;
-  if (fim) {
+  if (fim && dataInicioReal) {
     const { data: diariosAteFim } = await supabase
       .from('diario_obra')
       .select('id')
@@ -224,17 +232,19 @@ async function carregarDadosAoVivo(
     if (idsAteFim.length) {
       const { data: paralAteFim } = await supabase
         .from('diario_paralisacoes')
-        .select('total_dias')
+        .select('data_inicio, data_fim')
         .in('diario_id', idsAteFim);
-      diasParadosTotal = (paralAteFim || []).reduce((s: number, p: any) => s + (p.total_dias || 0), 0);
+      diasParadosTotal = datasUteisParadas((paralAteFim as any[]) || [], dataInicioReal, fim).size;
     }
   }
-  const diasTrabalhados = dataInicioReal && fim ? calcBusinessDays(dataInicioReal, fim) : 0;
+  const diasDecorridos = dataInicioReal && fim ? calcBusinessDays(dataInicioReal, fim) : 0;
+  const diasTrabalhados = Math.max(0, diasDecorridos - diasParadosTotal);
   const prazoAjustado = prazoContratual + diasParadosTotal;
-  const saldoPrazo = prazoAjustado - diasTrabalhados;
-  const percentualTempo = prazoContratual > 0 ? Math.round((diasTrabalhados / prazoContratual) * 100) : 0;
+  const saldoPrazo = prazoContratual - diasTrabalhados;
+  const percentualTempo = calcularPrazoConsumido(diasDecorridos, diasParadosTotal, prazoContratual).percentual;
 
-  const percentualExecutado = calcularProgressoOriginal(cronogramaAtivs);
+  const prog = calcularProgressoGlobal(cronogramaAtivs, aditivos, prazoBase);
+  const percentualExecutado = prog.global;
 
   // Baseline das atividades (X): maior % em diários da obra ANTES do início do período.
   // Chave = cronograma_atividade_id ou "d:" + descrição. null se não puder ser obtido.
