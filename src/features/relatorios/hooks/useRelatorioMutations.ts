@@ -8,6 +8,7 @@ import { gerarPDFRelatorio } from '../pdf';
 import {
   arquivarPdfAssinado, baixarBlob, baixarPdfArquivado, buscarUltimoPdfArquivado,
   excluirPdfArquivado as excluirPdfArquivadoFn, getVersaoLayout, montarArgsPdf, nomeArquivoPdf,
+  type PdfArquivado,
 } from '../pdfArquivado';
 import { aplicarIndicadoresCongelados, calcularIndicadores } from '../indicadores';
 import { buildSnapshot, detectChanges, revLabel } from '../utils';
