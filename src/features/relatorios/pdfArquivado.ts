@@ -79,18 +79,16 @@ function stampAgora(): string {
 }
 
 /**
- * Gera o PDF do relatório assinado, arquiva no bucket e registra em
- * relatorio_pdfs_assinados. Retorna o registro + o blob para download imediato.
+ * Gera o PDF do relatório assinado em memória, sem arquivar nada.
+ * Retorna o relatório, os args usados e o blob pronto para download.
  */
-export async function arquivarPdfAssinado({
+export async function gerarPdfAssinadoBlob({
   relatorioId,
   empresa,
-  origem,
 }: {
   relatorioId: string;
   empresa: EmpresaConfig | null;
-  origem: 'assinatura' | 'arquivamento_posterior';
-}): Promise<{ registro: PdfArquivado; blob: Blob; fileName: string }> {
+}): Promise<{ relatorio: Relatorio; args: GerarPdfArgs; blob: Blob; fileName: string }> {
   const { data: rel, error: errRel } = await supabase
     .from('relatorios')
     .select('*')
@@ -106,6 +104,25 @@ export async function arquivarPdfAssinado({
   if (!resultado) throw new Error('Falha ao gerar o PDF');
   const { blob, fileName } = resultado;
 
+  return { relatorio, args, blob, fileName };
+}
+
+/**
+ * Arquiva um blob já gerado: upload no bucket + registro em
+ * relatorio_pdfs_assinados + log. Não gera nem baixa o PDF.
+ */
+export async function arquivarBlob({
+  relatorio,
+  args,
+  blob,
+  origem,
+}: {
+  relatorio: Relatorio;
+  args: GerarPdfArgs;
+  blob: Blob;
+  origem: 'assinatura' | 'arquivamento_posterior';
+}): Promise<{ registro: PdfArquivado }> {
+  const relatorioId = relatorio.id;
   const qtdAssinaturas = args.assinaturas.length;
   const storagePath = `${relatorio.empresa_id}/${relatorioId}/${stampAgora()}-${qtdAssinaturas}ass.pdf`;
 
@@ -142,7 +159,25 @@ export async function arquivarPdfAssinado({
     });
   }
 
-  return { registro: registro as PdfArquivado, blob, fileName };
+  return { registro: registro as PdfArquivado };
+}
+
+/**
+ * Gera o PDF do relatório assinado, arquiva no bucket e registra em
+ * relatorio_pdfs_assinados. Retorna o registro + o blob para download imediato.
+ */
+export async function arquivarPdfAssinado({
+  relatorioId,
+  empresa,
+  origem,
+}: {
+  relatorioId: string;
+  empresa: EmpresaConfig | null;
+  origem: 'assinatura' | 'arquivamento_posterior';
+}): Promise<{ registro: PdfArquivado; blob: Blob; fileName: string }> {
+  const { relatorio, args, blob, fileName } = await gerarPdfAssinadoBlob({ relatorioId, empresa });
+  const { registro } = await arquivarBlob({ relatorio, args, blob, origem });
+  return { registro, blob, fileName };
 }
 
 export async function listarPdfsArquivados(relatorioId: string): Promise<PdfArquivado[]> {
