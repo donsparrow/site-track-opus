@@ -28,10 +28,10 @@ export interface GerarPdfArgs {
  * não faz nenhum fetch: recebe os dados já carregados pelos hooks.
  * As assinaturas continuam resolvidas em URL assinada do bucket privado.
  */
-export async function gerarPDFRelatorio({ empresa, obra, periodo, dados, assinaturas, versoes, revisao, versaoLayout = 1 }: GerarPdfArgs) {
+export async function gerarPDFRelatorio({ empresa, obra, periodo, dados, assinaturas, versoes, revisao, versaoLayout = 1 }: GerarPdfArgs, opts?: { saida?: 'download' | 'blob' }) {
   const v2 = versaoLayout >= 2;
   const maiorVersao = (versoes || []).reduce((m, v) => Math.max(m, v.numero_versao), 0);
-  await gerarRelatorioPDF({
+  return await gerarRelatorioPDF({
     empresa: empresa || null,
     obra: {
       nome: obra.nome,
@@ -58,6 +58,7 @@ export async function gerarPDFRelatorio({ empresa, obra, periodo, dados, assinat
     planejamentoConfigurado: dados.planejamentoConfigurado,
     congelado: dados.congelado ?? null,
     aditivosCongelados: dados.aditivosCongelados ?? false,
+    saida: opts?.saida,
     assinaturas: await resolveAssinaturas(assinaturas || []),
     versao: v2 && maiorVersao > 0 ? maiorVersao - 1 : revisao,
     versaoLayout,

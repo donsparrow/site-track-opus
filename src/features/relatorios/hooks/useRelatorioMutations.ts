@@ -5,6 +5,11 @@ import { carregarDadosRelatorio } from '@/lib/relatorioDados';
 import type { Json } from '@/integrations/supabase/types';
 import { relatoriosPrefixes } from '../queryKeys';
 import { gerarPDFRelatorio } from '../pdf';
+import {
+  arquivarPdfAssinado, baixarPdfAssinadoOuArquivar,
+  excluirPdfArquivado as excluirPdfArquivadoFn, getVersaoLayout, montarArgsPdf,
+  type PdfArquivado,
+} from '../pdfArquivado';
 import { aplicarIndicadoresCongelados, calcularIndicadores } from '../indicadores';
 import { buildSnapshot, detectChanges, revLabel } from '../utils';
 import type {
@@ -14,13 +19,6 @@ import type {
 import { useRelatoriosScope } from './useObrasRelatorios';
 
 /* ---------- leituras auxiliares usadas apenas dentro das mutations ---------- */
-
-/** Versão do layout do PDF (1 = legado). Sem relatório salvo → layout novo. */
-async function getVersaoLayout(relatorioId: string | null): Promise<number> {
-  if (!relatorioId) return 2;
-  const { data } = await supabase.from('relatorios').select('versao_layout').eq('id', relatorioId).maybeSingle();
-  return (data as { versao_layout?: number } | null)?.versao_layout ?? 1;
-}
 
 async function fetchVersoes(relatorioId: string): Promise<RelatorioVersao[]> {
   const { data } = await supabase
@@ -81,6 +79,7 @@ interface AssinarInput {
   nome: string;
   cargo: string;
   tipo: string;
+  empresa: EmpresaConfig | null;
 }
 
 interface DownloadListaInput {
@@ -302,48 +301,27 @@ export function useRelatorioMutations() {
     onError: (e: Error) => toast.error('Erro ao gerar PDF: ' + e.message),
   });
 
-  /** Download direto pela listagem — mesmos dados, mesmo PDF. */
+  /** Download direto pela listagem — assinado entrega o arquivo guardado, nunca regenera. */
   const baixarDaLista = useMutation({
     mutationFn: async ({ relatorio, empresa }: DownloadListaInput) => {
       toast.info('Preparando PDF...');
-      const { data: obra } = await supabase
-        .from('obras')
-        .select('*, clientes(nome, cpf_cnpj, email, telefone)')
-        .eq('id', relatorio.obra_id)
-        .maybeSingle();
-      if (!obra) throw new Error('Obra do relatório não encontrada');
 
-      const dadosBrutos = await carregarDadosRelatorio(
-        relatorio.obra_id,
-        relatorio.data_inicio || '',
-        relatorio.data_fim || '',
-        { relatorioId: relatorio.id },
-      );
-      // Documento imutável: indicadores congelados no fechamento têm precedência.
-      const dados = aplicarIndicadoresCongelados(dadosBrutos, relatorio);
+      if (relatorio.status === 'assinado') {
+        const ok = await baixarPdfAssinadoOuArquivar({
+          relatorioId: relatorio.id,
+          empresa,
+          nomeObra: relatorio.obras?.nome || 'relatorio',
+        });
+        if (ok) return relatorio.id;
+        toast.warning('PDF gerado, mas não foi possível arquivá-lo.');
+        // Fallback: gera e baixa como antes, sem arquivar.
+      }
 
-      const [assinRes, versRes] = await Promise.all([
-        supabase.from('assinaturas').select('*').eq('relatorio_id', relatorio.id).order('data_assinatura'),
-        supabase.from('relatorio_versoes').select('*').eq('relatorio_id', relatorio.id).order('numero_versao', { ascending: false }),
-      ]);
-
-      const pdfRevisao = relatorio.revisao_pdf || 0;
-      const versoes = (versRes.data || []) as RelatorioVersao[];
-
-      const versaoLayout = await getVersaoLayout(relatorio.id);
-      await gerarPDFRelatorio({
-        versaoLayout,
-        empresa,
-        obra: obra as unknown as ObraRelatorio,
-        periodo: { inicio: relatorio.data_inicio || '', fim: relatorio.data_fim || '' },
-        dados,
-        assinaturas: (assinRes.data || []) as Assinatura[],
-        versoes,
-        revisao: pdfRevisao,
-      });
+      const args = await montarArgsPdf(relatorio, empresa);
+      await gerarPDFRelatorio(args);
 
       if (user && await isPrimeiroPdfDoUsuario(relatorio.id, user.id)) {
-        const maior = versoes[0]?.numero_versao ?? 1;
+        const maior = args.versoes[0]?.numero_versao ?? 1;
         await supabase.from('relatorio_logs').insert({
           relatorio_id: relatorio.id,
           usuario_id: user.id,
@@ -360,9 +338,9 @@ export function useRelatorioMutations() {
     onError: (e: Error) => toast.error('Erro ao baixar PDF: ' + e.message),
   });
 
-  /** Assinatura digital: upload no bucket privado + versão + status assinado. */
+  /** Assinatura digital: upload no bucket privado + versão + status assinado + PDF arquivado. */
   const assinar = useMutation({
-    mutationFn: async ({ relatorioId, dataUrl, nome, cargo, tipo }: AssinarInput) => {
+    mutationFn: async ({ relatorioId, dataUrl, nome, cargo, tipo, empresa }: AssinarInput) => {
       const blob = await (await fetch(dataUrl)).blob();
       const filePath = `assinaturas/${relatorioId}/${Date.now()}.png`;
       const { error: upErr } = await supabase.storage.from('anexos').upload(filePath, blob);
@@ -411,6 +389,15 @@ export function useRelatorioMutations() {
       }
 
       await supabase.from('relatorios').update({ status: 'assinado' }).eq('id', relatorioId);
+
+      // Arquiva o PDF assinado; falha não desfaz nem bloqueia a assinatura.
+      try {
+        await arquivarPdfAssinado({ relatorioId, empresa, origem: 'assinatura' });
+      } catch (e) {
+        console.warn('Falha ao arquivar o PDF assinado:', e);
+        toast.warning('Assinatura registrada, mas o PDF não foi arquivado. Ele será arquivado no próximo download.');
+      }
+
       return relatorioId;
     },
     onSuccess: (relatorioId) => {
@@ -444,5 +431,35 @@ export function useRelatorioMutations() {
     onError: () => toast.error('Erro ao excluir relatório'),
   });
 
-  return { consolidar, salvar, gerarPdf, baixarDaLista, assinar, excluir };
+  /** Download pelo editor de relatório assinado — mesmo fluxo da listagem. */
+  const baixarAssinado = useMutation({
+    mutationFn: async ({ relatorioId, empresa, nomeObra }: { relatorioId: string; empresa: EmpresaConfig | null; nomeObra: string }) => {
+      toast.info('Preparando PDF...');
+      const ok = await baixarPdfAssinadoOuArquivar({ relatorioId, empresa, nomeObra });
+      if (!ok) throw new Error('Não foi possível obter o PDF arquivado');
+      return relatorioId;
+    },
+    onSuccess: (relatorioId) => {
+      qc.invalidateQueries({ queryKey: ['relatorio-pdfs-arquivados', relatorioId] });
+      toast.success('PDF baixado!');
+    },
+    onError: (e: Error) => toast.error('Erro ao baixar PDF: ' + e.message),
+  });
+
+  /** Exclusão de PDF arquivado (somente administrador — validado no backend). */
+  const excluirPdfArquivado = useMutation({
+    mutationFn: async ({ registro, relatorioId }: { registro: PdfArquivado; relatorioId: string }) => {
+      await excluirPdfArquivadoFn(registro, relatorioId);
+      return relatorioId;
+    },
+    onSuccess: (relatorioId) => {
+      qc.invalidateQueries({ queryKey: relatoriosPrefixes.detalhe });
+      qc.invalidateQueries({ queryKey: relatoriosPrefixes.logs });
+      qc.invalidateQueries({ queryKey: ['relatorio-pdfs-arquivados', relatorioId] });
+      toast.success('PDF arquivado excluído.');
+    },
+    onError: (e: Error) => toast.error('Erro ao excluir PDF arquivado: ' + e.message),
+  });
+
+  return { consolidar, salvar, gerarPdf, baixarDaLista, baixarAssinado, assinar, excluir, excluirPdfArquivado };
 }
