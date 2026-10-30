@@ -223,12 +223,15 @@ export async function baixarPdfArquivado(registro: PdfArquivado, fileName: strin
   baixarBlob(data, fileName);
 }
 
+export type ResultadoDownload = 'original' | 'arquivado_agora' | 'gerado_sem_arquivo';
+
 /**
- * Fluxo de download de relatório assinado: entrega o arquivo guardado. Se já
- * existe registro vigente, o download é obrigatório — falha dele é reportada e
- * NUNCA gera um novo arquivamento. Só quando não há registro vigente é que se
- * arquiva um novo e baixa. Retorna false apenas se esse arquivamento falhar
- * (o chamador decide o fallback de gerar sem arquivar).
+ * Fluxo de download de relatório assinado: o usuário SEMPRE recebe um PDF.
+ * - Com registro vigente: tenta o original; se o download falhar, gera na hora
+ *   e baixa SEM arquivar (uma falha nunca substitui o PDF vigente).
+ * - Sem registro vigente: gera, baixa imediatamente e só depois tenta arquivar;
+ *   falha no arquivamento não impede o download.
+ * Só lança erro se a própria geração do PDF falhar.
  */
 export async function baixarPdfAssinadoOuArquivar({
   relatorioId,
@@ -238,27 +241,37 @@ export async function baixarPdfAssinadoOuArquivar({
   relatorioId: string;
   empresa: EmpresaConfig | null;
   nomeObra: string;
-}): Promise<boolean> {
+}): Promise<ResultadoDownload> {
   const fileName = nomeArquivoPdf(nomeObra);
-  const registro = await buscarUltimoPdfArquivado(relatorioId);
+
+  let registro: PdfArquivado | null = null;
+  try {
+    registro = await buscarUltimoPdfArquivado(relatorioId);
+  } catch (e) {
+    console.warn('Falha ao consultar PDF arquivado; gerando sem arquivar:', e);
+  }
+
   if (registro) {
     try {
       await baixarPdfArquivado(registro, fileName);
-      return true;
-    } catch {
-      throw new Error('Não foi possível baixar o PDF arquivado. Verifique a conexão e tente novamente.');
+      return 'original';
+    } catch (e) {
+      console.warn('Falha ao baixar o PDF arquivado; gerando uma cópia sem arquivar:', e);
+      const { blob, fileName: nome } = await gerarPdfAssinadoBlob({ relatorioId, empresa });
+      baixarBlob(blob, nome);
+      return 'gerado_sem_arquivo';
     }
   }
+
+  const { relatorio, args, blob, fileName: nome } = await gerarPdfAssinadoBlob({ relatorioId, empresa });
+  baixarBlob(blob, nome);
+
   try {
-    const { blob, fileName: nome } = await arquivarPdfAssinado({
-      relatorioId,
-      empresa,
-      origem: 'arquivamento_posterior',
-    });
-    baixarBlob(blob, nome);
-    return true;
-  } catch {
-    return false;
+    await arquivarBlob({ relatorio, args, blob, origem: 'arquivamento_posterior' });
+    return 'arquivado_agora';
+  } catch (e) {
+    console.warn('PDF baixado, mas falha ao arquivar:', e);
+    return 'gerado_sem_arquivo';
   }
 }
 
