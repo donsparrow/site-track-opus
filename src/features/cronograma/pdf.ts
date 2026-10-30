@@ -19,6 +19,8 @@ export interface ExportarCronogramaPdfArgs {
   obraNome: string;
   atividades: Atividade[];
   progressoGeral: number;
+  /** % do contrato original; presente só quando há aditivos. */
+  progressoContrato?: number;
   ganttData: GanttData | null;
 }
 
@@ -31,6 +33,7 @@ export async function exportarCronogramaPdf({
   obraNome,
   atividades,
   progressoGeral,
+  progressoContrato,
   ganttData,
 }: ExportarCronogramaPdfArgs) {
   const doc = new jsPDF('landscape', 'mm', 'a4');
@@ -53,7 +56,7 @@ export async function exportarCronogramaPdf({
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(60);
   doc.text(`Data: ${format(new Date(), 'dd/MM/yyyy', { locale: ptBR })}`, MARGIN, y);
-  doc.text(`Progresso Geral: ${progressoGeral}%`, MARGIN + 80, y);
+  doc.text(`${progressoContrato !== undefined ? 'Progresso Global' : 'Progresso Geral'}: ${progressoGeral}%`, MARGIN + 80, y);
   y += 6;
 
   const barW = contentW, barH = 6;
@@ -61,7 +64,15 @@ export async function exportarCronogramaPdf({
   doc.roundedRect(MARGIN, y, barW, barH, 2, 2, 'F');
   doc.setFillColor(34, 197, 94);
   doc.roundedRect(MARGIN, y, barW * (progressoGeral / 100), barH, 2, 2, 'F');
-  y += 12;
+  if (progressoContrato !== undefined) {
+    y += barH + 4;
+    doc.setFontSize(8);
+    doc.setTextColor(100);
+    doc.text(`Contrato original: ${progressoContrato}%`, MARGIN, y);
+    y += 6;
+  } else {
+    y += 12;
+  }
 
   doc.setTextColor(0);
 
