@@ -57,6 +57,8 @@ interface RelatorioPDFData {
   /** Assinado com aditivos congelados no snapshot → usa a seção detalhada. */
   aditivosCongelados?: boolean;
   assinaturas: any[];
+  /** 'download' (padrão) baixa o arquivo; 'blob' apenas retorna o blob, sem baixar. */
+  saida?: 'download' | 'blob';
   versao?: number;
   versoes?: { rev: string; data: string; resumo: string }[];
   /** 1 = layout legado (inalterado); >= 2 = fotos por data, histórico em colunas. */
