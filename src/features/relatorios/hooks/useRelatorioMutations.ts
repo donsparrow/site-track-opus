@@ -8,7 +8,7 @@ import { gerarPDFRelatorio } from '../pdf';
 import {
   arquivarPdfAssinado, baixarPdfAssinadoOuArquivar,
   excluirPdfArquivado as excluirPdfArquivadoFn, getVersaoLayout, montarArgsPdf,
-  type PdfArquivado,
+  type PdfArquivado, type ResultadoDownload,
 } from '../pdfArquivado';
 import { aplicarIndicadoresCongelados, calcularIndicadores } from '../indicadores';
 import { buildSnapshot, detectChanges, revLabel } from '../utils';
@@ -19,6 +19,17 @@ import type {
 import { useRelatoriosScope } from './useObrasRelatorios';
 
 /* ---------- leituras auxiliares usadas apenas dentro das mutations ---------- */
+
+/** Toast conforme a origem do PDF entregue ao usuário. */
+function toastResultadoDownload(resultado: ResultadoDownload): void {
+  if (resultado === 'original') {
+    toast.success('PDF original arquivado baixado.');
+  } else if (resultado === 'arquivado_agora') {
+    toast.success('PDF gerado e arquivado.');
+  } else {
+    toast.warning('Não foi possível usar a cópia arquivada. Este PDF foi gerado agora e não é o original arquivado. Tente novamente mais tarde para obter o original.');
+  }
+}
 
 async function fetchVersoes(relatorioId: string): Promise<RelatorioVersao[]> {
   const { data } = await supabase
@@ -307,14 +318,13 @@ export function useRelatorioMutations() {
       toast.info('Preparando PDF...');
 
       if (relatorio.status === 'assinado') {
-        const ok = await baixarPdfAssinadoOuArquivar({
+        const resultado = await baixarPdfAssinadoOuArquivar({
           relatorioId: relatorio.id,
           empresa,
           nomeObra: relatorio.obras?.nome || 'relatorio',
         });
-        if (ok) return relatorio.id;
-        toast.warning('PDF gerado, mas não foi possível arquivá-lo.');
-        // Fallback: gera e baixa como antes, sem arquivar.
+        toastResultadoDownload(resultado);
+        return { relatorioId: relatorio.id, toastFeito: true };
       }
 
       const args = await montarArgsPdf(relatorio, empresa);
@@ -329,11 +339,11 @@ export function useRelatorioMutations() {
         });
       }
 
-      return relatorio.id;
+      return { relatorioId: relatorio.id, toastFeito: false };
     },
-    onSuccess: (relatorioId) => {
+    onSuccess: ({ relatorioId, toastFeito }) => {
       invalidateRelatorio(relatorioId);
-      toast.success('PDF baixado!');
+      if (!toastFeito) toast.success('PDF baixado!');
     },
     onError: (e: Error) => toast.error('Erro ao baixar PDF: ' + e.message),
   });
@@ -435,13 +445,12 @@ export function useRelatorioMutations() {
   const baixarAssinado = useMutation({
     mutationFn: async ({ relatorioId, empresa, nomeObra }: { relatorioId: string; empresa: EmpresaConfig | null; nomeObra: string }) => {
       toast.info('Preparando PDF...');
-      const ok = await baixarPdfAssinadoOuArquivar({ relatorioId, empresa, nomeObra });
-      if (!ok) throw new Error('Não foi possível obter o PDF arquivado');
+      const resultado = await baixarPdfAssinadoOuArquivar({ relatorioId, empresa, nomeObra });
+      toastResultadoDownload(resultado);
       return relatorioId;
     },
     onSuccess: (relatorioId) => {
       qc.invalidateQueries({ queryKey: ['relatorio-pdfs-arquivados', relatorioId] });
-      toast.success('PDF baixado!');
     },
     onError: (e: Error) => toast.error('Erro ao baixar PDF: ' + e.message),
   });
