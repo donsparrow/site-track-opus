@@ -4,7 +4,7 @@ O status da obra (Adiantada / Em Dia / Atrasada) passa a descontar os dias parad
 
 ## O que muda para o usuário
 - **Card de Progresso**: quando há aditivo, mostra em destaque o "Progresso Global da Obra" e, logo abaixo, o Contrato original e cada aditivo com sua própria barra. Sem aditivo, fica como hoje.
-- **Aviso amarelo** quando existem atividades de aditivo sem vínculo: elas não entram no progresso.
+- **Aviso amarelo** quando existem atividades de aditivo sem vínculo: elas não entram no progresso. O aviso não aparece em obra concluída.
 - **Indicadores**: a célula "Executado (global)" e a nova célula "Dias úteis consumidos", com a conta "decorridos − parados" e os dias de aditivo incluídos.
 - **Aviso de dias úteis sem diário** (até 10 datas e depois "e mais N"). Esses dias contam como prazo consumido.
 - **Aditivo** exige pelo menos 1 dia útil. Com 0 dias, não salva.
