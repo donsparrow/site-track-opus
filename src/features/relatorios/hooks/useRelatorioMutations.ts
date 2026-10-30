@@ -431,6 +431,21 @@ export function useRelatorioMutations() {
     onError: () => toast.error('Erro ao excluir relatório'),
   });
 
+  /** Download pelo editor de relatório assinado — mesmo fluxo da listagem. */
+  const baixarAssinado = useMutation({
+    mutationFn: async ({ relatorioId, empresa, nomeObra }: { relatorioId: string; empresa: EmpresaConfig | null; nomeObra: string }) => {
+      toast.info('Preparando PDF...');
+      const ok = await baixarPdfAssinadoOuArquivar({ relatorioId, empresa, nomeObra });
+      if (!ok) throw new Error('Não foi possível obter o PDF arquivado');
+      return relatorioId;
+    },
+    onSuccess: (relatorioId) => {
+      qc.invalidateQueries({ queryKey: ['relatorio-pdfs-arquivados', relatorioId] });
+      toast.success('PDF baixado!');
+    },
+    onError: (e: Error) => toast.error('Erro ao baixar PDF: ' + e.message),
+  });
+
   /** Exclusão de PDF arquivado (somente administrador — validado no backend). */
   const excluirPdfArquivado = useMutation({
     mutationFn: async ({ registro, relatorioId }: { registro: PdfArquivado; relatorioId: string }) => {
@@ -446,5 +461,5 @@ export function useRelatorioMutations() {
     onError: (e: Error) => toast.error('Erro ao excluir PDF arquivado: ' + e.message),
   });
 
-  return { consolidar, salvar, gerarPdf, baixarDaLista, assinar, excluir, excluirPdfArquivado };
+  return { consolidar, salvar, gerarPdf, baixarDaLista, baixarAssinado, assinar, excluir, excluirPdfArquivado };
 }
