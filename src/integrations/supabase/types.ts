@@ -1946,6 +1946,76 @@ export type Database = {
           },
         ]
       }
+      relatorio_pdfs_assinados: {
+        Row: {
+          empresa_id: string
+          excluido_em: string | null
+          excluido_por: string | null
+          gerado_em: string
+          gerado_por: string
+          id: string
+          origem: string
+          qtd_assinaturas: number
+          relatorio_id: string
+          sha256: string
+          storage_path: string
+          tamanho_bytes: number
+          versao_id: string | null
+        }
+        Insert: {
+          empresa_id: string
+          excluido_em?: string | null
+          excluido_por?: string | null
+          gerado_em?: string
+          gerado_por?: string
+          id?: string
+          origem: string
+          qtd_assinaturas?: number
+          relatorio_id: string
+          sha256: string
+          storage_path: string
+          tamanho_bytes: number
+          versao_id?: string | null
+        }
+        Update: {
+          empresa_id?: string
+          excluido_em?: string | null
+          excluido_por?: string | null
+          gerado_em?: string
+          gerado_por?: string
+          id?: string
+          origem?: string
+          qtd_assinaturas?: number
+          relatorio_id?: string
+          sha256?: string
+          storage_path?: string
+          tamanho_bytes?: number
+          versao_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "relatorio_pdfs_assinados_empresa_id_fkey"
+            columns: ["empresa_id"]
+            isOneToOne: false
+            referencedRelation: "empresas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "relatorio_pdfs_assinados_relatorio_id_fkey"
+            columns: ["relatorio_id"]
+            isOneToOne: false
+            referencedRelation: "relatorios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "relatorio_pdfs_assinados_versao_id_fkey"
+            columns: ["versao_id"]
+            isOneToOne: false
+            referencedRelation: "relatorio_versoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       relatorio_versoes: {
         Row: {
           criado_por: string
@@ -2327,6 +2397,7 @@ export type Database = {
         Args: { _fim: string; _inicio: string }
         Returns: number
       }
+      excluir_pdf_assinado: { Args: { _id: string }; Returns: undefined }
       get_empresa_branding:
         | {
             Args: never
