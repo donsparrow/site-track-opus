@@ -8,7 +8,7 @@ import { fmtData } from '../utils';
 import { toast } from 'sonner';
 import type { DiarioParalisacao } from '../types';
 
-const MOTIVOS_RAPIDOS = ['Chuva', 'Aguardando condomínio', 'Falta de material'];
+const MOTIVOS_RAPIDOS = ['Chuva', 'Feriado', 'Aguardando condomínio', 'Falta de material'];
 
 function isDiaUtil(data: string) {
   const [y, m, d] = data.split('-').map(Number);

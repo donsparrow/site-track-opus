@@ -38,6 +38,8 @@ interface RelatorioPDFData {
     dataInicioReal: string;
     percentualTempo: number;
     percentualExecutado: number; diasAditivos?: number; contratualBase?: number;
+    decorridos?: number; percentualContrato?: number; percentualAditivos?: number;
+    progressoPorAditivo?: { id: string; descricao: string; dias: number; progresso: number }[];
   };
   diarios: any[];
   equipe: any[];
@@ -385,15 +387,31 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   doc.setFontSize(9);
 
   const desvioStr = `${desvio > 0 ? '+' : ''}${desvio}%`;
+  const novoPrazo = data.prazos.percentualContrato !== undefined;
+  const comAditivoPrazo = novoPrazo && (data.prazos.progressoPorAditivo?.length ?? 0) > 0;
+  const paradosTotalResumo = novoPrazo
+    ? (data.prazos.paradosTotal ?? Math.max(0, data.prazos.ajustado - data.prazos.contratual))
+    : Math.max(0, data.prazos.ajustado - data.prazos.contratual);
   const summaryData = [
-    ['Progresso Físico Executado', `${pExec}%`],
+    [comAditivoPrazo ? 'Progresso Físico Global' : 'Progresso Físico Executado', `${pExec}%`],
+    ...(comAditivoPrazo
+      ? [
+          ['Contrato Original', `${data.prazos.percentualContrato}%`],
+          ...(data.prazos.progressoPorAditivo || []).map((a, i) => [`Aditivo ${i + 1} (+${a.dias} dias)`, `${a.progresso}%`]),
+        ]
+      : []),
     ['Prazo Consumido', `${pTime}%`],
     ['Desvio', desvioStr],
     ['Status da Obra', statusObra],
     ['Período do Relatório', `${fmt(data.periodo.inicio)} a ${fmt(data.periodo.fim)}`],
-    ['Dias Trabalhados', `${data.prazos.trabalhados}`],
+    ...(novoPrazo
+      ? [
+          ['Dias Úteis Decorridos', `${data.prazos.decorridos ?? 0}`],
+          ['Dias Úteis Trabalhados', `${data.prazos.trabalhados}`],
+        ]
+      : [['Dias Trabalhados', `${data.prazos.trabalhados}`]]),
     ['Dias Parados (período)', `${data.prazos.parados}`],
-    ['Dias Parados (total da obra)', `${Math.max(0, data.prazos.ajustado - data.prazos.contratual)}`],
+    ['Dias Parados (total da obra)', `${paradosTotalResumo}`],
     ['Diários Registrados', `${data.diarios.length}`],
   ];
 
@@ -611,7 +629,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     { label: 'Parados (total da obra)', value: `${Math.max(0, data.prazos.ajustado - data.prazos.contratual)}` },
     { label: 'Dias Úteis Trabalhados', value: `${data.prazos.trabalhados}` },
     { label: 'Prazo Consumido', value: `${data.prazos.percentualTempo}%`, highlight: true },
-    { label: 'Progresso Físico', value: `${data.prazos.percentualExecutado}%`, highlight: true },
+    { label: (data.prazos.percentualContrato !== undefined && (data.prazos.progressoPorAditivo?.length ?? 0) > 0) ? 'Progresso Global' : 'Progresso Físico', value: `${data.prazos.percentualExecutado}%`, highlight: true },
   ];
   const col2W = contentW / 5;
   prazoItems2.forEach((item: any, i: number) => {
@@ -624,7 +642,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     if (item.highlight) {
-      const isFisico = item.label === 'Progresso Físico';
+      const isFisico = item.label === 'Progresso Físico' || item.label === 'Progresso Global';
       const clr = isFisico ? (data.prazos.percentualExecutado >= data.prazos.percentualTempo ? [34, 197, 94] : [239, 68, 68]) : [100, 100, 100];
       doc.setTextColor(clr[0], clr[1], clr[2]);
     } else {
@@ -830,7 +848,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     checkPage(12);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.text(`Progresso Geral: ${progressoObra}%`, MARGIN, y);
+    doc.text(`${(data.prazos.percentualContrato !== undefined && (data.prazos.progressoPorAditivo?.length ?? 0) > 0) ? 'Progresso do Contrato Original' : 'Progresso Geral'}: ${progressoObra}%`, MARGIN, y);
     doc.setFont('helvetica', 'normal');
     y += 4;
     doc.setFillColor(229, 231, 235);
