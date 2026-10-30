@@ -189,6 +189,43 @@ export async function baixarPdfArquivado(registro: PdfArquivado, fileName: strin
 }
 
 /**
+ * Fluxo de download de relatório assinado: entrega o arquivo guardado; se não
+ * houver (ou falhar), arquiva um novo e baixa. Retorna false se nada deu certo
+ * (o chamador decide o fallback de gerar sem arquivar).
+ */
+export async function baixarPdfAssinadoOuArquivar({
+  relatorioId,
+  empresa,
+  nomeObra,
+}: {
+  relatorioId: string;
+  empresa: EmpresaConfig | null;
+  nomeObra: string;
+}): Promise<boolean> {
+  const fileName = nomeArquivoPdf(nomeObra);
+  const registro = await buscarUltimoPdfArquivado(relatorioId);
+  if (registro) {
+    try {
+      await baixarPdfArquivado(registro, fileName);
+      return true;
+    } catch {
+      // Arquivo indisponível: cai no arquivamento posterior abaixo.
+    }
+  }
+  try {
+    const { blob, fileName: nome } = await arquivarPdfAssinado({
+      relatorioId,
+      empresa,
+      origem: 'arquivamento_posterior',
+    });
+    baixarBlob(blob, nome);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Exclusão de administrador: marca o registro via RPC e remove o arquivo.
  * Falha na remoção do arquivo não desfaz a marcação (apenas aviso no console).
  */

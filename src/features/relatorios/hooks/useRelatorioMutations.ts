@@ -308,27 +308,14 @@ export function useRelatorioMutations() {
       const fileName = nomeArquivoPdf(relatorio.obras?.nome || 'relatorio');
 
       if (relatorio.status === 'assinado') {
-        const registro = await buscarUltimoPdfArquivado(relatorio.id);
-        if (registro) {
-          try {
-            await baixarPdfArquivado(registro, fileName);
-            return relatorio.id;
-          } catch {
-            // Arquivo indisponível: cai no arquivamento posterior abaixo.
-          }
-        }
-        try {
-          const { blob, fileName: nome } = await arquivarPdfAssinado({
-            relatorioId: relatorio.id,
-            empresa,
-            origem: 'arquivamento_posterior',
-          });
-          baixarBlob(blob, nome);
-          return relatorio.id;
-        } catch {
-          toast.warning('PDF gerado, mas não foi possível arquivá-lo.');
-          // Fallback: gera e baixa como antes, sem arquivar.
-        }
+        const ok = await baixarPdfAssinadoOuArquivar({
+          relatorioId: relatorio.id,
+          empresa,
+          nomeObra: relatorio.obras?.nome || 'relatorio',
+        });
+        if (ok) return relatorio.id;
+        toast.warning('PDF gerado, mas não foi possível arquivá-lo.');
+        // Fallback: gera e baixa como antes, sem arquivar.
       }
 
       const args = await montarArgsPdf(relatorio, empresa);
