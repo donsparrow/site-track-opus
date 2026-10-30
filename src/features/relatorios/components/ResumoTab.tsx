@@ -35,7 +35,7 @@ export default function ResumoTab({ dados }: { dados: DadosRelatorio }) {
               <div>
                 <p className={`font-bold text-lg ${smartStatus.color}`}>{smartStatus.label}</p>
                 <p className="text-xs text-muted-foreground">
-                  Obra executada: {prazos.percentualExecutado}% | Tempo consumido: {prazos.percentualTempo}%
+                  Obra executada{prazos.percentualContrato !== undefined ? ' (global)' : ''}: {prazos.percentualExecutado}% | Tempo consumido: {prazos.percentualTempo}%
                 </p>
               </div>
             </div>
@@ -43,7 +43,7 @@ export default function ResumoTab({ dados }: { dados: DadosRelatorio }) {
           </div>
           <div className="space-y-1">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>Execução</span>
+              <span>{prazos.percentualContrato !== undefined ? 'Execução (global)' : 'Execução'}</span>
               <div className="flex-1"><Progress value={prazos.percentualExecutado} className="h-2" /></div>
               <span>{prazos.percentualExecutado}%</span>
             </div>
@@ -52,6 +52,11 @@ export default function ResumoTab({ dados }: { dados: DadosRelatorio }) {
               <div className="flex-1"><Progress value={Math.min(prazos.percentualTempo, 100)} className="h-2" /></div>
               <span>{prazos.percentualTempo}%</span>
             </div>
+            {prazos.percentualContrato !== undefined && (prazos.progressoPorAditivo?.length ?? 0) > 0 && (
+              <p className="text-xs text-muted-foreground pt-1">
+                Contrato original: {prazos.percentualContrato}% • Aditivos: {prazos.percentualAditivos ?? 0}%
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>

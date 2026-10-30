@@ -83,6 +83,12 @@ export default function IndicadoresPrazo({ prazos }: { prazos: PrazosRelatorio }
         </CardContent>
       </Card>
       {grid(linha1)}
+      {porAditivo.length > 0 && (
+        <p className="text-xs text-muted-foreground -mt-4 mb-6">
+          Contrato original: {prazos.percentualContrato}%
+          {porAditivo.map((a, i) => ` • Aditivo ${i + 1} (+${a.dias} dias): ${a.progresso}%`).join('')}
+        </p>
+      )}
       {grid(linha2)}
     </>
   );
