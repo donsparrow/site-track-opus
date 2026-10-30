@@ -4,7 +4,7 @@ O status da obra (Adiantada / Em Dia / Atrasada) passa a descontar os dias parad
 
 ## O que muda para o usuário
 - **Card de Progresso**: quando há aditivo, mostra em destaque o "Progresso Global da Obra" e, logo abaixo, o Contrato original e cada aditivo com sua própria barra. Sem aditivo, fica como hoje.
-- **Aviso amarelo** quando existem atividades de aditivo sem vínculo: elas não entram no progresso.
+- **Aviso amarelo** quando existem atividades de aditivo sem vínculo: elas não entram no progresso. O aviso não aparece em obra concluída.
 - **Indicadores**: a célula "Executado (global)" e a nova célula "Dias úteis consumidos", com a conta "decorridos − parados" e os dias de aditivo incluídos.
 - **Aviso de dias úteis sem diário** (até 10 datas e depois "e mais N"). Esses dias contam como prazo consumido.
 - **Aditivo** exige pelo menos 1 dia útil. Com 0 dias, não salva.
@@ -44,6 +44,7 @@ O status da obra (Adiantada / Em Dia / Atrasada) passa a descontar os dias parad
   - nova chamada de `calcularIndicadores`;
   - validação de pelo menos 1 dia em `handleSaveAditivo`.
 - Ajustes de tela em `ProgressoGeralCard.tsx` e `IndicadoresCard.tsx`, e só as props dos cards em `Cronograma.tsx`.
+- O `ProgressoGeralCard` recebe a nova prop `obraConcluida: boolean`, passada pelo `Cronograma.tsx`. O alerta de vínculo só aparece quando `obraConcluida === false`.
 - `AditivoDialog.tsx`: só o campo Dias Adicionais muda (`min=1`, placeholder "Ex.: 10").
 - `AtividadeDialog.tsx`: só o Select de tipo muda.
 - `useDiarioMutations.ts`:
@@ -53,4 +54,4 @@ O status da obra (Adiantada / Em Dia / Atrasada) passa a descontar os dias parad
 
 ## Validação
 - Rodar os testes com vitest, incluindo `prazoObra.test.ts`.
-- Conferir o Cronograma de uma obra sem aditivo e de uma com aditivo (Espíndula). Na Espíndula, as 8 atividades antigas sem vínculo devem gerar o aviso amarelo.
+- Conferir o Cronograma de uma obra sem aditivo e de uma com aditivo (Espíndula). Na Espíndula, que está concluída, o aviso não deve aparecer, e as atividades sem vínculo continuam fora do cálculo.
