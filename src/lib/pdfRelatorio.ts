@@ -1348,5 +1348,9 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   const nomeObra = data.obra.nome.toLowerCase().replace(/\s+/g, '_').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const fileName = `relatorio_${nomeObra}_${dataFormatada}.pdf`;
 
+  if (data.saida === 'blob') {
+    return { blob: doc.output('blob'), fileName };
+  }
   downloadPdf(doc, fileName);
+  return null;
 }
