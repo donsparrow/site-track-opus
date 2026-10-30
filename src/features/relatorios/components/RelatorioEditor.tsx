@@ -49,6 +49,7 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
 
   const obraData = obras.find((o) => o.id === obraId) || null;
   const isNovo = !relatorioInicial;
+  const { isAdmin } = useAuth();
 
   const periodoSugerido = usePeriodoSugerido(obraId, isNovo && !relatorioId);
   useEffect(() => {
