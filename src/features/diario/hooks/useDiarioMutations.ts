@@ -5,6 +5,7 @@ import { diarioKeys } from '../queryKeys';
 import { cronogramaStatus, mapLegacyStatus, percentualToStatus, totalDiasParalisacao } from '../utils';
 import type { DiarioDetalhado, DiarioFormValues } from '../types';
 import { uploadAnexoComProgresso } from '../upload';
+import { calcBusinessDays } from '@/lib/dias';
 
 interface Options {
   obraId: string;
@@ -445,13 +446,13 @@ export function useDiarioMutations({ obraId, diarioId }: Options) {
   /* ---------------- Paralisações ---------------- */
 
   const adicionarParalisacao = useMutation({
-    mutationFn: async (v: { motivo: string; dataInicio: string; dataFim: string }) => {
+    mutationFn: async (v: { motivo: string; data: string }) => {
       const { error } = await supabase.from('diario_paralisacoes').insert({
         diario_id: diarioId!,
         motivo: v.motivo,
-        data_inicio: v.dataInicio,
-        data_fim: v.dataFim || null,
-        total_dias: totalDiasParalisacao(v.dataInicio, v.dataFim),
+        data_inicio: v.data,
+        data_fim: v.data,
+        total_dias: calcBusinessDays(v.data, v.data),
       });
       if (error) throw error;
     },
@@ -463,15 +464,10 @@ export function useDiarioMutations({ obraId, diarioId }: Options) {
   });
 
   const atualizarParalisacao = useMutation({
-    mutationFn: async (v: { id: string; motivo: string; dataInicio: string; dataFim: string }) => {
+    mutationFn: async (v: { id: string; motivo: string }) => {
       const { error } = await supabase
         .from('diario_paralisacoes')
-        .update({
-          motivo: v.motivo,
-          data_inicio: v.dataInicio,
-          data_fim: v.dataFim || null,
-          total_dias: totalDiasParalisacao(v.dataInicio, v.dataFim),
-        })
+        .update({ motivo: v.motivo })
         .eq('id', v.id);
       if (error) throw error;
     },

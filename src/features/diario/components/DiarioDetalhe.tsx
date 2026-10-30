@@ -105,6 +105,7 @@ export function DiarioDetalhe({
         <TabsContent value="paralisacoes">
           <ParalisacoesTab
             paralisacoes={diario.diario_paralisacoes}
+            dataDiario={diario.data}
             canEdit={canEdit}
             canEditDelete={canEditDelete}
             onAdd={(v) => m.adicionarParalisacao.mutate(v)}
