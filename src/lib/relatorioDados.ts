@@ -116,7 +116,20 @@ export async function carregarDadosRelatorio(
   if (!opts?.relatorioId) return vivo;
   const snap = await buscarSnapshotCongelado(opts.relatorioId);
   if (!snap) return vivo;
-  const prazosBase = snap.prazos_congelados && snap.prazos ? snap.prazos : vivo.prazos;
+  // Assinado sem a marca prazos_congelados nunca recebe os campos da regra nova.
+  const CAMPOS_NOVOS = ["decorridos", "percentualContrato", "percentualAditivos", "progressoPorAditivo"];
+  const semCamposNovos = (p: any) => {
+    const c = { ...p };
+    for (const k of CAMPOS_NOVOS) delete c[k];
+    return c;
+  };
+  const vivoLegado = semCamposNovos(vivo.prazos);
+  const prazosBase =
+    snap.prazos_congelados && snap.prazos
+      ? snap.prazos
+      : snap.prazos
+        ? semCamposNovos({ ...vivoLegado, ...snap.prazos })
+        : vivoLegado;
   const aditivosCongelados = Array.isArray(snap.aditivos);
   return {
     ...vivo,
