@@ -7,6 +7,8 @@ import { FileText } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
 
 import { useObrasRelatorios, useEmpresaConfig } from '@/features/relatorios/hooks/useObrasRelatorios';
+import { useNomeAssinante } from '@/features/relatorios/hooks/useNomeAssinante';
+import { fmt } from '@/features/relatorios/utils';
 import { useRelatorios } from '@/features/relatorios/hooks/useRelatorios';
 import { useRelatorioMutations } from '@/features/relatorios/hooks/useRelatorioMutations';
 import FiltrosRelatorios from '@/features/relatorios/components/FiltrosRelatorios';
@@ -17,11 +19,15 @@ import type { RelatorioComObra, ViewMode } from '@/features/relatorios/types';
 
 /** Editor carregado sob demanda (inclui o canvas de assinatura). */
 const RelatorioEditor = lazy(() => import('@/features/relatorios/components/RelatorioEditor'));
+const AssinarDialog = lazy(() => import('@/features/relatorios/components/AssinarDialog'));
 
 export default function Relatorios() {
   const { pode } = usePermissions();
   const { role, user } = useAuth();
   const operacional = role === 'admin' || role === 'trabalhador' || role === 'super_admin';
+  const isCliente = role === 'sindico' || role === 'cliente';
+  const nomeAssinante = useNomeAssinante();
+  const [assinandoRel, setAssinandoRel] = useState<RelatorioComObra | null>(null);
   const podeCriar = pode('relatorios', 'criar');
   const podeEditar = pode('relatorios', 'editar');
   const podeExcluir = pode('relatorios', 'excluir');
@@ -38,7 +44,7 @@ export default function Relatorios() {
   const ids = listaQuery.relatorios.filter((r) => r.status === 'assinado').map((r) => r.id).sort();
   const liberacaoQuery = useQuery({
     queryKey: ['relatorio-liberacao', 'lote', user?.id, ids],
-    enabled: operacional && listaQuery.isSuccess,
+    enabled: (operacional || isCliente) && listaQuery.isSuccess,
     queryFn: () => statusLiberacaoLote(ids),
   });
   const liberacoes = liberacaoQuery.data ?? {};
@@ -96,7 +102,10 @@ export default function Relatorios() {
       ) : (
         <RelatoriosLista
           relatorios={relatorios}
-          liberacoes={operacional ? liberacoes : undefined}
+          liberacoes={liberacoes}
+          mostrarPendenciaEmpresa={operacional}
+          cliente={isCliente ? { userId: user?.id } : undefined}
+          onAssinar={(r) => setAssinandoRel(r)}
           podeEditar={podeEditar}
           podeExcluir={podeExcluir}
           onBaixar={(r) => m.baixarDaLista.mutate({ relatorio: r, empresa })}
@@ -104,6 +113,22 @@ export default function Relatorios() {
           onEditar={(r) => abrir(r, false)}
           onExcluir={(r) => m.excluir.mutate(r.id)}
         />
+      )}
+      {assinandoRel && (
+        <Suspense fallback={<RelatorioSkeleton rows={2} />}>
+          <AssinarDialog
+            open={!!assinandoRel}
+            onOpenChange={(open) => { if (!open) setAssinandoRel(null); }}
+            tipoFixo="cliente"
+            nomeInicial={nomeAssinante.data}
+            subtitulo={`${assinandoRel.obras?.nome || '—'} — ${assinandoRel.data_inicio ? fmt(assinandoRel.data_inicio) : '—'} a ${assinandoRel.data_fim ? fmt(assinandoRel.data_fim) : '—'}`}
+            saving={m.assinarComoCliente.isPending}
+            onConfirm={(values) => {
+              if (!assinandoRel) return;
+              m.assinarComoCliente.mutate({ relatorioId: assinandoRel.id, ...values }, { onSuccess: () => setAssinandoRel(null) });
+            }}
+          />
+        </Suspense>
       )}
     </div>
   );
