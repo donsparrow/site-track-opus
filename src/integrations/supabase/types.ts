@@ -17,6 +17,7 @@ export type Database = {
       assinaturas: {
         Row: {
           assinado_em: string | null
+          assinado_por: string | null
           assinatura_url: string
           cargo: string | null
           created_at: string
@@ -29,6 +30,7 @@ export type Database = {
         }
         Insert: {
           assinado_em?: string | null
+          assinado_por?: string | null
           assinatura_url: string
           cargo?: string | null
           created_at?: string
@@ -41,6 +43,7 @@ export type Database = {
         }
         Update: {
           assinado_em?: string | null
+          assinado_por?: string | null
           assinatura_url?: string
           cargo?: string | null
           created_at?: string
@@ -2382,6 +2385,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assinar_relatorio_cliente: {
+        Args: {
+          _assinatura_url: string
+          _cargo: string
+          _nome: string
+          _relatorio_id: string
+        }
+        Returns: string
+      }
       can_access_obra: { Args: { _obra_id: string }; Returns: boolean }
       can_manage_usuario_obra: {
         Args: { _obra_id: string; _target_user_id: string }
