@@ -4,3 +4,4 @@
 - Plan addendum activity synchronization through `aditivoSync.ts` and omit progress/status from existing-row updates; this preserves daily progress while isolating changes to the selected addendum.
 - Scope app-shell recovery to the app worker and its known caches, coordinate boot/chunk/boundary reset guards, and retain NetworkFirst HTML with preview registration guards; this avoids stale releases, reload loops and interference with auth or messaging.
 - Register client report signatures through the protected RPC and derive release status from the newest active PDF signature count; client downloads must never regenerate unreleased signatures.
+- Share signer-name lookup through `useNomeAssinante` between report list and editor; this keeps profile-based prefilling consistent without duplicate query logic.
