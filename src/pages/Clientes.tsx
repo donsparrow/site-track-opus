@@ -1,7 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
+import { queryKeys } from '@/lib/queryKeys';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -13,13 +15,21 @@ import { Plus, Users, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Clientes() {
-  const { isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const queryClient = useQueryClient();
   const { pode } = usePermissions();
   const canCreate = pode('clientes', 'criar');
   const canEditCliente = pode('clientes', 'editar');
   const canDelete = pode('clientes', 'excluir');
-  const [clientes, setClientes] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: clientes = [], isLoading: loading } = useQuery({
+    queryKey: queryKeys.clientesLista(user?.id ?? ''),
+    enabled: !!user,
+    staleTime: 0,
+    queryFn: async () => {
+      const { data } = await supabase.from('clientes').select('*').order('nome');
+      return data || [];
+    },
+  });
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [nome, setNome] = useState('');
@@ -35,14 +45,11 @@ export default function Clientes() {
   const [deleteNome, setDeleteNome] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
-  const fetchClientes = async () => {
-    setLoading(true);
-    const { data } = await supabase.from('clientes').select('*').order('nome');
-    setClientes(data || []);
-    setLoading(false);
+  const invalidateClientes = () => {
+    void queryClient.invalidateQueries({ queryKey: ['clientesLista'] });
+    void queryClient.invalidateQueries({ queryKey: ['obrasLista'] });
+    void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
   };
-
-  useEffect(() => { fetchClientes(); }, []);
 
   const resetForm = () => {
     setNome(''); setCpfCnpj(''); setEndereco(''); setAdministradora(''); setTelefone(''); setEmail('');
@@ -93,7 +100,7 @@ export default function Clientes() {
 
     resetForm();
     setDialogOpen(false);
-    fetchClientes();
+    invalidateClientes();
   };
 
   const confirmDelete = async () => {
@@ -111,7 +118,7 @@ export default function Clientes() {
     if (error) { toast.error('Erro: ' + error.message); }
     else { toast.success('Cliente excluído com sucesso!'); }
     setDeleteDialogOpen(false);
-    fetchClientes();
+    invalidateClientes();
   };
 
   const openDelete = (c: any) => {
