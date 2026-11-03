@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 type AppRole = 'admin' | 'trabalhador' | 'sindico' | 'cliente' | 'super_admin';
@@ -34,6 +35,7 @@ const withTimeout = <T,>(promise: Promise<T>, fallback: T): Promise<T> => {
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
@@ -169,6 +171,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    // Limpa todo o cache para não exibir dados de um usuário a outro no mesmo aparelho
+    queryClient.clear();
     setRole(null);
     setEmpresaId(null);
   };
