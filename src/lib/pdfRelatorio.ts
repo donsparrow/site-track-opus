@@ -89,7 +89,7 @@ async function loadImageAsDataUrl(url: string): Promise<string | null> {
   try {
     return await new Promise<string | null>((resolve) => {
       const img = new Image();
-      img.crossOrigin = 'Anonymous';
+      img.crossOrigin = 'anonymous';
       img.onload = () => {
         try {
           const canvas = document.createElement('canvas');
@@ -126,7 +126,7 @@ async function loadLogoReduzido(url: string): Promise<string | null> {
   try {
     return await new Promise<string | null>((resolve) => {
       const img = new Image();
-      img.crossOrigin = 'Anonymous';
+      img.crossOrigin = 'anonymous';
       img.onload = () => {
         try {
           const larguraOriginal = img.naturalWidth;
@@ -172,7 +172,7 @@ async function loadFotoComprimida(url: string): Promise<string | null> {
   try {
     return await new Promise<string | null>((resolve) => {
       const img = new Image();
-      img.crossOrigin = 'Anonymous';
+      img.crossOrigin = 'anonymous';
       img.onload = () => {
         try {
           const larguraOriginal = img.naturalWidth;
@@ -213,7 +213,7 @@ async function loadImageAsPngDataUrl(url: string): Promise<string | null> {
   try {
     return await new Promise<string | null>((resolve) => {
       const img = new Image();
-      img.crossOrigin = 'Anonymous';
+      img.crossOrigin = 'anonymous';
       img.onload = () => {
         try {
           const canvas = document.createElement('canvas');
