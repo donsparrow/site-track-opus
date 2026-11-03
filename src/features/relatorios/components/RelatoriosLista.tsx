@@ -5,11 +5,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Download, Edit, Eye, Trash2 } from 'lucide-react';
 import type { RelatorioComObra } from '../types';
+import type { StatusLiberacao } from '../pdfArquivado';
 import { fmt, statusVariant } from '../utils';
 
 interface Props {
   relatorios: RelatorioComObra[];
   podeEditar: boolean;
+  liberacoes?: Record<string, StatusLiberacao>;
   podeExcluir: boolean;
   onBaixar: (r: RelatorioComObra) => void;
   onVisualizar: (r: RelatorioComObra) => void;
@@ -17,7 +19,7 @@ interface Props {
   onExcluir: (r: RelatorioComObra) => void;
 }
 
-export default function RelatoriosLista({ relatorios, podeEditar, podeExcluir, onBaixar, onVisualizar, onEditar, onExcluir }: Props) {
+export default function RelatoriosLista({ relatorios, podeEditar, podeExcluir, onBaixar, onVisualizar, onEditar, onExcluir, liberacoes = {} }: Props) {
   const renderActions = (r: RelatorioComObra) => (
     <div className="flex gap-1">
                       <Button size="sm" variant="ghost" onClick={() => onBaixar(r)} title="Baixar PDF">
@@ -89,7 +91,7 @@ export default function RelatoriosLista({ relatorios, podeEditar, podeExcluir, o
                     {r.data_inicio ? fmt(r.data_inicio) : '—'} a {r.data_fim ? fmt(r.data_fim) : '—'}
                   </TableCell>
                   <TableCell className="text-sm">{new Date(r.created_at).toLocaleDateString('pt-BR')}</TableCell>
-                  <TableCell><Badge variant={statusVariant(r.status)}>{(r.status || '').toUpperCase()}</Badge></TableCell>
+                  <TableCell><Badge variant={statusVariant(r.status)}>{(r.status || '').toUpperCase()}</Badge>{liberacoes[r.id]?.pendente && <Badge variant="destructive" className="ml-2">Aguardando liberação</Badge>}</TableCell>
                   <TableCell>
                     {renderActions(r)}
                   </TableCell>
@@ -103,7 +105,7 @@ export default function RelatoriosLista({ relatorios, podeEditar, podeExcluir, o
  {relatorios.map((r) => (
  <Card key={r.id}><CardContent className="p-4 space-y-3">
  <h3 className="font-semibold break-words">{r.obras?.nome || '—'}</h3>
- <div className="space-y-1 text-sm break-words"><p>Cliente: {r.obras?.clientes?.nome || '—'}</p><p>Período: {r.data_inicio ? fmt(r.data_inicio) : '—'} a {r.data_fim ? fmt(r.data_fim) : '—'}</p><Badge variant={statusVariant(r.status)}>{(r.status || '').toUpperCase()}</Badge></div>
+ <div className="space-y-1 text-sm break-words"><p>Cliente: {r.obras?.clientes?.nome || '—'}</p><p>Período: {r.data_inicio ? fmt(r.data_inicio) : '—'} a {r.data_fim ? fmt(r.data_fim) : '—'}</p><Badge variant={statusVariant(r.status)}>{(r.status || '').toUpperCase()}</Badge>{liberacoes[r.id]?.pendente && <Badge variant="destructive" className="ml-2">Aguardando liberação</Badge>}</div>
  {renderActions(r)}
  </CardContent></Card>
  ))}

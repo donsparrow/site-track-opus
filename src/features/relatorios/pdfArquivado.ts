@@ -204,6 +204,37 @@ export async function buscarUltimoPdfArquivado(relatorioId: string): Promise<Pdf
   return (data as PdfArquivado | null) ?? null;
 }
 
+export interface StatusLiberacao {
+  pendente: boolean;
+  qtdAtual: number;
+  qtdVigente: number;
+}
+
+export function calcularStatusLiberacao(qtdAtual: number, vigente: Pick<PdfArquivado, 'qtd_assinaturas'> | null): StatusLiberacao {
+  return { pendente: vigente !== null && vigente.qtd_assinaturas < qtdAtual, qtdAtual, qtdVigente: vigente?.qtd_assinaturas ?? 0 };
+}
+
+/** Duas consultas para toda a lista; a ordenação escolhe o vigente mais recente. */
+export async function statusLiberacaoLote(ids: string[]): Promise<Record<string, StatusLiberacao>> {
+  const unicos = [...new Set(ids)];
+  if (unicos.length === 0) return {};
+  const [assinaturas, pdfs] = await Promise.all([
+    supabase.from('assinaturas').select('relatorio_id').in('relatorio_id', unicos),
+    supabase.from('relatorio_pdfs_assinados').select('relatorio_id, qtd_assinaturas, gerado_em').in('relatorio_id', unicos).is('excluido_em', null).order('gerado_em', { ascending: false }),
+  ]);
+  if (assinaturas.error) throw assinaturas.error;
+  if (pdfs.error) throw pdfs.error;
+  return Object.fromEntries(unicos.map((id) => [id, calcularStatusLiberacao(
+    (assinaturas.data ?? []).filter((a) => a.relatorio_id === id).length,
+    (pdfs.data ?? []).find((p) => p.relatorio_id === id) ?? null,
+  )]));
+}
+
+export async function statusLiberacao(relatorioId: string): Promise<StatusLiberacao> {
+  const lote = await statusLiberacaoLote([relatorioId]);
+  return lote[relatorioId];
+}
+
 /** Dispara o download de um blob no navegador. */
 export function baixarBlob(blob: Blob, fileName: string): void {
   const url = URL.createObjectURL(blob);
@@ -237,10 +268,12 @@ export async function baixarPdfAssinadoOuArquivar({
   relatorioId,
   empresa,
   nomeObra,
+  isCliente = false,
 }: {
   relatorioId: string;
   empresa: EmpresaConfig | null;
   nomeObra: string;
+  isCliente?: boolean;
 }): Promise<ResultadoDownload> {
   const fileName = nomeArquivoPdf(nomeObra);
 
@@ -248,14 +281,30 @@ export async function baixarPdfAssinadoOuArquivar({
   try {
     registro = await buscarUltimoPdfArquivado(relatorioId);
   } catch (e) {
+    if (isCliente) throw new Error('Não foi possível consultar o PDF liberado. Verifique a conexão e tente novamente.');
     console.warn('Falha ao consultar PDF arquivado; gerando sem arquivar:', e);
   }
 
   if (registro) {
+    if (!isCliente) {
+      const liberacao = await statusLiberacao(relatorioId);
+      if (liberacao.pendente) {
+        const { relatorio, args, blob, fileName: nome } = await gerarPdfAssinadoBlob({ relatorioId, empresa });
+        baixarBlob(blob, nome);
+        try {
+          await arquivarBlob({ relatorio, args, blob, origem: 'assinatura' });
+          return 'arquivado_agora';
+        } catch (e) {
+          console.warn('PDF baixado, mas falha ao liberar:', e);
+          return 'gerado_sem_arquivo';
+        }
+      }
+    }
     try {
       await baixarPdfArquivado(registro, fileName);
       return 'original';
     } catch (e) {
+      if (isCliente) throw new Error('Não foi possível baixar o PDF liberado. Verifique a conexão e tente novamente.');
       console.warn('Falha ao baixar o PDF arquivado; gerando uma cópia sem arquivar:', e);
       const { blob, fileName: nome } = await gerarPdfAssinadoBlob({ relatorioId, empresa });
       baixarBlob(blob, nome);
@@ -263,6 +312,7 @@ export async function baixarPdfAssinadoOuArquivar({
     }
   }
 
+  if (isCliente) throw new Error('O PDF ainda não foi liberado pela empresa.');
   const { relatorio, args, blob, fileName: nome } = await gerarPdfAssinadoBlob({ relatorioId, empresa });
   baixarBlob(blob, nome);
 

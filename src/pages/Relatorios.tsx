@@ -1,4 +1,7 @@
 import { lazy, Suspense, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useAuth } from '@/contexts/AuthContext';
+import { statusLiberacaoLote } from '@/features/relatorios/pdfArquivado';
 import { Button } from '@/components/ui/button';
 import { FileText } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -17,6 +20,8 @@ const RelatorioEditor = lazy(() => import('@/features/relatorios/components/Rela
 
 export default function Relatorios() {
   const { pode } = usePermissions();
+  const { role, user } = useAuth();
+  const operacional = role === 'admin' || role === 'trabalhador' || role === 'super_admin';
   const podeCriar = pode('relatorios', 'criar');
   const podeEditar = pode('relatorios', 'editar');
   const podeExcluir = pode('relatorios', 'excluir');
@@ -29,7 +34,17 @@ export default function Relatorios() {
 
   const { obras } = useObrasRelatorios();
   const { empresa } = useEmpresaConfig();
-  const listaQuery = useRelatorios({ obraId: filtroObra, status: filtroStatus });
+  const listaQuery = useRelatorios({ obraId: filtroObra, status: filtroStatus === 'aguardando_liberacao' ? '' : filtroStatus });
+  const ids = listaQuery.relatorios.filter((r) => r.status === 'assinado').map((r) => r.id).sort();
+  const liberacaoQuery = useQuery({
+    queryKey: ['relatorio-liberacao', 'lote', user?.id, ids],
+    enabled: operacional && listaQuery.isSuccess,
+    queryFn: () => statusLiberacaoLote(ids),
+  });
+  const liberacoes = liberacaoQuery.data ?? {};
+  const relatorios = filtroStatus === 'aguardando_liberacao'
+    ? listaQuery.relatorios.filter((r) => liberacoes[r.id]?.pendente)
+    : listaQuery.relatorios;
   const m = useRelatorioMutations();
 
   const abrir = (rel: RelatorioComObra | null, somenteLeitura: boolean) => {
@@ -66,6 +81,7 @@ export default function Relatorios() {
 
       <FiltrosRelatorios
         obras={obras}
+        operacional={operacional}
         filtroObra={filtroObra}
         filtroStatus={filtroStatus}
         onFiltroObra={(v) => setFiltroObra(v === 'all' ? '' : v)}
@@ -79,7 +95,8 @@ export default function Relatorios() {
         <RelatorioSkeleton />
       ) : (
         <RelatoriosLista
-          relatorios={listaQuery.relatorios}
+          relatorios={relatorios}
+          liberacoes={operacional ? liberacoes : undefined}
           podeEditar={podeEditar}
           podeExcluir={podeExcluir}
           onBaixar={(r) => m.baixarDaLista.mutate({ relatorio: r, empresa })}

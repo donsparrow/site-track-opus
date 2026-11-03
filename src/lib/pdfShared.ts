@@ -8,7 +8,7 @@ export async function loadImageAsDataUrl(url: string): Promise<string | null> {
   try {
     return await new Promise<string | null>((resolve) => {
       const img = new Image();
-      img.crossOrigin = 'Anonymous';
+      img.crossOrigin = 'anonymous';
       img.onload = () => {
         try {
           // SVGs may report 0 for naturalWidth/Height. Use a sane fallback so

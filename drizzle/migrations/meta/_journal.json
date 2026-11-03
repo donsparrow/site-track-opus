@@ -50,6 +50,13 @@
       "when": 1793369226577,
       "tag": "0006_storage_pdf_only_insert",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1793730878036,
+      "tag": "0007_assinatura_cliente_relatorio",
+      "breakpoints": true
     }
   ]
 }

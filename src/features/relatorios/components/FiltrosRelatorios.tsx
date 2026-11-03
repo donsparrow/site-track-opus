@@ -12,9 +12,10 @@ interface Props {
   onFiltroObra: (v: string) => void;
   onFiltroStatus: (v: string) => void;
   onLimpar: () => void;
+  operacional?: boolean;
 }
 
-export default function FiltrosRelatorios({ obras, filtroObra, filtroStatus, onFiltroObra, onFiltroStatus, onLimpar }: Props) {
+export default function FiltrosRelatorios({ obras, filtroObra, filtroStatus, onFiltroObra, onFiltroStatus, onLimpar, operacional = false }: Props) {
   return (
     <Card className="mb-6">
       <CardContent className="pt-6">
@@ -38,6 +39,7 @@ export default function FiltrosRelatorios({ obras, filtroObra, filtroStatus, onF
                 <SelectItem value="rascunho">Rascunho</SelectItem>
                 <SelectItem value="finalizado">Finalizado</SelectItem>
                 <SelectItem value="assinado">Assinado</SelectItem>
+                {operacional && <SelectItem value="aguardando_liberacao">Aguardando liberação</SelectItem>}
               </SelectContent>
             </Select>
           </div>

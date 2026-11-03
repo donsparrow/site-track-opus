@@ -1,4 +1,4 @@
-import { lazy, Suspense, useRef, useState } from 'react';
+import { lazy, Suspense, useRef, useState, useEffect } from 'react';
 import type SignatureCanvasType from 'react-signature-canvas';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -15,19 +15,25 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   saving?: boolean;
+  tipoFixo?: 'responsavel_tecnico' | 'cliente';
+  nomeInicial?: string;
   onConfirm: (values: { dataUrl: string; nome: string; cargo: string; tipo: string }) => void;
 }
 
-export default function AssinarDialog({ open, onOpenChange, saving, onConfirm }: Props) {
+export default function AssinarDialog({ open, onOpenChange, saving, onConfirm, tipoFixo, nomeInicial }: Props) {
   const sigRef = useRef<SignatureCanvasType>(null);
   const [nome, setNome] = useState('');
   const [cargo, setCargo] = useState('');
   const [tipo, setTipo] = useState('responsavel_tecnico');
 
+  useEffect(() => {
+    if (open && nomeInicial) setNome(nomeInicial);
+  }, [open, nomeInicial]);
+
   const handleConfirm = () => {
     if (!sigRef.current || sigRef.current.isEmpty()) { toast.error('Desenhe sua assinatura'); return; }
-    if (!nome) return;
-    onConfirm({ dataUrl: sigRef.current.toDataURL('image/png'), nome, cargo, tipo });
+    if (!nome.trim() || (tipoFixo === 'cliente' && !cargo.trim())) return;
+    onConfirm({ dataUrl: sigRef.current.toDataURL('image/png'), nome: nome.trim(), cargo: cargo.trim(), tipo: tipoFixo ?? tipo });
     setNome(''); setCargo('');
   };
 
@@ -37,8 +43,8 @@ export default function AssinarDialog({ open, onOpenChange, saving, onConfirm }:
         <DialogHeader><DialogTitle className="font-display">Assinatura Digital</DialogTitle></DialogHeader>
         <div className="space-y-4">
           <div><Label>Nome *</Label><Input value={nome} onChange={(e) => setNome(e.target.value)} required /></div>
-          <div><Label>Cargo</Label><Input value={cargo} onChange={(e) => setCargo(e.target.value)} /></div>
-          <div>
+          <div><Label>Cargo{tipoFixo === 'cliente' ? ' *' : ''}</Label><Input value={cargo} onChange={(e) => setCargo(e.target.value)} required={tipoFixo === 'cliente'} placeholder={tipoFixo === 'cliente' ? 'Ex.: Síndico, Fiscal de obra' : undefined} /></div>
+          {!tipoFixo && <div>
             <Label>Tipo</Label>
             <Select value={tipo} onValueChange={setTipo}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -47,7 +53,7 @@ export default function AssinarDialog({ open, onOpenChange, saving, onConfirm }:
                 <SelectItem value="cliente">Cliente</SelectItem>
               </SelectContent>
             </Select>
-          </div>
+          </div>}
           <div>
             <Label>Desenhe sua assinatura</Label>
             <div className="border rounded-lg bg-white">
@@ -61,7 +67,7 @@ export default function AssinarDialog({ open, onOpenChange, saving, onConfirm }:
             </div>
             <Button variant="ghost" size="sm" className="mt-1" onClick={() => sigRef.current?.clear()}>Limpar</Button>
           </div>
-          <Button onClick={handleConfirm} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={!nome || saving}>
+          <Button onClick={handleConfirm} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={!nome.trim() || (tipoFixo === 'cliente' && !cargo.trim()) || saving}>
             {saving ? 'Registrando...' : 'Confirmar Assinatura'}
           </Button>
         </div>
