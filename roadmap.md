@@ -10,3 +10,4 @@
 - [ ] Verificar assinatura/liberação com dois signatários (aguarda login no preview e contas autorizadas).
 - [x] Adicionar assinatura na lista com identificação da obra/período e status individual, sem mudar liberação (5 testes aprovados).
 - [ ] Conferir assinatura na lista e botões no celular com conta de síndico (aguarda login autorizado no preview).
+- [ ] Aplicar somente índice do caminho do PDF e INSERT de empresas exclusivo do super admin; verificar banco e Quick security scan.
