@@ -6,3 +6,31 @@
 - Register client report signatures through the protected RPC and derive release status from the newest active PDF signature count; client downloads must never regenerate unreleased signatures.
 - Share signer-name lookup through `useNomeAssinante` between report list and editor; this keeps profile-based prefilling consistent without duplicate query logic.
 - Keep archived-PDF storage SELECT governed by record RLS without filtering soft-deletion, and restrict direct company INSERT to super admins while preserving the protected onboarding RPC; storage removal needs SELECT after soft-deletion.
+
+# Performance rules
+
+- Toda leitura do Supabase feita por componentes ou hooks usa React Query
+  (useQuery/useQueries). PROIBIDO buscar dados com useEffect + useState.
+- Hooks de dados usados por vários componentes usam a MESMA queryKey,
+  definida em um único lugar: uma requisição por dado, nunca uma por
+  componente.
+- queryKeys de dados que dependem do usuário incluem user.id (e role
+  quando o resultado depende dela). No logout, chamar queryClient.clear().
+- Skeleton/spinner apenas no primeiro carregamento (isLoading). Atualização
+  em segundo plano (isFetching) nunca esconde conteúdo já exibido.
+- Após mutações, invalidar somente as queryKeys afetadas. Nunca recarregar
+  a página nem invalidar tudo.
+- Consultas independentes rodam em paralelo (Promise.all/useQueries).
+  Evitar cascata sequencial de requisições.
+- select com colunas explícitas; proibido select('*') em listagens. Listas
+  que crescem com o tempo usam limite ou paginação.
+- Não baixar todas as linhas de tabelas que crescem (despesas, receitas,
+  parcelas) só para somar no navegador em telas novas; preferir agregação
+  no banco (view/RPC).
+- Imagens são comprimidas no navegador antes do upload (máx. 1920 px,
+  JPEG ~0,8). <img> fora da primeira dobra usa loading="lazy" e
+  decoding="async".
+- Bibliotecas pesadas (jspdf, xlsx, recharts, @tiptap, html2canvas,
+  pdfjs-dist) só via import dinâmico no momento do uso ou dentro de
+  componente lazy. Nunca importar no topo de layout, sidebar ou
+  componentes compartilhados.
