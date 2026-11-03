@@ -1,10 +1,12 @@
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchEmpresaConfigOrBranding } from '@/lib/empresaBranding';
 import { useAuth } from '@/contexts/AuthContext';
 import { useObrasFiltered } from '@/hooks/useObrasFiltered';
 import { usePermissions } from '@/hooks/usePermissions';
+import { queryKeys } from '@/lib/queryKeys';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -36,128 +38,129 @@ interface Despesa {
   forma_pagamento: string | null;
 }
 
+interface DocStats {
+  totalPastas: number;
+  totalArquivos: number;
+  pdfs: number;
+  imagens: number;
+  recentFiles: { nome: string; tipo: string; created_at: string }[];
+}
+
+interface ObraDetalheData {
+  obra: any;
+  parcelas: Parcela[];
+  despesas: Despesa[];
+  financeiro: { contrato: number; recebido: number; aReceber: number; gasto: number; saldo: number };
+  saldoPrazo: number | null;
+  docStats: DocStats;
+}
+
+const EMPTY_DOC_STATS: DocStats = { totalPastas: 0, totalArquivos: 0, pdfs: 0, imagens: 0, recentFiles: [] };
+const EMPTY_FINANCEIRO = { contrato: 0, recebido: 0, aReceber: 0, gasto: 0, saldo: 0 };
+
 export default function ObraDetail() {
   const { id } = useParams<{ id: string }>();
-  const { canEdit, role, isSuperAdmin, isAdmin } = useAuth();
+  const { user, canEdit, role, isSuperAdmin, isAdmin } = useAuth();
   const { pode, loading: permissionsLoading } = usePermissions();
-  const [obra, setObra] = useState<any>(null);
-  const [parcelas, setParcelas] = useState<Parcela[]>([]);
-  const [despesas, setDespesas] = useState<Despesa[]>([]);
-  const [financeiro, setFinanceiro] = useState({ contrato: 0, recebido: 0, aReceber: 0, gasto: 0, saldo: 0 });
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { isObraAllowed, loading: obrasFilterLoading } = useObrasFiltered();
   const [exportingPdf, setExportingPdf] = useState(false);
-  const [saldoPrazo, setSaldoPrazo] = useState<number | null>(null);
   const chartRef = useRef<HTMLDivElement>(null);
-
-  // Documentos
-  const [docStats, setDocStats] = useState<{ totalPastas: number; totalArquivos: number; pdfs: number; imagens: number; recentFiles: { nome: string; tipo: string; created_at: string }[] }>({
-    totalPastas: 0, totalArquivos: 0, pdfs: 0, imagens: 0, recentFiles: [],
-  });
 
   // Delete obra
   const [deleteObraOpen, setDeleteObraOpen] = useState(false);
   const [deleteObraBlocked, setDeleteObraBlocked] = useState(false);
   const [deleteObraMsg, setDeleteObraMsg] = useState('');
 
-  const { isObraAllowed, loading: obrasFilterLoading } = useObrasFiltered();
+  const { data, isLoading } = useQuery({
+    queryKey: queryKeys.obraDetalhe(id ?? '', user?.id ?? ''),
+    enabled: !!id && !!user && !obrasFilterLoading && !permissionsLoading,
+    staleTime: 0,
+    queryFn: async (): Promise<ObraDetalheData> => {
+      // Tudo que não depende de outro resultado roda em paralelo
+      const [obraRes, relRes, recRes, despRes, pastasRes] = await Promise.all([
+        supabase.from('obras').select('*, clientes(nome)').eq('id', id!).single(),
+        supabase.from('relatorios').select('saldo_prazo').eq('obra_id', id!).order('created_at', { ascending: false }).limit(1).single(),
+        supabase.from('receitas').select('id, valor_total').eq('obra_id', id!),
+        supabase.from('despesas').select('*').eq('obra_id', id!).order('data', { ascending: false }),
+        supabase.from('documentos_pastas').select('id').eq('obra_id', id!),
+      ]);
 
-  useEffect(() => {
-    if (!id) return;
-    if (!obrasFilterLoading && !permissionsLoading) fetchData();
-  }, [id, obrasFilterLoading, permissionsLoading]);
+      const obraData = obraRes.data;
 
-  const fetchData = async () => {
-    setLoading(true);
+      // Verificação de acesso antes de qualquer exibição de dados
+      if (obraData && !isObraAllowed(obraData.id)) {
+        return { obra: null, parcelas: [], despesas: [], financeiro: EMPTY_FINANCEIRO, saldoPrazo: null, docStats: EMPTY_DOC_STATS };
+      }
 
-    const { data: obraData } = await supabase
-      .from('obras')
-      .select('*, clientes(nome)')
-      .eq('id', id!)
-      .single();
+      const receitas = recRes.data || [];
+      const totalContrato = receitas.reduce((s, r) => s + Number(r.valor_total), 0);
+      const receitaIds = receitas.map(r => r.id);
+      const pastaIds = (pastasRes.data || []).map(p => p.id);
 
-    if (obraData && !isObraAllowed(obraData.id)) {
-      setObra(null);
-      setLoading(false);
-      return;
-    }
+      // Parcelas (depende de receitas) e arquivos (depende de pastas), em paralelo entre si
+      const [parcelasRes, arquivosRes] = await Promise.all([
+        receitaIds.length > 0
+          ? supabase.from('parcelas').select('*').in('receita_id', receitaIds).order('data_vencimento')
+          : Promise.resolve({ data: [] as any[] }),
+        pastaIds.length > 0
+          ? supabase.from('documentos_arquivos').select('nome_arquivo, tipo, created_at').in('pasta_id', pastaIds).order('created_at', { ascending: false })
+          : Promise.resolve({ data: [] as any[] }),
+      ]);
 
-    setObra(obraData);
+      const today = new Date().toISOString().split('T')[0];
+      const allParcelas = ((parcelasRes.data || []) as Parcela[]).map(p => ({
+        ...p,
+        status: p.data_recebimento ? 'recebido' : (p.data_vencimento < today ? 'atrasado' : 'pendente')
+      }));
 
+      const totalRecebido = allParcelas.filter(p => p.status === 'recebido').reduce((s, p) => s + Number(p.valor), 0);
+      const totalAReceber = allParcelas.filter(p => p.status !== 'recebido').reduce((s, p) => s + Number(p.valor), 0);
 
-    const { data: latestRelatorio } = await supabase
-      .from('relatorios')
-      .select('saldo_prazo')
-      .eq('obra_id', id!)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
-    setSaldoPrazo(latestRelatorio?.saldo_prazo ?? null);
+      const despesasData = (despRes.data || []) as Despesa[];
+      const totalGasto = despesasData.reduce((s, d) => s + Number(d.valor), 0);
 
-    const { data: receitas } = await supabase.from('receitas').select('id, valor_total').eq('obra_id', id!);
-    const totalContrato = (receitas || []).reduce((s, r) => s + Number(r.valor_total), 0);
-    const receitaIds = (receitas || []).map(r => r.id);
+      const files = arquivosRes.data || [];
+      const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+      const pdfs = files.filter((f: any) => f.tipo === 'pdf' || f.nome_arquivo.toLowerCase().endsWith('.pdf')).length;
+      const imgs = files.filter((f: any) => imageExts.some(ext => f.nome_arquivo.toLowerCase().endsWith(`.${ext}`))).length;
 
-    let allParcelas: Parcela[] = [];
-    if (receitaIds.length > 0) {
-      const { data } = await supabase
-        .from('parcelas')
-        .select('*')
-        .in('receita_id', receitaIds)
-        .order('data_vencimento');
-      allParcelas = (data || []) as Parcela[];
-    }
-
-    const today = new Date().toISOString().split('T')[0];
-    allParcelas = allParcelas.map(p => ({
-      ...p,
-      status: p.data_recebimento ? 'recebido' : (p.data_vencimento < today ? 'atrasado' : 'pendente')
-    }));
-    setParcelas(allParcelas);
-
-    const totalRecebido = allParcelas.filter(p => p.status === 'recebido').reduce((s, p) => s + Number(p.valor), 0);
-    const totalAReceber = allParcelas.filter(p => p.status !== 'recebido').reduce((s, p) => s + Number(p.valor), 0);
-
-    const { data: despesasData } = await supabase.from('despesas').select('*').eq('obra_id', id!).order('data', { ascending: false });
-    setDespesas((despesasData || []) as Despesa[]);
-    const totalGasto = (despesasData || []).reduce((s, d) => s + Number(d.valor), 0);
-
-    const saldoCalc = totalRecebido - totalGasto;
-    setFinanceiro({
-      contrato: totalContrato,
-      recebido: totalRecebido,
-      aReceber: totalAReceber,
-      gasto: totalGasto,
-      saldo: saldoCalc,
-    });
-
-    // Fetch document stats (always fetch, render is gated by permission)
-    {
-      const { data: pastas } = await supabase.from('documentos_pastas').select('id').eq('obra_id', id!);
-      const pastaIds = (pastas || []).map(p => p.id);
-      if (pastaIds.length > 0) {
-        const { data: arquivos } = await supabase
-          .from('documentos_arquivos')
-          .select('nome_arquivo, tipo, created_at')
-          .in('pasta_id', pastaIds)
-          .order('created_at', { ascending: false });
-        const files = arquivos || [];
-        const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
-        const pdfs = files.filter(f => f.tipo === 'pdf' || f.nome_arquivo.toLowerCase().endsWith('.pdf')).length;
-        const imgs = files.filter(f => imageExts.some(ext => f.nome_arquivo.toLowerCase().endsWith(`.${ext}`))).length;
-        setDocStats({
+      return {
+        obra: obraData,
+        parcelas: allParcelas,
+        despesas: despesasData,
+        financeiro: {
+          contrato: totalContrato,
+          recebido: totalRecebido,
+          aReceber: totalAReceber,
+          gasto: totalGasto,
+          saldo: totalRecebido - totalGasto,
+        },
+        saldoPrazo: relRes.data?.saldo_prazo ?? null,
+        docStats: {
           totalPastas: pastaIds.length,
           totalArquivos: files.length,
           pdfs,
           imagens: imgs,
-          recentFiles: files.slice(0, 5).map(f => ({ nome: f.nome_arquivo, tipo: f.tipo, created_at: f.created_at })),
-        });
-      } else {
-        setDocStats({ totalPastas: 0, totalArquivos: 0, pdfs: 0, imagens: 0, recentFiles: [] });
-      }
-    }
+          recentFiles: files.slice(0, 5).map((f: any) => ({ nome: f.nome_arquivo, tipo: f.tipo, created_at: f.created_at })),
+        },
+      };
+    },
+  });
 
-    setLoading(false);
-  };
+  const obra = data?.obra ?? null;
+  const parcelas = data?.parcelas ?? [];
+  const despesas = data?.despesas ?? [];
+  const financeiro = data?.financeiro ?? EMPTY_FINANCEIRO;
+  const saldoPrazo = data?.saldoPrazo ?? null;
+  const docStats = data?.docStats ?? EMPTY_DOC_STATS;
+  const loading = obrasFilterLoading || permissionsLoading || isLoading;
+
+  // Mesmo nome da função anterior: invalida o detalhe da obra e o dashboard
+  const fetchData = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.obraDetalhe(id ?? '', user?.id ?? '') });
+    void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+  }, [queryClient, id, user?.id]);
 
   // --- DELETE OBRA ---
   const handleCheckDeleteObra = async () => {
@@ -186,6 +189,8 @@ export default function ObraDetail() {
     if (error) toast.error('Erro: ' + error.message);
     else {
       toast.success('Obra excluída com sucesso!');
+      void queryClient.invalidateQueries({ queryKey: ['obrasLista'] });
+      void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       window.location.href = '/dashboard';
     }
     setDeleteObraOpen(false);

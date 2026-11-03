@@ -10,4 +10,12 @@ export const queryKeys = {
     ['permissoes', userId, role] as const,
   empresaNome: (empresaId: string) =>
     ['empresaNome', empresaId] as const,
+  obrasLista: (userId: string) =>
+    ['obrasLista', userId] as const,
+  clientesLista: (userId: string) =>
+    ['clientesLista', userId] as const,
+  obraDetalhe: (obraId: string, userId: string) =>
+    ['obraDetalhe', obraId, userId] as const,
+  timelineObra: (obraId: string) =>
+    ['timelineObra', obraId] as const,
 };

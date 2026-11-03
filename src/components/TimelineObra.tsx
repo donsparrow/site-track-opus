@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { queryKeys } from '@/lib/queryKeys';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,17 +39,13 @@ const typeConfig = {
 };
 
 export default function TimelineObra({ obraId, obraData }: TimelineObraProps) {
-  const [events, setEvents] = useState<TimelineEvent[]>([]);
-  const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<string>('todos');
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    fetchTimeline();
-  }, [obraId]);
-
-  const fetchTimeline = async () => {
-    setLoading(true);
+  const { data: events = [], isLoading: loading } = useQuery({
+    queryKey: queryKeys.timelineObra(obraId),
+    staleTime: 0,
+    queryFn: async (): Promise<TimelineEvent[]> => {
     const allEvents: TimelineEvent[] = [];
 
     // Marcos da obra
@@ -177,9 +175,9 @@ export default function TimelineObra({ obraId, obraData }: TimelineObraProps) {
 
     // Sort: most recent first
     allEvents.sort((a, b) => b.date.localeCompare(a.date));
-    setEvents(allEvents);
-    setLoading(false);
-  };
+    return allEvents;
+    },
+  });
 
   const toggleExpand = (id: string) => {
     setExpandedIds(prev => {
