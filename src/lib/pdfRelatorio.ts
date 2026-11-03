@@ -1383,14 +1383,17 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
     }
 
     if (clientSigs.length > 0) {
+      checkPage(55);
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.text('CLIENTE', techSigs.length > 0 ? rightX : leftX, y - (techSigs.length > 0 ? 40 * techSigs.length + 6 : 0));
-
-      for (const sig of clientSigs) {
-        checkPage(45);
-        await renderSigBlock(sig, techSigs.length > 0 ? rightX : leftX);
-        y += 40;
+      doc.text('CLIENTE', leftX, y);
+      y += 6;
+      for (let i = 0; i < clientSigs.length; i += 2) {
+        checkPage(50);
+        await renderSigBlock(clientSigs[i], leftX);
+        const segunda = clientSigs[i + 1];
+        if (segunda) await renderSigBlock(segunda, rightX);
+        y += 50;
       }
     }
   } else {

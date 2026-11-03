@@ -1,4 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { supabase } from '@/integrations/supabase/client';
+import { statusLiberacao } from '../pdfArquivado';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, Download, History, List, PenTool, Save } from 'lucide-react';
+import { BarChart3, Download, History, List, PenTool, Save, Clock } from 'lucide-react';
 
 import { useRelatorioDados, useRelatorioDetail } from '../hooks/useRelatorioDetail';
 import { useRelatorioHistorico } from '../hooks/useRelatorioHistorico';
@@ -49,7 +53,19 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
 
   const obraData = obras.find((o) => o.id === obraId) || null;
   const isNovo = !relatorioInicial;
-  const { isAdmin } = useAuth();
+  const { isAdmin, role, user } = useAuth();
+  const isCliente = role === 'sindico' || role === 'cliente';
+  const operacional = role === 'admin' || role === 'trabalhador' || role === 'super_admin';
+  const nomeQuery = useQuery({
+    queryKey: ['relatorio-assinante-nome', user?.id],
+    enabled: isCliente && !!user,
+    queryFn: async () => {
+      if (!user) return '';
+      const { data, error } = await supabase.from('profiles').select('nome').eq('user_id', user.id).maybeSingle();
+      if (error) throw error;
+      return data?.nome ?? '';
+    },
+  });
 
   const periodoSugerido = usePeriodoSugerido(obraId, isNovo && !relatorioId);
   useEffect(() => {
@@ -66,6 +82,16 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
   const dadosQuery = useRelatorioDados({ obraId, inicio, fim, relatorioId });
   const { dados } = dadosQuery;
   const detail = useRelatorioDetail(relatorioId);
+  const jaAssinei = detail.assinaturas.some((a) => a.tipo === 'cliente' && a.assinado_por === user?.id);
+  const liberacaoQuery = useQuery({
+    queryKey: ['relatorio-liberacao', relatorioId],
+    enabled: !!relatorioId && detail.relatorio?.status === 'assinado',
+    queryFn: () => {
+      if (!relatorioId) throw new Error('Relatório não encontrado');
+      return statusLiberacao(relatorioId);
+    },
+  });
+  const pendente = liberacaoQuery.data?.pendente ?? false;
   const historico = useRelatorioHistorico(relatorioId, true);
   const maiorVersao = historico.versoes.reduce((m, v) => Math.max(m, v.numero_versao), 0);
   /** Exibição e PDF usam os indicadores congelados no fechamento (documento imutável). */
@@ -95,7 +121,7 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
     if (!empresa) toast.info('Dados da empresa não configurados. O PDF será gerado sem cabeçalho/logo.');
     // Relatório assinado: entrega o PDF arquivado, nunca regenera.
     if (relatorioId && detail.relatorio?.status === 'assinado') {
-      m.baixarAssinado.mutate({ relatorioId, empresa, nomeObra: obraData.nome });
+      m.baixarAssinado.mutate({ relatorioId, empresa, nomeObra: obraData.nome, isCliente });
       return;
     }
     m.gerarPdf.mutate(
@@ -164,6 +190,18 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
 
           {carregando ? <RelatorioSkeleton rows={6} /> : <IndicadoresPrazo prazos={dadosExibicao.prazos} />}
 
+          {isCliente && jaAssinei && pendente && (
+            <Alert className="mb-4"><Clock className="h-4 w-4" /><AlertDescription>Sua assinatura foi registrada. O PDF com sua assinatura será liberado pela J&A Engenharia em breve.</AlertDescription></Alert>
+          )}
+          {isCliente && jaAssinei && liberacaoQuery.isSuccess && !pendente && <Badge className="mb-4">Você assinou este relatório</Badge>}
+          {operacional && pendente && (
+            <Alert className="mb-4"><Clock className="h-4 w-4" /><AlertDescription className="flex flex-wrap items-center gap-3">
+              <span>Assinatura do cliente aguardando liberação do PDF</span>
+              <Button size="sm" disabled={m.liberarPdf.isPending} onClick={() => { if (relatorioId) m.liberarPdf.mutate({ relatorioId, empresa }); }}>
+                <Download className="mr-2 h-4 w-4" />{m.liberarPdf.isPending ? 'Liberando...' : 'Liberar PDF assinado'}
+              </Button>
+            </AlertDescription></Alert>
+          )}
           <div className="flex gap-3 mb-6 flex-wrap">
             {podeEditar && !readOnly && (
               <Button onClick={handleSalvar} disabled={m.salvar.isPending} variant="outline">
@@ -171,9 +209,9 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
               </Button>
             )}
             <Button onClick={handleGerarPdf} disabled={m.gerarPdf.isPending || m.baixarAssinado.isPending} className="bg-accent text-accent-foreground hover:bg-accent/90">
-              <Download className="h-4 w-4 mr-2" />{m.gerarPdf.isPending || m.baixarAssinado.isPending ? 'Gerando...' : 'Gerar PDF'}
+              <Download className="h-4 w-4 mr-2" />{m.gerarPdf.isPending || m.baixarAssinado.isPending ? 'Gerando...' : isCliente && pendente ? 'Baixar versão sem sua assinatura' : 'Gerar PDF'}
             </Button>
-            {podeEditar && !readOnly && (
+            {((isCliente && detail.relatorio?.status === 'assinado' && !jaAssinei) || (!isCliente && podeEditar && !readOnly)) && (
               <Button variant="outline" onClick={() => setSignOpen(true)}><PenTool className="h-4 w-4 mr-2" />Assinar</Button>
             )}
           </div>
@@ -204,6 +242,7 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
                 relatorioStatus={detail.relatorio?.status}
                 isAdmin={isAdmin}
                 empresa={empresa}
+                pendente={pendente}
                 nomeObra={obraData?.nome || 'relatorio'}
               />
             </TabsContent>
@@ -217,10 +256,16 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
       <AssinarDialog
         open={signOpen}
         onOpenChange={setSignOpen}
-        saving={m.assinar.isPending}
+        saving={isCliente ? m.assinarComoCliente.isPending : m.assinar.isPending}
+        tipoFixo={isCliente ? 'cliente' : undefined}
+        nomeInicial={isCliente ? nomeQuery.data : undefined}
         onConfirm={(values) => {
           if (!relatorioId) return;
-          m.assinar.mutate({ relatorioId, empresa, ...values }, { onSuccess: () => setSignOpen(false) });
+          if (isCliente) {
+            m.assinarComoCliente.mutate({ relatorioId, ...values }, { onSuccess: () => setSignOpen(false) });
+          } else {
+            m.assinar.mutate({ relatorioId, empresa, ...values }, { onSuccess: () => setSignOpen(false) });
+          }
         }}
       />
     </div>

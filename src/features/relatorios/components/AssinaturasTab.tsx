@@ -21,6 +21,7 @@ interface Props {
   relatorioId?: string | null;
   relatorioStatus?: string | null;
   isAdmin?: boolean;
+  pendente?: boolean;
   empresa?: EmpresaConfig | null;
   nomeObra?: string;
 }
@@ -31,7 +32,7 @@ function formatDataHora(iso: string): string {
   });
 }
 
-function DocumentoArquivado({ relatorioId, isAdmin, nomeObra }: { relatorioId: string; isAdmin: boolean; nomeObra: string }) {
+function DocumentoArquivado({ relatorioId, isAdmin, nomeObra, pendente }: { relatorioId: string; isAdmin: boolean; nomeObra: string; pendente: boolean }) {
   const qc = useQueryClient();
   const m = useRelatorioMutations();
   const [excluindo, setExcluindo] = useState<PdfArquivado | null>(null);
@@ -71,6 +72,7 @@ function DocumentoArquivado({ relatorioId, isAdmin, nomeObra }: { relatorioId: s
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium">{formatDataHora(r.gerado_em)}</span>
                       {isVigente && <Badge variant="default">Vigente</Badge>}
+                      {isVigente && pendente && <Badge variant="destructive">Desatualizado</Badge>}
                       <Badge variant="secondary">
                         {r.origem === 'assinatura' ? 'Na assinatura' : 'Arquivamento posterior'}
                       </Badge>
@@ -149,7 +151,7 @@ function DocumentoArquivado({ relatorioId, isAdmin, nomeObra }: { relatorioId: s
 }
 
 export default function AssinaturasTab({
-  assinaturas, assinaturaUrls, relatorioId, relatorioStatus, isAdmin = false, nomeObra = 'relatorio',
+  assinaturas, assinaturaUrls, relatorioId, relatorioStatus, isAdmin = false, nomeObra = 'relatorio', pendente = false,
 }: Props) {
   return (
     <>
@@ -176,7 +178,7 @@ export default function AssinaturasTab({
                         {a.tipo === 'responsavel_tecnico' ? 'Resp. Técnico' : 'Cliente'}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
-                        {new Date(a.data_assinatura + 'T00:00:00').toLocaleDateString('pt-BR')}
+                        {a.assinado_em ? formatDataHora(a.assinado_em) : new Date(a.data_assinatura + 'T00:00:00').toLocaleDateString('pt-BR')}
                       </span>
                     </div>
                   </div>
@@ -188,7 +190,7 @@ export default function AssinaturasTab({
       </Card>
 
       {relatorioStatus === 'assinado' && relatorioId && (
-        <DocumentoArquivado relatorioId={relatorioId} isAdmin={isAdmin} nomeObra={nomeObra} />
+        <DocumentoArquivado relatorioId={relatorioId} isAdmin={isAdmin} nomeObra={nomeObra} pendente={pendente} />
       )}
     </>
   );
