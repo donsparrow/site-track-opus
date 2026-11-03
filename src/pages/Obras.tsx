@@ -1,8 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useObrasFiltered } from '@/hooks/useObrasFiltered';
 import { usePermissions } from '@/hooks/usePermissions';
+import { queryKeys } from '@/lib/queryKeys';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,11 +26,10 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function Obras() {
-  const { role, isSuperAdmin, isAdmin } = useAuth();
+  const { user, role, isSuperAdmin, isAdmin } = useAuth();
+  const queryClient = useQueryClient();
   const { filterObras, loading: obrasFilterLoading } = useObrasFiltered();
   const { pode } = usePermissions();
-  const [obras, setObras] = useState<any[]>([]);
-  const [clientes, setClientes] = useState<any[]>([]);
   const [novaObraOpen, setNovaObraOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editObra, setEditObra] = useState<any>(null);
@@ -38,31 +39,41 @@ export default function Obras() {
   const canCreate = pode('dashboard', 'criar') || canManage;
   const canView = true;
 
-  const fetchObras = async () => {
-    const { data } = await supabase
-      .from('obras')
-      .select('*, clientes(nome)')
-      .order('created_at', { ascending: false });
-    setObras(filterObras((data || []) as any[]));
-  };
+  const { data: obrasData } = useQuery({
+    queryKey: queryKeys.obrasLista(user?.id ?? ''),
+    enabled: !!user && !obrasFilterLoading,
+    staleTime: 0,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('obras')
+        .select('*, clientes(nome)')
+        .order('created_at', { ascending: false });
+      return (data || []) as any[];
+    },
+  });
+  const obras = filterObras(obrasData ?? []);
 
-  const fetchClientes = async () => {
-    const { data } = await supabase.from('clientes').select('id, nome').order('nome');
-    setClientes(data || []);
-  };
+  const { data: clientes = [] } = useQuery({
+    queryKey: queryKeys.clientesLista(user?.id ?? ''),
+    enabled: !!user,
+    staleTime: 0,
+    queryFn: async () => {
+      const { data } = await supabase.from('clientes').select('*').order('nome');
+      return data || [];
+    },
+  });
 
-  useEffect(() => {
-    if (!obrasFilterLoading) {
-      fetchObras();
-      fetchClientes();
-    }
-  }, [obrasFilterLoading]);
+  const invalidateObras = (obraId?: string) => {
+    void queryClient.invalidateQueries({ queryKey: ['obrasLista'] });
+    void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    if (obraId) void queryClient.invalidateQueries({ queryKey: ['obraDetalhe', obraId] });
+  };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir esta obra?')) return;
     const { error } = await supabase.from('obras').delete().eq('id', id);
     if (error) toast.error('Erro ao excluir: ' + error.message);
-    else { toast.success('Obra excluída!'); fetchObras(); }
+    else { toast.success('Obra excluída!'); invalidateObras(id); }
   };
 
   const openEdit = (obra: any) => {
@@ -89,7 +100,7 @@ export default function Obras() {
     }).eq('id', editObra.id);
     setLoading(false);
     if (error) toast.error('Erro ao salvar: ' + error.message);
-    else { toast.success('Obra atualizada!'); setEditOpen(false); fetchObras(); }
+    else { toast.success('Obra atualizada!'); setEditOpen(false); invalidateObras(editObra.id); }
   };
 
   const handleEditDateChange = (field: 'data_inicio' | 'data_fim_prevista', value: string) => {
@@ -176,7 +187,7 @@ export default function Obras() {
         </CardContent>
       </Card>
 
-      <NovaObraDialog open={novaObraOpen} onOpenChange={setNovaObraOpen} onCreated={fetchObras} />
+      <NovaObraDialog open={novaObraOpen} onOpenChange={setNovaObraOpen} onCreated={() => invalidateObras()} />
 
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
