@@ -1,6 +1,9 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { useObrasFiltered } from '@/hooks/useObrasFiltered';
+import { queryKeys } from '@/lib/queryKeys';
 
 export interface ObraResumo {
   id: string;
@@ -59,6 +62,30 @@ export interface AtividadeItem {
   obra_id: string;
 }
 
+interface DashboardQueryData {
+  obras: ObraResumo[];
+  despesas: DespesaItem[];
+  parcelas: ParcelaItem[];
+  ferramentas: FerramentaItem[];
+  diarios: DiarioItem[];
+  atividades: AtividadeItem[];
+  despesasPorTipo: { name: string; value: number }[];
+  evolucaoMensal: { mes: string; Receitas: number; Despesas: number }[];
+  parcelasAtrasadas: number;
+}
+
+const EMPTY_DATA: DashboardQueryData = {
+  obras: [],
+  despesas: [],
+  parcelas: [],
+  ferramentas: [],
+  diarios: [],
+  atividades: [],
+  despesasPorTipo: [],
+  evolucaoMensal: [],
+  parcelasAtrasadas: 0,
+};
+
 export interface DashboardData {
   loading: boolean;
   obras: ObraResumo[];
@@ -79,44 +106,26 @@ export interface DashboardData {
 }
 
 export function useDashboardData(): DashboardData {
+  const { user, role } = useAuth();
+  const queryClient = useQueryClient();
   const { filterObras, loading: obrasFilterLoading } = useObrasFiltered();
-  const [loading, setLoading] = useState(true);
-  const [obras, setObras] = useState<ObraResumo[]>([]);
-  const [despesas, setDespesas] = useState<DespesaItem[]>([]);
-  const [parcelas, setParcelas] = useState<ParcelaItem[]>([]);
-  const [ferramentas, setFerramentas] = useState<FerramentaItem[]>([]);
-  const [diarios, setDiarios] = useState<DiarioItem[]>([]);
-  const [atividades, setAtividades] = useState<AtividadeItem[]>([]);
-  const [despesasPorTipo, setDespesasPorTipo] = useState<{ name: string; value: number }[]>([]);
-  const [evolucaoMensal, setEvolucaoMensal] = useState<{ mes: string; Receitas: number; Despesas: number }[]>([]);
-  const [parcelasAtrasadas, setParcelasAtrasadas] = useState(0);
-  const [refreshKey, setRefreshKey] = useState(0);
 
-  const refresh = useCallback(() => setRefreshKey(k => k + 1), []);
+  const dashboardKey = queryKeys.dashboard(user?.id ?? '', role);
 
-  useEffect(() => {
-    if (obrasFilterLoading) return;
-    let cancelled = false;
-
-    (async () => {
-      setLoading(true);
+  const { data, isLoading } = useQuery({
+    queryKey: dashboardKey,
+    enabled: !!user && !obrasFilterLoading,
+    queryFn: async (): Promise<DashboardQueryData> => {
       const { data: obrasData } = await supabase
         .from('obras')
         .select('id, nome, endereco, status, data_inicio, data_fim_prevista, clientes(nome)')
         .order('created_at', { ascending: false });
 
-      if (!obrasData) { if (!cancelled) setLoading(false); return; }
+      if (!obrasData) return EMPTY_DATA;
       const filtered = filterObras(obrasData as any[]);
       const obraIds = filtered.map((o: any) => o.id);
 
-      if (obraIds.length === 0) {
-        if (!cancelled) {
-          setObras([]); setDespesas([]); setParcelas([]); setFerramentas([]);
-          setDiarios([]); setAtividades([]); setDespesasPorTipo([]); setEvolucaoMensal([]);
-          setParcelasAtrasadas(0); setLoading(false);
-        }
-        return;
-      }
+      if (obraIds.length === 0) return EMPTY_DATA;
 
       const [recRes, despRes, ferRes, diaRes, atvRes] = await Promise.all([
         supabase.from('receitas').select('id, valor_total, obra_id').in('obra_id', obraIds),
@@ -222,41 +231,44 @@ export function useDashboardData(): DashboardData {
         data_vencimento: d.data_vencimento, obra_id: d.obra_id,
       }));
 
-      if (cancelled) return;
-      setObras(obrasResumo);
-      setDespesas(desp);
-      setParcelas(parc);
-      setFerramentas(fers);
-      setDiarios(dias);
-      setAtividades(atvs);
-      setParcelasAtrasadas(late);
-      setDespesasPorTipo(Object.entries(tipoMap).map(([name, value]) => ({ name, value })));
-      setEvolucaoMensal(sortedMonths.map(([mes, v]) => ({
-        mes: new Date(mes + '-01T00:00:00').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
-        Receitas: v.receitas,
-        Despesas: v.despesas,
-      })));
-      setLoading(false);
-    })();
+      return {
+        obras: obrasResumo,
+        despesas: desp,
+        parcelas: parc,
+        ferramentas: fers,
+        diarios: dias,
+        atividades: atvs,
+        parcelasAtrasadas: late,
+        despesasPorTipo: Object.entries(tipoMap).map(([name, value]) => ({ name, value })),
+        evolucaoMensal: sortedMonths.map(([mes, v]) => ({
+          mes: new Date(mes + '-01T00:00:00').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }),
+          Receitas: v.receitas,
+          Despesas: v.despesas,
+        })),
+      };
+    },
+  });
 
-    return () => { cancelled = true; };
-  }, [obrasFilterLoading, refreshKey]);
+  const refresh = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: dashboardKey });
+  }, [queryClient, dashboardKey]);
 
-  const totalContratos = obras.reduce((s, o) => s + o.total_receitas, 0);
-  const totalRecebido = obras.reduce((s, o) => s + o.total_recebido, 0);
-  const totalGastos = obras.reduce((s, o) => s + o.total_despesas, 0);
+  const d = data ?? EMPTY_DATA;
+  const totalContratos = d.obras.reduce((s, o) => s + o.total_receitas, 0);
+  const totalRecebido = d.obras.reduce((s, o) => s + o.total_recebido, 0);
+  const totalGastos = d.obras.reduce((s, o) => s + o.total_despesas, 0);
 
   return {
-    loading,
-    obras,
-    despesas,
-    parcelas,
-    ferramentas,
-    diarios,
-    atividades,
-    totals: { totalContratos, totalRecebido, totalGastos, parcelasAtrasadas },
-    despesasPorTipo,
-    evolucaoMensal,
+    loading: obrasFilterLoading || isLoading,
+    obras: d.obras,
+    despesas: d.despesas,
+    parcelas: d.parcelas,
+    ferramentas: d.ferramentas,
+    diarios: d.diarios,
+    atividades: d.atividades,
+    totals: { totalContratos, totalRecebido, totalGastos, parcelasAtrasadas: d.parcelasAtrasadas },
+    despesasPorTipo: d.despesasPorTipo,
+    evolucaoMensal: d.evolucaoMensal,
     refresh,
   };
 }
