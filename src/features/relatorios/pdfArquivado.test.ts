@@ -23,7 +23,7 @@ describe('liberação de assinaturas do cliente', () => {
   it('consulta lote com duas queries e usa apenas o PDF vigente mais recente', async () => {
     mocks.from.mockImplementation((table: string) => {
       const result = table === 'assinaturas'
-        ? { data: [{ relatorio_id: 'r1' }, { relatorio_id: 'r1' }, { relatorio_id: 'r2' }], error: null }
+        ? { data: [{ relatorio_id: 'r1', tipo: 'cliente', assinado_por: 'sindico-1' }, { relatorio_id: 'r1', tipo: 'responsavel_tecnico', assinado_por: 'tecnico-1' }, { relatorio_id: 'r2', tipo: 'cliente', assinado_por: null }], error: null }
         : { data: [{ relatorio_id: 'r1', qtd_assinaturas: 2 }, { relatorio_id: 'r1', qtd_assinaturas: 1 }], error: null };
       const query = { select: vi.fn(), in: vi.fn(), is: vi.fn(), order: vi.fn(), then: (resolve: (v: unknown) => void) => Promise.resolve(result).then(resolve) };
       query.select.mockReturnValue(query); query.in.mockReturnValue(query); query.is.mockReturnValue(query); query.order.mockReturnValue(query);
@@ -31,7 +31,8 @@ describe('liberação de assinaturas do cliente', () => {
     });
     const result = await statusLiberacaoLote(['r1', 'r2', 'r1']);
     expect(mocks.from).toHaveBeenCalledTimes(2);
-    expect(result.r1).toEqual({ pendente: false, qtdAtual: 2, qtdVigente: 2 });
+    expect(result.r1).toEqual({ pendente: false, qtdAtual: 2, qtdVigente: 2, assinantesCliente: ['sindico-1'] });
+    expect(result.r2.assinantesCliente).toEqual([]);
     expect(result.r2.pendente).toBe(false);
   });
   it('cliente com falha de download nunca gera nem arquiva PDF novo', async () => {

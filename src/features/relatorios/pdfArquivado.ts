@@ -208,6 +208,7 @@ export interface StatusLiberacao {
   pendente: boolean;
   qtdAtual: number;
   qtdVigente: number;
+  assinantesCliente?: string[];
 }
 
 export function calcularStatusLiberacao(qtdAtual: number, vigente: Pick<PdfArquivado, 'qtd_assinaturas'> | null): StatusLiberacao {
@@ -219,15 +220,17 @@ export async function statusLiberacaoLote(ids: string[]): Promise<Record<string,
   const unicos = [...new Set(ids)];
   if (unicos.length === 0) return {};
   const [assinaturas, pdfs] = await Promise.all([
-    supabase.from('assinaturas').select('relatorio_id').in('relatorio_id', unicos),
+    supabase.from('assinaturas').select('relatorio_id, tipo, assinado_por').in('relatorio_id', unicos),
     supabase.from('relatorio_pdfs_assinados').select('relatorio_id, qtd_assinaturas, gerado_em').in('relatorio_id', unicos).is('excluido_em', null).order('gerado_em', { ascending: false }),
   ]);
   if (assinaturas.error) throw assinaturas.error;
   if (pdfs.error) throw pdfs.error;
-  return Object.fromEntries(unicos.map((id) => [id, calcularStatusLiberacao(
+  return Object.fromEntries(unicos.map((id) => [id, { ...calcularStatusLiberacao(
     (assinaturas.data ?? []).filter((a) => a.relatorio_id === id).length,
     (pdfs.data ?? []).find((p) => p.relatorio_id === id) ?? null,
-  )]));
+  ), assinantesCliente: (assinaturas.data ?? [])
+    .filter((a) => a.relatorio_id === id && a.tipo === 'cliente')
+    .flatMap((a) => a.assinado_por ? [a.assinado_por] : []), }]));
 }
 
 export async function statusLiberacao(relatorioId: string): Promise<StatusLiberacao> {

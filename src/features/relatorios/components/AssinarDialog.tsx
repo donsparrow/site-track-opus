@@ -1,6 +1,6 @@
 import { lazy, Suspense, useRef, useState, useEffect } from 'react';
 import type SignatureCanvasType from 'react-signature-canvas';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,10 +17,11 @@ interface Props {
   saving?: boolean;
   tipoFixo?: 'responsavel_tecnico' | 'cliente';
   nomeInicial?: string;
+  subtitulo?: string;
   onConfirm: (values: { dataUrl: string; nome: string; cargo: string; tipo: string }) => void;
 }
 
-export default function AssinarDialog({ open, onOpenChange, saving, onConfirm, tipoFixo, nomeInicial }: Props) {
+export default function AssinarDialog({ open, onOpenChange, saving, onConfirm, tipoFixo, nomeInicial, subtitulo }: Props) {
   const sigRef = useRef<SignatureCanvasType>(null);
   const [nome, setNome] = useState('');
   const [cargo, setCargo] = useState('');
@@ -40,7 +41,7 @@ export default function AssinarDialog({ open, onOpenChange, saving, onConfirm, t
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
-        <DialogHeader><DialogTitle className="font-display">Assinatura Digital</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle className="font-display">Assinatura Digital</DialogTitle>{subtitulo && <DialogDescription className="break-words">{subtitulo}</DialogDescription>}</DialogHeader>
         <div className="space-y-4">
           <div><Label>Nome *</Label><Input value={nome} onChange={(e) => setNome(e.target.value)} required /></div>
           <div><Label>Cargo{tipoFixo === 'cliente' ? ' *' : ''}</Label><Input value={cargo} onChange={(e) => setCargo(e.target.value)} required={tipoFixo === 'cliente'} placeholder={tipoFixo === 'cliente' ? 'Ex.: Síndico, Fiscal de obra' : undefined} /></div>

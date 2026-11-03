@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { supabase } from '@/integrations/supabase/client';
+import { useNomeAssinante } from '../hooks/useNomeAssinante';
 import { statusLiberacao } from '../pdfArquivado';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,16 +56,7 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
   const { isAdmin, role, user } = useAuth();
   const isCliente = role === 'sindico' || role === 'cliente';
   const operacional = role === 'admin' || role === 'trabalhador' || role === 'super_admin';
-  const nomeQuery = useQuery({
-    queryKey: ['relatorio-assinante-nome', user?.id],
-    enabled: isCliente && !!user,
-    queryFn: async () => {
-      if (!user) return '';
-      const { data, error } = await supabase.from('profiles').select('nome').eq('user_id', user.id).maybeSingle();
-      if (error) throw error;
-      return data?.nome ?? '';
-    },
-  });
+  const nomeQuery = useNomeAssinante();
 
   const periodoSugerido = usePeriodoSugerido(obraId, isNovo && !relatorioId);
   useEffect(() => {

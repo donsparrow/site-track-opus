@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Download, Edit, Eye, Trash2 } from 'lucide-react';
+import { Download, Edit, Eye, Trash2, PenTool } from 'lucide-react';
 import type { RelatorioComObra } from '../types';
 import type { StatusLiberacao } from '../pdfArquivado';
 import { fmt, statusVariant } from '../utils';
@@ -13,15 +13,35 @@ interface Props {
   podeEditar: boolean;
   liberacoes?: Record<string, StatusLiberacao>;
   podeExcluir: boolean;
+  mostrarPendenciaEmpresa?: boolean;
+  cliente?: { userId?: string };
+  onAssinar?: (r: RelatorioComObra) => void;
   onBaixar: (r: RelatorioComObra) => void;
   onVisualizar: (r: RelatorioComObra) => void;
   onEditar: (r: RelatorioComObra) => void;
   onExcluir: (r: RelatorioComObra) => void;
 }
 
-export default function RelatoriosLista({ relatorios, podeEditar, podeExcluir, onBaixar, onVisualizar, onEditar, onExcluir, liberacoes = {} }: Props) {
+export default function RelatoriosLista({ relatorios, podeEditar, podeExcluir, onBaixar, onVisualizar, onEditar, onExcluir, liberacoes = {}, mostrarPendenciaEmpresa = false, cliente, onAssinar }: Props) {
+  const jaAssinei = (r: RelatorioComObra) => !!cliente?.userId && !!liberacoes[r.id]?.assinantesCliente?.includes(cliente.userId);
+  const renderStatus = (r: RelatorioComObra) => (
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <Badge variant={statusVariant(r.status)}>{(r.status || '').toUpperCase()}</Badge>
+      {mostrarPendenciaEmpresa && liberacoes[r.id]?.pendente && <Badge variant="destructive">Aguardando liberação</Badge>}
+      {cliente && r.status === 'assinado' && jaAssinei(r) && (
+        liberacoes[r.id]?.pendente
+          ? <Badge variant="secondary">Aguardando liberação do PDF</Badge>
+          : <Badge variant="outline">Assinado por você</Badge>
+      )}
+    </span>
+  );
   const renderActions = (r: RelatorioComObra) => (
-    <div className="flex gap-1">
+    <div className="flex flex-wrap gap-1 items-center">
+      {cliente?.userId && r.status === 'assinado' && liberacoes[r.id] && !jaAssinei(r) && onAssinar && (
+        <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => onAssinar(r)}>
+          <PenTool className="h-4 w-4 mr-1" />Assinar
+        </Button>
+      )}
                       <Button size="sm" variant="ghost" onClick={() => onBaixar(r)} title="Baixar PDF">
                         <Download className="h-4 w-4" />
                       </Button>
@@ -91,7 +111,7 @@ export default function RelatoriosLista({ relatorios, podeEditar, podeExcluir, o
                     {r.data_inicio ? fmt(r.data_inicio) : '—'} a {r.data_fim ? fmt(r.data_fim) : '—'}
                   </TableCell>
                   <TableCell className="text-sm">{new Date(r.created_at).toLocaleDateString('pt-BR')}</TableCell>
-                  <TableCell><Badge variant={statusVariant(r.status)}>{(r.status || '').toUpperCase()}</Badge>{liberacoes[r.id]?.pendente && <Badge variant="destructive" className="ml-2">Aguardando liberação</Badge>}</TableCell>
+                  <TableCell>{renderStatus(r)}</TableCell>
                   <TableCell>
                     {renderActions(r)}
                   </TableCell>
@@ -105,7 +125,7 @@ export default function RelatoriosLista({ relatorios, podeEditar, podeExcluir, o
  {relatorios.map((r) => (
  <Card key={r.id}><CardContent className="p-4 space-y-3">
  <h3 className="font-semibold break-words">{r.obras?.nome || '—'}</h3>
- <div className="space-y-1 text-sm break-words"><p>Cliente: {r.obras?.clientes?.nome || '—'}</p><p>Período: {r.data_inicio ? fmt(r.data_inicio) : '—'} a {r.data_fim ? fmt(r.data_fim) : '—'}</p><Badge variant={statusVariant(r.status)}>{(r.status || '').toUpperCase()}</Badge>{liberacoes[r.id]?.pendente && <Badge variant="destructive" className="ml-2">Aguardando liberação</Badge>}</div>
+ <div className="space-y-1 text-sm break-words"><p>Cliente: {r.obras?.clientes?.nome || '—'}</p><p>Período: {r.data_inicio ? fmt(r.data_inicio) : '—'} a {r.data_fim ? fmt(r.data_fim) : '—'}</p>{renderStatus(r)}</div>
  {renderActions(r)}
  </CardContent></Card>
  ))}

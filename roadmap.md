@@ -8,3 +8,5 @@
 - [x] Mostrar pendências e liberar PDFs assinados pela empresa, com filtro em lote.
 - [x] Testar regras de pendência e download protegido (5 testes aprovados).
 - [ ] Verificar assinatura/liberação com dois signatários (aguarda login no preview e contas autorizadas).
+- [x] Adicionar assinatura na lista com identificação da obra/período e status individual, sem mudar liberação (5 testes aprovados).
+- [ ] Conferir assinatura na lista e botões no celular com conta de síndico (aguarda login autorizado no preview).
