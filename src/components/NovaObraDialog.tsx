@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { queryKeys } from '@/lib/queryKeys';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,16 +40,20 @@ export default function NovaObraDialog({ open, onOpenChange, onCreated }: Props)
   const [dataFimPrevista, setDataFimPrevista] = useState('');
   const [status, setStatus] = useState('planejamento');
   const [prazoContratual, setPrazoContratual] = useState(0);
-  const [clientes, setClientes] = useState<{ id: string; nome: string }[]>([]);
   const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
 
-  useEffect(() => {
-    if (open) {
-      supabase.from('clientes').select('id, nome').order('nome').then(({ data }) => {
-        setClientes(data || []);
-      });
-    }
-  }, [open]);
+  // Mesma queryKey da tela Clientes: reaproveita o cache compartilhado
+  const { data: clientesData = [] } = useQuery({
+    queryKey: queryKeys.clientesLista(user?.id ?? ''),
+    enabled: open && !!user,
+    staleTime: 0,
+    queryFn: async () => {
+      const { data } = await supabase.from('clientes').select('*').order('nome');
+      return data || [];
+    },
+  });
+  const clientes: { id: string; nome: string }[] = clientesData.map((c: any) => ({ id: c.id, nome: c.nome }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
