@@ -1,31 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchEmpresaBranding } from '@/lib/empresaBranding';
+import { queryKeys } from '@/lib/queryKeys';
 
 export function useEmpresaNome() {
   const { empresaId } = useAuth();
-  const [nome, setNome] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    if (!empresaId) {
-      setNome(null);
-      return;
-    }
-    (async () => {
-      const { data } = await supabase.from('empresas').select('nome').eq('id', empresaId).maybeSingle();
+  const { data: nome } = useQuery({
+    queryKey: queryKeys.empresaNome(empresaId ?? ''),
+    enabled: !!empresaId,
+    staleTime: 30 * 60 * 1000, // 30 minutos
+    queryFn: async (): Promise<string | null> => {
+      const { data } = await supabase.from('empresas').select('nome').eq('id', empresaId!).maybeSingle();
       let resolved = data?.nome ?? null;
       if (!resolved) {
         const branding = await fetchEmpresaBranding();
         resolved = branding?.nome_empresa ?? null;
       }
-      if (!cancelled) setNome(resolved);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [empresaId]);
+      return resolved;
+    },
+  });
 
   return nome ?? 'Empresa não configurada';
 }

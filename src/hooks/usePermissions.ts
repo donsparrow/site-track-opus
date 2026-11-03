@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { queryKeys } from '@/lib/queryKeys';
 
 export type Modulo = 'dashboard' | 'financeiro' | 'diario_obra' | 'cronograma' | 'relatorios' | 'documentos' | 'usuarios' | 'configuracoes' | 'clientes' | 'ferramentas' | 'relatorio_final' | 'funcionarios';
 
@@ -47,54 +48,49 @@ export const ROUTE_MODULE_MAP: Record<string, Modulo> = {
 
 export { MODULOS, MODULO_LABELS };
 
+const fullAccess = (): Permissao[] =>
+  MODULOS.map(m => ({
+    modulo: m,
+    pode_visualizar: true,
+    pode_criar: true,
+    pode_editar: true,
+    pode_excluir: true,
+  }));
+
+const noAccess = (): Permissao[] =>
+  MODULOS.map(m => ({
+    modulo: m,
+    pode_visualizar: false,
+    pode_criar: false,
+    pode_editar: false,
+    pode_excluir: false,
+  }));
+
 export function usePermissions() {
   const { user, role, isSuperAdmin, isAdmin } = useAuth();
-  const [permissoes, setPermissoes] = useState<Permissao[]>([]);
-  const [loading, setLoading] = useState(true);
+  const isPrivileged = isSuperAdmin || isAdmin;
+  const needsQuery = !!user && !isPrivileged;
 
-  useEffect(() => {
-    if (!user) {
-      setPermissoes([]);
-      setLoading(false);
-      return;
-    }
-
-    // Super admin and admin always have full access
-    if (isSuperAdmin || isAdmin) {
-      setPermissoes(MODULOS.map(m => ({
-        modulo: m,
-        pode_visualizar: true,
-        pode_criar: true,
-        pode_editar: true,
-        pode_excluir: true,
-      })));
-      setLoading(false);
-      return;
-    }
-
-    const fetch = async () => {
+  const { data, isLoading } = useQuery({
+    queryKey: queryKeys.permissoes(user?.id ?? '', role),
+    enabled: needsQuery,
+    queryFn: async (): Promise<Permissao[]> => {
       const { data } = await supabase
         .from('permissoes_usuario')
         .select('modulo, pode_visualizar, pode_criar, pode_editar, pode_excluir')
-        .eq('user_id', user.id);
+        .eq('user_id', user!.id);
 
       if (data && data.length > 0) {
-        setPermissoes(data as Permissao[]);
-      } else {
-        // Fallback: no permissions found = no access
-        setPermissoes(MODULOS.map(m => ({
-          modulo: m,
-          pode_visualizar: false,
-          pode_criar: false,
-          pode_editar: false,
-          pode_excluir: false,
-        })));
+        return data as Permissao[];
       }
-      setLoading(false);
-    };
+      // Fallback: no permissions found = no access
+      return noAccess();
+    },
+  });
 
-    fetch();
-  }, [user, role, isSuperAdmin, isAdmin]);
+  // Super admin and admin always have full access, sem consulta
+  const permissoes: Permissao[] = isPrivileged ? fullAccess() : (data ?? []);
+  const loading = needsQuery && isLoading;
 
   const pode = (modulo: Modulo, acao: 'visualizar' | 'criar' | 'editar' | 'excluir'): boolean => {
     if (isSuperAdmin || isAdmin) return true;

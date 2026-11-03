@@ -1,33 +1,28 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { queryKeys } from '@/lib/queryKeys';
 
 export function useObrasFiltered() {
   const { user, role } = useAuth();
-  const [allowedObraIds, setAllowedObraIds] = useState<string[] | null>(null);
-  const [loading, setLoading] = useState(true);
+  const isPrivileged = role === 'admin' || role === 'super_admin';
+  const needsQuery = !!user && !isPrivileged;
 
-  useEffect(() => {
-    if (!user) { setAllowedObraIds(null); setLoading(false); return; }
-
-    if (role === 'admin' || role === 'super_admin') {
-      setAllowedObraIds(null); // null = all obras
-      setLoading(false);
-      return;
-    }
-
-    // trabalhador/cliente/sindico: fetch linked obras
-    const fetchLinks = async () => {
-      setLoading(true);
+  const { data, isLoading } = useQuery({
+    queryKey: queryKeys.obrasPermitidas(user?.id ?? '', role),
+    enabled: needsQuery,
+    queryFn: async () => {
       const { data } = await supabase
         .from('usuario_obras')
         .select('obra_id')
-        .eq('user_id', user.id);
-      setAllowedObraIds((data || []).map((d: any) => d.obra_id));
-      setLoading(false);
-    };
-    fetchLinks();
-  }, [user, role]);
+        .eq('user_id', user!.id);
+      return (data || []).map((d: any) => d.obra_id as string);
+    },
+  });
+
+  const loading = needsQuery && isLoading;
+  // null = all obras (admin/super_admin ou sem usuário); array vazio em erro = nenhuma obra
+  const allowedObraIds: string[] | null = needsQuery ? (data ?? []) : null;
 
   const filterObras = <T extends { id: string }>(obras: T[]): T[] => {
     // While loading, return empty to prevent data leakage
