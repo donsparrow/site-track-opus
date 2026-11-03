@@ -4,3 +4,6 @@
 - [x] Corrigir cache e recuperação de falhas de carregamento, mantendo o PWA.
 - [x] Verificar testes e recuperação automática sem ciclos de recarga.
 - [ ] Verificar duas versões publicadas (aguarda publicação autorizada).
+- [ ] Permitir assinatura individual de síndico/cliente por função protegida, sem alterar RLS existente.
+- [ ] Mostrar pendências e liberar PDFs assinados pela empresa, com filtro em lote.
+- [ ] Testar regras e verificar assinatura/liberação com contas autorizadas.
