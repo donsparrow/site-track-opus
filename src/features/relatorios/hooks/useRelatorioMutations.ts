@@ -1,3 +1,4 @@
+import { useAuth } from '@/contexts/AuthContext';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -101,6 +102,9 @@ interface DownloadListaInput {
 export function useRelatorioMutations() {
   const qc = useQueryClient();
   const { user } = useRelatoriosScope();
+  const { role } = useAuth();
+  const isCliente = role === 'sindico' || role === 'cliente';
+  const invalidarLiberacao = () => qc.invalidateQueries({ queryKey: ['relatorio-liberacao'] });
 
   const invalidateLista = () => qc.invalidateQueries({ queryKey: relatoriosPrefixes.lista });
   const invalidateRelatorio = (relatorioId: string | null) => {
@@ -322,6 +326,7 @@ export function useRelatorioMutations() {
           relatorioId: relatorio.id,
           empresa,
           nomeObra: relatorio.obras?.nome || 'relatorio',
+          isCliente,
         });
         toastResultadoDownload(resultado);
         return { relatorioId: relatorio.id, toastFeito: true };
@@ -343,6 +348,8 @@ export function useRelatorioMutations() {
     },
     onSuccess: ({ relatorioId, toastFeito }) => {
       invalidateRelatorio(relatorioId);
+      invalidarLiberacao();
+      qc.invalidateQueries({ queryKey: ['relatorio-pdfs-arquivados', relatorioId] });
       if (!toastFeito) toast.success('PDF baixado!');
     },
     onError: (e: Error) => toast.error('Erro ao baixar PDF: ' + e.message),
@@ -417,6 +424,43 @@ export function useRelatorioMutations() {
     onError: (e: Error) => toast.error('Erro ao assinar: ' + e.message),
   });
 
+  const assinarComoCliente = useMutation({
+    mutationFn: async ({ relatorioId, dataUrl, nome, cargo }: { relatorioId: string; dataUrl: string; nome: string; cargo: string }) => {
+      const blob = await (await fetch(dataUrl)).blob();
+      const filePath = `assinaturas/${relatorioId}/${Date.now()}.png`;
+      const { error: upErr } = await supabase.storage.from('anexos').upload(filePath, blob, { contentType: 'image/png', upsert: false });
+      if (upErr) throw upErr;
+      const { error } = await supabase.rpc('assinar_relatorio_cliente', {
+        _relatorio_id: relatorioId, _assinatura_url: filePath, _nome: nome, _cargo: cargo,
+      });
+      if (error) {
+        await supabase.storage.from('anexos').remove([filePath]);
+        throw error;
+      }
+      return relatorioId;
+    },
+    onSuccess: (relatorioId) => {
+      invalidateRelatorio(relatorioId);
+      invalidarLiberacao();
+      toast.success('Assinatura registrada! O PDF com sua assinatura será liberado pela J&A Engenharia.');
+    },
+    onError: (e: Error) => toast.error('Erro ao assinar: ' + e.message),
+  });
+
+  const liberarPdf = useMutation({
+    mutationFn: async ({ relatorioId, empresa }: { relatorioId: string; empresa: EmpresaConfig | null }) => {
+      if (role !== 'admin' && role !== 'trabalhador' && role !== 'super_admin') throw new Error('Somente a empresa pode liberar o PDF');
+      await arquivarPdfAssinado({ relatorioId, empresa, origem: 'assinatura' });
+      return relatorioId;
+    },
+    onSuccess: (relatorioId) => {
+      qc.invalidateQueries({ queryKey: ['relatorio-pdfs-arquivados', relatorioId] });
+      invalidarLiberacao();
+      toast.success('PDF liberado para o cliente');
+    },
+    onError: (e: Error) => toast.error('Erro ao liberar PDF: ' + e.message),
+  });
+
   /** Soft-delete: libera os diários vinculados e preserva o histórico. */
   const excluir = useMutation({
     mutationFn: async (relatorioId: string) => {
@@ -443,14 +487,15 @@ export function useRelatorioMutations() {
 
   /** Download pelo editor de relatório assinado — mesmo fluxo da listagem. */
   const baixarAssinado = useMutation({
-    mutationFn: async ({ relatorioId, empresa, nomeObra }: { relatorioId: string; empresa: EmpresaConfig | null; nomeObra: string }) => {
+    mutationFn: async ({ relatorioId, empresa, nomeObra, isCliente: cliente = isCliente }: { relatorioId: string; empresa: EmpresaConfig | null; nomeObra: string; isCliente?: boolean }) => {
       toast.info('Preparando PDF...');
-      const resultado = await baixarPdfAssinadoOuArquivar({ relatorioId, empresa, nomeObra });
+      const resultado = await baixarPdfAssinadoOuArquivar({ relatorioId, empresa, nomeObra, isCliente: cliente });
       toastResultadoDownload(resultado);
       return relatorioId;
     },
     onSuccess: (relatorioId) => {
       qc.invalidateQueries({ queryKey: ['relatorio-pdfs-arquivados', relatorioId] });
+      invalidarLiberacao();
     },
     onError: (e: Error) => toast.error('Erro ao baixar PDF: ' + e.message),
   });
@@ -470,5 +515,5 @@ export function useRelatorioMutations() {
     onError: (e: Error) => toast.error('Erro ao excluir PDF arquivado: ' + e.message),
   });
 
-  return { consolidar, salvar, gerarPdf, baixarDaLista, baixarAssinado, assinar, excluir, excluirPdfArquivado };
+  return { consolidar, salvar, gerarPdf, baixarDaLista, baixarAssinado, assinar, assinarComoCliente, liberarPdf, excluir, excluirPdfArquivado };
 }
