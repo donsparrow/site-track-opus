@@ -115,6 +115,7 @@ export function useDashboardData(): DashboardData {
   const { data, isLoading } = useQuery({
     queryKey: dashboardKey,
     enabled: !!user && !obrasFilterLoading,
+    staleTime: 0, // exibe o cache na hora e atualiza em segundo plano ao montar
     queryFn: async (): Promise<DashboardQueryData> => {
       const { data: obrasData } = await supabase
         .from('obras')
