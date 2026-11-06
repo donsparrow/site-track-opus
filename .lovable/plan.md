@@ -4,7 +4,7 @@ Sem mudanças de banco, layout, regras de negócio, PDF, assinaturas ou arquivos
 
 ## Arquivos (somente estes)
 
-1. **Novo `src/lib/comprimirImagem.ts`** — `comprimirImagem(file): Promise<File>`
+1. **Novo `src/lib/comprimirImagem.ts`** — `comprimirImagem(file, opcoes?: { maxLado?, qualidade? }): Promise<File>` (padrão 1920 px / 0,8). Diário usa o padrão; Relatório Final usa 3000 px / 0,9.
    - Processa apenas JPEG/PNG/WebP acima de 500 KB; demais casos retornam o original.
    - `createImageBitmap(file, { imageOrientation: 'from-image' })`, lado maior máx. 1920 px (nunca amplia).
    - Canvas com fundo branco, `toBlob` JPEG 0,8; novo `File` `.jpg` / `image/jpeg`.
