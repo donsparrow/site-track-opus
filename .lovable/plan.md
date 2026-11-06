@@ -18,6 +18,9 @@ Sem mudanças de banco, layout, regras de negócio, PDF, assinaturas ou arquivos
 
 5. **`GaleriaImagens.tsx` → apenas o preview**: gerar a URL uma vez por arquivo (`useMemo`) e revogá-la ao trocar o arquivo ou desmontar (`useEffect`). Visual idêntico.
 
+## Garantia de nomes
+Quando `comprimirImagem` devolver o arquivo original (mesmo objeto), o caminho e o nome no armazenamento ficam exatamente como hoje — mesma lógica de extensão/nome atual, sem forçar `.jpg`. Só arquivos efetivamente convertidos usam `.jpg`.
+
 ## Validação
 - Rodar os testes de `comprimirImagem`.
 - Conferir build; se possível, medir no preview o tamanho antes/depois de uma foto de teste e listar os arquivos alterados.
