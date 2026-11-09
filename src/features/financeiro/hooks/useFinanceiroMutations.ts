@@ -61,8 +61,14 @@ export function useFinanceiroMutations() {
       financeiroPrefixes.parcelasRecebidas,
     ]);
 
-  const onError = (error: unknown) =>
-    toast.error('Erro: ' + (error instanceof Error ? error.message : 'desconhecido'));
+  const onError = (error: unknown) => {
+    const msg = error instanceof Error ? error.message : String((error as { message?: string })?.message ?? '');
+    if (/failed to fetch|networkerror|load failed|network request failed/i.test(msg)) {
+      toast.error('Sem conexão com o servidor. Verifique se a receita já aparece na lista antes de tentar de novo.');
+      return;
+    }
+    toast.error('Erro: ' + (msg || 'desconhecido'));
+  };
 
   /** Envia um arquivo ao bucket e registra em financeiro_anexos. Lança erro em falha. */
   const uploadParaFinanceiroAnexos = async ({
@@ -143,6 +149,7 @@ export function useFinanceiroMutations() {
       parcelas,
       anexoFile,
       tipoAnexo,
+      chaveEnvio,
     }: {
       payload: {
         obra_id: string;
@@ -154,8 +161,10 @@ export function useFinanceiroMutations() {
       parcelas: { valor: number; data_vencimento: string }[];
       anexoFile?: File | null;
       tipoAnexo?: string;
+      chaveEnvio?: string;
     }) => {
       const { data: id, error } = await supabase.rpc('criar_receita_com_parcelas', {
+        _chave_envio: chaveEnvio,
         _obra_id: payload.obra_id,
         _descricao: payload.descricao,
         _valor_total: payload.valor_total,
