@@ -61,10 +61,10 @@ export function useFinanceiroMutations() {
       financeiroPrefixes.parcelasRecebidas,
     ]);
 
-  const onError = (error: unknown) => {
+  const onError = (error: unknown, msgRede = 'Sem conexão com o servidor. Verifique sua conexão e tente novamente.') => {
     const msg = error instanceof Error ? error.message : String((error as { message?: string })?.message ?? '');
     if (/failed to fetch|networkerror|load failed|network request failed/i.test(msg)) {
-      toast.error('Sem conexão com o servidor. Verifique se a receita já aparece na lista antes de tentar de novo.');
+      toast.error(msgRede);
       return;
     }
     toast.error('Erro: ' + (msg || 'desconhecido'));
@@ -182,7 +182,7 @@ export function useFinanceiroMutations() {
       invalidateListas();
       invalidate([financeiroPrefixes.anexos]);
     },
-    onError,
+    onError: (e) => onError(e, 'Sem conexão com o servidor. Verifique se a receita já aparece na lista antes de tentar de novo.'),
   });
 
 
