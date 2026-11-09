@@ -31,7 +31,7 @@ export function useObrasDiario() {
 
 /** Seleção de obra em estado local, resetada quando a obra deixa de estar disponível. */
 export function useObraSelecionada(obras: ObraDiario[]) {
-  const [selectedObra, setSelectedObra] = useState('');
+  const [selectedObra, setSelectedObra] = useState(() => new URLSearchParams(window.location.search).get('obra') || '');
 
   useEffect(() => {
     if (selectedObra && obras.length > 0 && !obras.some((o) => o.id === selectedObra)) {

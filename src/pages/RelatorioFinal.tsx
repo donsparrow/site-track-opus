@@ -27,8 +27,9 @@ export default function RelatorioFinalPage() {
   const isSindico = role === 'sindico';
   const { pode } = usePermissions();
   const qc = useQueryClient();
-  const [obraId, setObraId] = useState<string | null>(null);
-  const [tipoRelatorio, setTipoRelatorio] = useState<string>('entrega_obra');
+  const params = new URLSearchParams(window.location.search);
+  const [obraId, setObraId] = useState<string | null>(params.get('obra'));
+  const [tipoRelatorio, setTipoRelatorio] = useState<string>(params.get('tipo') || 'entrega_obra');
   const [criando, setCriando] = useState(false);
   const [gerando, setGerando] = useState(false);
 
