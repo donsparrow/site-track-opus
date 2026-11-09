@@ -61,7 +61,7 @@ export function useFinanceiroMutations() {
       financeiroPrefixes.parcelasRecebidas,
     ]);
 
-  const onError = (error: unknown, msgRede = 'Sem conexão com o servidor. Verifique sua conexão e tente novamente.') => {
+  const erroComMensagem = (error: unknown, msgRede = 'Sem conexão com o servidor. Verifique sua conexão e tente novamente.') => {
     const msg = error instanceof Error ? error.message : String((error as { message?: string })?.message ?? '');
     if (/failed to fetch|networkerror|load failed|network request failed/i.test(msg)) {
       toast.error(msgRede);
@@ -69,6 +69,7 @@ export function useFinanceiroMutations() {
     }
     toast.error('Erro: ' + (msg || 'desconhecido'));
   };
+  const onError = (error: unknown) => erroComMensagem(error);
 
   /** Envia um arquivo ao bucket e registra em financeiro_anexos. Lança erro em falha. */
   const uploadParaFinanceiroAnexos = async ({
@@ -182,7 +183,7 @@ export function useFinanceiroMutations() {
       invalidateListas();
       invalidate([financeiroPrefixes.anexos]);
     },
-    onError: (e) => onError(e, 'Sem conexão com o servidor. Verifique se a receita já aparece na lista antes de tentar de novo.'),
+    onError: (e) => erroComMensagem(e, 'Sem conexão com o servidor. Verifique se a receita já aparece na lista antes de tentar de novo.'),
   });
 
 
