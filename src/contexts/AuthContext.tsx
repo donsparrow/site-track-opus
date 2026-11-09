@@ -1,27 +1,10 @@
-import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { useContext, useEffect, useRef, useState, ReactNode } from 'react';
+import type { User, Session } from '@supabase/supabase-js';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-type AppRole = 'admin' | 'trabalhador' | 'sindico' | 'cliente' | 'super_admin';
+import { AuthContext, type AppRole } from './authContextObject';
 
-interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  role: AppRole | null;
-  loading: boolean;
-  hasCheckedEmpresa: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signUp: (email: string, password: string, nome: string) => Promise<{ error: Error | null }>;
-  signOut: () => Promise<void>;
-  canEdit: boolean;
-  isAdmin: boolean;
-  isSuperAdmin: boolean;
-  empresaId: string | null;
-  refreshEmpresa: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const METADATA_TIMEOUT_MS = 5000;
 
 const withTimeout = <T,>(promise: Promise<T>, fallback: T): Promise<T> => {
