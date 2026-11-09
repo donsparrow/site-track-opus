@@ -1,26 +1,19 @@
-# Fase 2 de Performance — compressão de fotos antes do upload
+# Correção: anexo enviado na criação de Receita/Despesa não aparece
 
-Sem mudanças de banco, layout, regras de negócio, PDF, assinaturas ou arquivos existentes. Nenhuma biblioteca nova.
+## O que muda para o usuário
+- Ao criar receita ou despesa com arquivo, aparece um seletor "Tipo do anexo" (Nota Fiscal padrão / Boleto).
+- O anexo passa a aparecer imediatamente na linha do registro e na aba Notas Fiscais.
+- Se o registro salvar mas o anexo falhar: o registro fica salvo e aparece o aviso "Receita salva, mas o anexo não foi enviado. Abra o registro e anexe novamente." (idem Despesa).
 
-## Arquivos (somente estes)
+## Detalhes técnicos
+Arquivo `src/features/financeiro/hooks/useFinanceiroMutations.ts`:
+1. Extrair de `uploadAnexos` a função interna `uploadParaFinanceiroAnexos({ registroId, tipoRegistro, tipoAnexo, file })` — mesmo bucket `anexos`, mesmo padrão de caminho `financeiro/{tipoRegistro}/...`, mesmo insert em `financeiro_anexos`. `uploadAnexos` passa a chamá-la sem mudar comportamento.
+2. `criarReceita` / `criarDespesa`: `insert(payload).select('id').single()`, sem o campo `anexo`; se houver arquivo, chamar a função com o id; falha do anexo → toast de aviso, registro mantido. `onSuccess` invalida também `financeiroPrefixes.anexos`.
+3. Remover `uploadArquivo` (fica sem uso neste arquivo; as ocorrências em Documentação são funções próprias). Coluna `anexo` permanece intocada.
 
-1. **Novo `src/lib/comprimirImagem.ts`** — `comprimirImagem(file, opcoes?: { maxLado?, qualidade? }): Promise<File>` (padrão 1920 px / 0,8). Diário usa o padrão; Relatório Final usa 3000 px / 0,9.
-   - Processa apenas JPEG/PNG/WebP acima de 500 KB; demais casos retornam o original.
-   - `createImageBitmap(file, { imageOrientation: 'from-image' })`, lado maior máx. 1920 px (nunca amplia).
-   - Canvas com fundo branco, `toBlob` JPEG 0,8; novo `File` `.jpg` / `image/jpeg`.
-   - Resultado maior que o original → original. Qualquer erro → `console.warn` + original.
+`NovaReceitaDialog.tsx` e `NovaDespesaDialog.tsx`: Select "Tipo do anexo" visível quando houver arquivo, padrão `nota_fiscal`, enviado à mutation e resetado ao fechar/limpar.
 
-2. **Novo `src/lib/comprimirImagem.test.ts`** — arquivo < 500 KB retorna o mesmo objeto; `application/pdf` e `image/heic` retornam o original; `createImageBitmap` lançando erro retorna o original sem exceção.
+Fora do escopo: migration, dados antigos, parcelas, RLS/Storage policies.
 
-3. **`useDiarioMutations.ts` → apenas `enviarImagem`**: comprimir `v.file` antes de `uploadAnexoComProgresso`; extensão do caminho calculada a partir do arquivo resultante; progresso inalterado.
-
-4. **`useRelatorioFinalMutations.ts` → apenas `adicionarFotos`**: comprimir cada arquivo antes de `uploadRelatorioFinalArquivo`, usando o nome resultante. Capa, modelo de capa e assinatura intocados.
-
-5. **`GaleriaImagens.tsx` → apenas o preview**: gerar a URL uma vez por arquivo (`useMemo`) e revogá-la ao trocar o arquivo ou desmontar (`useEffect`). Visual idêntico.
-
-## Garantia de nomes
-Quando `comprimirImagem` devolver o arquivo original (mesmo objeto), o caminho e o nome no armazenamento ficam exatamente como hoje — mesma lógica de extensão/nome atual, sem forçar `.jpg`. Só arquivos efetivamente convertidos usam `.jpg`.
-
-## Validação
-- Rodar os testes de `comprimirImagem`.
-- Conferir build; se possível, medir no preview o tamanho antes/depois de uma foto de teste e listar os arquivos alterados.
+## Verificação
+Build/tipos e, no preview, criar receita com PDF (NF) e despesa com imagem (Boleto) conferindo exibição imediata; criar sem anexo; anexar depois pelo fluxo atual.
