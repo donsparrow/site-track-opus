@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { isStorageError } from '@supabase/storage-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { TablesInsert } from '@/integrations/supabase/types';
 import { financeiroPrefixes } from '../queryKeys';
@@ -358,7 +359,7 @@ export function useFinanceiroMutations() {
           await uploadParaFinanceiroAnexos({ registroId, tipoRegistro, tipoAnexo, file });
         } catch (e) {
           // Mantém o comportamento anterior: falha de upload avisa e segue; falha no registro interrompe.
-          if (e && typeof e === 'object' && 'statusCode' in e || (e as { name?: string })?.name === 'StorageError' || (e as { __isStorageError?: boolean })?.__isStorageError) {
+          if (isStorageError(e)) {
             toast.error('Erro ao enviar ' + file.name + ': ' + (e as Error).message);
             continue;
           }
