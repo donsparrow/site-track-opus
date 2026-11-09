@@ -64,6 +64,13 @@
       "when": 1793732632761,
       "tag": "0008_restrict_empresa_insert_add_pdf_path_index",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794246888049,
+      "tag": "0009_parcelas_manuais_e_travas",
+      "breakpoints": true
     }
   ]
 }

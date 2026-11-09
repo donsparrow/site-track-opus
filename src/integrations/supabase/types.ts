@@ -2405,6 +2405,17 @@ export type Database = {
         Args: { _cnpj?: string; _nome: string }
         Returns: string
       }
+      criar_receita_com_parcelas: {
+        Args: {
+          _descricao: string
+          _forma_pagamento: string
+          _obra_id: string
+          _observacoes: string
+          _parcelas: Json
+          _valor_total: number
+        }
+        Returns: string
+      }
       dias_uteis_entre: {
         Args: { _fim: string; _inicio: string }
         Returns: number
