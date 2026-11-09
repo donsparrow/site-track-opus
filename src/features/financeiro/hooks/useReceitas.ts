@@ -25,7 +25,7 @@ export function useReceitas({ filterObra, obras, obrasReady }: Options) {
 
       let q = supabase
         .from('receitas')
-        .select('*, obras(nome)')
+        .select('*, obras(nome), parcelas(valor)')
         .order('created_at', { ascending: false });
 
       if (filterObra !== 'all') q = q.eq('obra_id', filterObra);
