@@ -27,6 +27,7 @@ import ResumoTab from './ResumoTab';
 import EvolucaoTab from './EvolucaoTab';
 import RegistrosTab from './RegistrosTab';
 import AssinaturasTab from './AssinaturasTab';
+import FotosTab from './FotosTab';
 import HistoricoVersoes from './HistoricoVersoes';
 import AssinarDialog from './AssinarDialog';
 import RelatorioSkeleton from './RelatorioSkeleton';
@@ -212,6 +213,7 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
               <TabsTrigger value="resumo">Resumo</TabsTrigger>
               <TabsTrigger value="evolucao">Evolução Diária</TabsTrigger>
               <TabsTrigger value="registros">Paralisações e Ocorrências</TabsTrigger>
+              <TabsTrigger value="fotos">Fotos ({dadosExibicao.imagens.length})</TabsTrigger>
               <TabsTrigger value="assinaturas">Assinaturas ({detail.assinaturas.length})</TabsTrigger>
               <TabsTrigger value="versoes"><History className="h-3 w-3 mr-1" />Histórico</TabsTrigger>
             </TabsList>
@@ -224,6 +226,9 @@ export default function RelatorioEditor({ obras, empresa, relatorioInicial, read
             </TabsContent>
             <TabsContent value="registros">
               {carregando ? <RelatorioSkeleton rows={6} /> : <RegistrosTab dados={dadosExibicao} />}
+            </TabsContent>
+            <TabsContent value="fotos">
+              {carregando ? <RelatorioSkeleton rows={6} /> : <FotosTab imagens={dadosExibicao.imagens} />}
             </TabsContent>
             <TabsContent value="assinaturas">
               <AssinaturasTab
