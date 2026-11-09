@@ -6,7 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Check, ChevronDown, ChevronRight, Pencil, Plus, Trash2, Upload } from 'lucide-react';
 import type { AnexoPreviewTarget } from '@/components/AnexoPreviewDialog';
 import AnexosInline from './AnexosInline';
-import { fmt, fmtData, statusParcela } from '../utils';
+import { fmt, fmtData, saldoReceita, statusParcela } from '../utils';
+import { TOLERANCIA } from '../parcelasCalc';
 import { useParcelas } from '../hooks/useParcelas';
 import type { FinanceiroAnexo, Parcela, ReceitaComObra } from '../types';
 
@@ -23,6 +24,7 @@ interface Props {
   onEditarParcela: (p: Parcela) => void;
   onExcluirParcela: (p: Parcela) => void;
   onReceberParcela: (p: Parcela) => void;
+  onCriarParcelaSaldo: (receitaId: string) => void;
   onAnexar: (registroId: string) => void;
   onPreviewAnexo: (target: AnexoPreviewTarget) => void;
 }
@@ -30,9 +32,32 @@ interface Props {
 export default function TabelaReceitas({
   receitas, anexos, canEdit, isAdmin, expandedReceita, onToggleReceita, onNovaReceita,
   onEditarReceita, onExcluirReceita, onEditarParcela, onExcluirParcela, onReceberParcela,
-  onAnexar, onPreviewAnexo,
+  onCriarParcelaSaldo, onAnexar, onPreviewAnexo,
 }: Props) {
   const { parcelas } = useParcelas(expandedReceita);
+
+  const renderSaldoBadge = (r: ReceitaComObra) => {
+    const saldo = saldoReceita(r);
+    if (saldo <= TOLERANCIA) return null;
+    return (
+      <Badge variant="outline" className="border-warning text-warning whitespace-nowrap">
+        Saldo não parcelado: {fmt(saldo)}
+      </Badge>
+    );
+  };
+
+  const renderSaldoAviso = (r: ReceitaComObra) => {
+    const saldo = saldoReceita(r);
+    if (saldo <= TOLERANCIA) return null;
+    return (
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 mb-3 text-sm">
+        <span>Esta receita tem {fmt(saldo)} sem parcela.</span>
+        {canEdit && (
+          <Button size="sm" variant="outline" onClick={() => onCriarParcelaSaldo(r.id)}>Criar parcela com o saldo</Button>
+        )}
+      </div>
+    );
+  };
 
   const renderActions = (r: ReceitaComObra) => (
     <div className="flex items-center gap-1">
@@ -116,7 +141,9 @@ export default function TabelaReceitas({
                     <TableCell>
                       {expandedReceita === r.id ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                     </TableCell>
-                    <TableCell className="font-medium">{r.descricao}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex flex-wrap items-center gap-2">{r.descricao}{renderSaldoBadge(r)}</div>
+                    </TableCell>
                     <TableCell>{r.obras?.nome || '—'}</TableCell>
                     <TableCell className="data-tech text-success font-medium">{fmt(Number(r.valor_total))}</TableCell>
                     <TableCell className="capitalize">{r.forma_pagamento}</TableCell>
@@ -133,6 +160,7 @@ export default function TabelaReceitas({
                   {expandedReceita === r.id && (
                     <TableRow>
                       <TableCell colSpan={canEdit ? 8 : 7} className="bg-muted/50 p-4">
+                        {renderSaldoAviso(r)}
                         <Table>
                           <TableHeader>
                             <TableRow>
@@ -189,10 +217,10 @@ export default function TabelaReceitas({
  {receitas.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma receita cadastrada</p>}
  {receitas.map((r) => (
  <Card key={r.id}><CardContent className="p-4 space-y-3">
- <h3 className="font-semibold break-words">{r.descricao}</h3>
+ <h3 className="font-semibold break-words">{r.descricao}</h3>{renderSaldoBadge(r)}
  <div className="space-y-1 text-sm break-words"><p>Obra: {r.obras?.nome || '—'}</p><p className="text-success font-medium">Valor: {fmt(Number(r.valor_total))}</p><p className="capitalize">{r.forma_pagamento} · {r.numero_parcelas}x</p></div>
  {renderAttachments(r)}{canEdit && renderActions(r)}
-<Button variant="outline" size="sm" aria-expanded={expandedReceita === r.id} onClick={() => onToggleReceita(r.id)}>{expandedReceita === r.id ? 'Ocultar parcelas' : 'Ver parcelas'}</Button>{expandedReceita === r.id && <div className="space-y-2">
+<Button variant="outline" size="sm" aria-expanded={expandedReceita === r.id} onClick={() => onToggleReceita(r.id)}>{expandedReceita === r.id ? 'Ocultar parcelas' : 'Ver parcelas'}</Button>{expandedReceita === r.id && <div className="space-y-2">{renderSaldoAviso(r)}
 {parcelas.map(p => <Card key={p.id}><CardContent className="p-3 space-y-2">
 <h4 className="font-medium">Parcela {p.numero_parcela} — {fmt(Number(p.valor))}</h4>
 <p className="text-sm">Vencimento: {fmtData(p.data_vencimento)}</p>

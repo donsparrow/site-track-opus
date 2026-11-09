@@ -30,6 +30,7 @@ import EditarReceitaDialog from '@/features/financeiro/components/EditarReceitaD
 import EditarParcelaDialog from '@/features/financeiro/components/EditarParcelaDialog';
 import EditarDespesaDialog from '@/features/financeiro/components/EditarDespesaDialog';
 import ReceberParcelaDialog from '@/features/financeiro/components/ReceberParcelaDialog';
+import SaldoParcelaDialog from '@/features/financeiro/components/SaldoParcelaDialog';
 import ConfirmarExclusaoDialog from '@/features/financeiro/components/ConfirmarExclusaoDialog';
 import type { DespesaComObra, Parcela, ReceitaComObra, TipoRegistroAnexo } from '@/features/financeiro/types';
 
@@ -48,6 +49,7 @@ export default function Financeiro() {
   const [editParcela, setEditParcela] = useState<Parcela | null>(null);
   const [editDespesa, setEditDespesa] = useState<DespesaComObra | null>(null);
   const [receberAlvo, setReceberAlvo] = useState<Parcela | null>(null);
+  const [saldoReceitaId, setSaldoReceitaId] = useState<string | null>(null);
   const [excluirReceitaId, setExcluirReceitaId] = useState<string | null>(null);
   const [excluirDespesaId, setExcluirDespesaId] = useState<string | null>(null);
   const [excluirParcelaAlvo, setExcluirParcelaAlvo] = useState<Parcela | null>(null);
@@ -133,6 +135,7 @@ export default function Financeiro() {
                 onEditarParcela={setEditParcela}
                 onExcluirParcela={setExcluirParcelaAlvo}
                 onReceberParcela={setReceberAlvo}
+                onCriarParcelaSaldo={setSaldoReceitaId}
                 onAnexar={(id) => setAnexoAlvo({ id, tipo: 'receita' })}
                 onPreviewAnexo={setPreviewAnexo}
               />
@@ -206,13 +209,24 @@ export default function Financeiro() {
 
       <EditarParcelaDialog
         parcela={editParcela}
+        valorTotalReceita={(() => {
+          const r = receitas.find((x) => x.id === editParcela?.receita_id);
+          return r ? Number(r.valor_total) : null;
+        })()}
         open={!!editParcela}
         onOpenChange={(o) => { if (!o) setEditParcela(null); }}
         onSubmit={(values) => {
           if (!editParcela) return;
           m.editarParcela.mutate(
             { id: editParcela.id, receita_id: editParcela.receita_id, ...values },
-            { onSuccess: () => setEditParcela(null) },
+            {
+              onSuccess: () => {
+                const reduziu = values.valor < Number(editParcela.valor);
+                const receitaId = editParcela.receita_id;
+                setEditParcela(null);
+                if (reduziu) setSaldoReceitaId(receitaId);
+              },
+            },
           );
         }}
       />
@@ -230,14 +244,29 @@ export default function Financeiro() {
       <ReceberParcelaDialog
         open={!!receberAlvo}
         onOpenChange={(o) => { if (!o) setReceberAlvo(null); }}
-        onConfirm={(formaPagamento) => {
+        onConfirm={(formaPagamento, dataRecebimento) => {
           if (!receberAlvo) return;
           m.receberParcela.mutate({
             parcelaId: receberAlvo.id,
             receitaId: receberAlvo.receita_id,
             formaPagamento,
+            dataRecebimento,
           });
           setReceberAlvo(null);
+        }}
+      />
+
+      <SaldoParcelaDialog
+        receitaId={saldoReceitaId}
+        valorTotal={Number(receitas.find((x) => x.id === saldoReceitaId)?.valor_total ?? 0)}
+        pending={m.criarParcelaSaldo.isPending}
+        onOpenChange={(o) => { if (!o) setSaldoReceitaId(null); }}
+        onCriar={(values) => {
+          if (!saldoReceitaId) return;
+          m.criarParcelaSaldo.mutate(
+            { receitaId: saldoReceitaId, ...values },
+            { onSuccess: () => setSaldoReceitaId(null) },
+          );
         }}
       />
 

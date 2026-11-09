@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { ReceitaComObra } from '../types';
+import { fmt } from '../utils';
+import { somaValores, TOLERANCIA } from '../parcelasCalc';
 
 interface Props {
   receita: ReceitaComObra | null;
@@ -24,6 +26,9 @@ export default function EditarReceitaDialog({ receita, open, onOpenChange, onSub
     setObservacoes(receita.observacoes || '');
   }, [receita]);
 
+  const somaParcelas = somaValores((receita?.parcelas ?? []).map((p) => Number(p.valor)));
+  const abaixo = parseFloat(valor) < somaParcelas - TOLERANCIA;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -32,13 +37,16 @@ export default function EditarReceitaDialog({ receita, open, onOpenChange, onSub
           className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
+            if (abaixo) return;
             onSubmit({ descricao, valor_total: parseFloat(valor), observacoes: observacoes || null });
           }}
         >
           <div><Label>Descrição</Label><Input value={descricao} onChange={(e) => setDescricao(e.target.value)} required /></div>
-          <div><Label>Valor Total (R$)</Label><Input type="number" step="0.01" min="0" value={valor} onChange={(e) => setValor(e.target.value)} required /></div>
+          <div><Label>Valor Total (R$)</Label><Input type="number" step="0.01" min="0" value={valor} onChange={(e) => setValor(e.target.value)} required />
+            {abaixo && <p className="text-sm text-destructive mt-1">O valor total não pode ser menor que a soma das parcelas já lançadas ({fmt(somaParcelas)}).</p>}
+          </div>
           <div><Label>Observações</Label><Input value={observacoes} onChange={(e) => setObservacoes(e.target.value)} /></div>
-          <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">Salvar Alterações</Button>
+          <Button type="submit" disabled={abaixo} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">Salvar Alterações</Button>
         </form>
       </DialogContent>
     </Dialog>
