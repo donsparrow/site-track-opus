@@ -62,13 +62,60 @@ export function useFinanceiroMutations() {
   const onError = (error: unknown) =>
     toast.error('Erro: ' + (error instanceof Error ? error.message : 'desconhecido'));
 
-  /** Faz upload de um anexo simples e devolve o caminho relativo no bucket. */
-  const uploadArquivo = async (file: File, pasta: 'receitas' | 'despesas') => {
+  /** Envia um arquivo ao bucket e registra em financeiro_anexos. Lança erro em falha. */
+  const uploadParaFinanceiroAnexos = async ({
+    registroId,
+    tipoRegistro,
+    tipoAnexo,
+    file,
+  }: {
+    registroId: string;
+    tipoRegistro: TipoRegistroAnexo;
+    tipoAnexo: string;
+    file: File;
+  }) => {
     const ext = file.name.split('.').pop();
-    const path = `${pasta}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-    const { error } = await supabase.storage.from('anexos').upload(path, file);
+    const path = `financeiro/${tipoRegistro}/${Date.now()}_${Math.random()
+      .toString(36)
+      .slice(2)}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('anexos').upload(path, file);
+    if (upErr) throw upErr;
+    const { error } = await supabase.from('financeiro_anexos').insert({
+      tipo_registro: tipoRegistro,
+      registro_id: registroId,
+      tipo_anexo: tipoAnexo,
+      nome_arquivo: file.name,
+      url_arquivo: path,
+    });
     if (error) throw error;
-    return path;
+  };
+
+  /** Cria o registro e, se houver arquivo, tenta anexar. Retorna true se o anexo falhou. */
+  const criarComAnexo = async (
+    tabela: 'receitas' | 'despesas',
+    payload: TablesInsert<'receitas'> | TablesInsert<'despesas'>,
+    anexoFile: File | null | undefined,
+    tipoAnexo: string | undefined,
+  ) => {
+    const { data, error } = await supabase
+      .from(tabela)
+      .insert(payload as never)
+      .select('id')
+      .single();
+    if (error) throw error;
+    if (!anexoFile) return false;
+    try {
+      await uploadParaFinanceiroAnexos({
+        registroId: (data as { id: string }).id,
+        tipoRegistro: tabela === 'receitas' ? 'receita' : 'despesa',
+        tipoAnexo: tipoAnexo || 'nota_fiscal',
+        file: anexoFile,
+      });
+      return false;
+    } catch (e) {
+      console.warn('Falha ao enviar anexo', e);
+      return true;
+    }
   };
 
   /* ---------------- RECEITAS ---------------- */
@@ -77,17 +124,18 @@ export function useFinanceiroMutations() {
     mutationFn: async ({
       payload,
       anexoFile,
+      tipoAnexo,
     }: {
       payload: TablesInsert<'receitas'>;
       anexoFile?: File | null;
-    }) => {
-      const anexo = anexoFile ? await uploadArquivo(anexoFile, 'receitas') : null;
-      const { error } = await supabase.from('receitas').insert({ ...payload, anexo });
-      if (error) throw error;
-    },
-    onSuccess: () => {
+      tipoAnexo?: string;
+    }) => criarComAnexo('receitas', payload, anexoFile, tipoAnexo),
+    onSuccess: (anexoFalhou) => {
       toast.success('Receita criada! Parcelas geradas automaticamente.');
+      if (anexoFalhou)
+        toast.warning('Receita salva, mas o anexo não foi enviado. Abra o registro e anexe novamente.');
       invalidateListas();
+      invalidate([financeiroPrefixes.anexos]);
     },
     onError,
   });
@@ -195,17 +243,18 @@ export function useFinanceiroMutations() {
     mutationFn: async ({
       payload,
       anexoFile,
+      tipoAnexo,
     }: {
       payload: TablesInsert<'despesas'>;
       anexoFile?: File | null;
-    }) => {
-      const anexo = anexoFile ? await uploadArquivo(anexoFile, 'despesas') : null;
-      const { error } = await supabase.from('despesas').insert({ ...payload, anexo });
-      if (error) throw error;
-    },
-    onSuccess: () => {
+      tipoAnexo?: string;
+    }) => criarComAnexo('despesas', payload, anexoFile, tipoAnexo),
+    onSuccess: (anexoFalhou) => {
       toast.success('Despesa registrada!');
+      if (anexoFalhou)
+        toast.warning('Despesa salva, mas o anexo não foi enviado. Abra o registro e anexe novamente.');
       invalidateListas();
+      invalidate([financeiroPrefixes.anexos]);
     },
     onError,
   });
@@ -305,23 +354,16 @@ export function useFinanceiroMutations() {
   const uploadAnexos = useMutation({
     mutationFn: async ({ registroId, tipoRegistro, tipoAnexo, files }: UploadAnexosInput) => {
       for (const file of files) {
-        const ext = file.name.split('.').pop();
-        const path = `financeiro/${tipoRegistro}/${Date.now()}_${Math.random()
-          .toString(36)
-          .slice(2)}.${ext}`;
-        const { error: upErr } = await supabase.storage.from('anexos').upload(path, file);
-        if (upErr) {
-          toast.error('Erro ao enviar ' + file.name + ': ' + upErr.message);
-          continue;
+        try {
+          await uploadParaFinanceiroAnexos({ registroId, tipoRegistro, tipoAnexo, file });
+        } catch (e) {
+          // Mantém o comportamento anterior: falha de upload avisa e segue; falha no registro interrompe.
+          if (e && typeof e === 'object' && 'statusCode' in e || (e as { name?: string })?.name === 'StorageError' || (e as { __isStorageError?: boolean })?.__isStorageError) {
+            toast.error('Erro ao enviar ' + file.name + ': ' + (e as Error).message);
+            continue;
+          }
+          throw e;
         }
-        const { error } = await supabase.from('financeiro_anexos').insert({
-          tipo_registro: tipoRegistro,
-          registro_id: registroId,
-          tipo_anexo: tipoAnexo,
-          nome_arquivo: file.name,
-          url_arquivo: path,
-        });
-        if (error) throw error;
       }
     },
     onSuccess: () => {
