@@ -36,6 +36,9 @@ export default function NovaReceitaDialog({ open, onOpenChange }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [linhas, setLinhas] = useState<LinhaParcela[]>([]);
   const [editado, setEditado] = useState(false);
+  // Chave de envio: a mesma em todas as tentativas deste formulário; evita receita duplicada.
+  const [chaveEnvio, setChaveEnvio] = useState(() => crypto.randomUUID());
+  useEffect(() => { if (open) setChaveEnvio(crypto.randomUUID()); }, [open]);
 
   const total = parseFloat(valorTotal);
   const n = formaPagamento === 'parcelado' ? parseInt(numeroParcelas) : 1;
@@ -64,7 +67,7 @@ export default function NovaReceitaDialog({ open, onOpenChange }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fechado) return;
+    if (!fechado || criarReceita.isPending) return;
     criarReceita.mutate(
       {
         payload: {
@@ -80,11 +83,13 @@ export default function NovaReceitaDialog({ open, onOpenChange }: Props) {
         })),
         anexoFile,
         tipoAnexo,
+        chaveEnvio,
       },
       {
         onSuccess: () => {
           setDescricao(''); setValorTotal(''); setObraId(''); setObservacoes(''); setAnexoFile(null); setTipoAnexo('nota_fiscal');
           setFormaPagamento('avista'); setNumeroParcelas('1'); setEditado(false);
+          setChaveEnvio(crypto.randomUUID());
           onOpenChange(false);
         },
       },

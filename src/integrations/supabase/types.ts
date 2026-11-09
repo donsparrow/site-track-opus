@@ -1818,6 +1818,7 @@ export type Database = {
       receitas: {
         Row: {
           anexo: string | null
+          chave_envio: string | null
           created_at: string
           descricao: string
           empresa_id: string | null
@@ -1831,6 +1832,7 @@ export type Database = {
         }
         Insert: {
           anexo?: string | null
+          chave_envio?: string | null
           created_at?: string
           descricao: string
           empresa_id?: string | null
@@ -1844,6 +1846,7 @@ export type Database = {
         }
         Update: {
           anexo?: string | null
+          chave_envio?: string | null
           created_at?: string
           descricao?: string
           empresa_id?: string | null
@@ -2410,6 +2413,7 @@ export type Database = {
       }
       criar_receita_com_parcelas: {
         Args: {
+          _chave_envio?: string
           _descricao: string
           _forma_pagamento: string
           _obra_id: string

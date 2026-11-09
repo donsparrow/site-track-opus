@@ -85,6 +85,13 @@
       "when": 1794248070854,
       "tag": "0011_laudos_acesso_externo",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794249559766,
+      "tag": "0012_receitas_chave_envio",
+      "breakpoints": true
     }
   ]
 }
