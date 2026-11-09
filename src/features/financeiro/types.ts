@@ -11,7 +11,10 @@ export interface ObraOption {
   nome: string;
 }
 
-export type ReceitaComObra = Receita & { obras: { nome: string } | null };
+export type ReceitaComObra = Receita & {
+  obras: { nome: string } | null;
+  parcelas?: { valor: number }[] | null;
+};
 export type DespesaComObra = Despesa & { obras: { nome: string } | null };
 
 /** Linha crua retornada pela query de parcelas recebidas (com join). */

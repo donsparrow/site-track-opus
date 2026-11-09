@@ -1,3 +1,4 @@
+import { saldoNaoParcelado } from './parcelasCalc';
 import type { DespesaComObra, Parcela, ReceitaComObra, StatusParcela } from './types';
 
 export const fmt = (val: number) =>
@@ -22,6 +23,10 @@ export const somaDespesas = (despesas: DespesaComObra[]) =>
 
 export const calcSaldo = (totalReceitas: number, totalDespesas: number) =>
   totalReceitas - totalDespesas;
+
+/** Saldo não parcelado da receita (total − soma das parcelas). */
+export const saldoReceita = (r: ReceitaComObra) =>
+  saldoNaoParcelado(Number(r.valor_total), (r.parcelas ?? []).map((p) => Number(p.valor)));
 
 export const statusParcela = (p: Parcela): StatusParcela => {
   const today = new Date().toISOString().split('T')[0];

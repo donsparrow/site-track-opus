@@ -23,6 +23,7 @@ interface EditarParcelaInput {
 
 interface ReceberParcelaInput {
   parcelaId: string;
+  dataRecebimento: string;
   receitaId: string;
   formaPagamento: string;
 }
@@ -104,11 +105,26 @@ export function useFinanceiroMutations() {
       .select('id')
       .single();
     if (error) throw error;
+    return anexarAoRegistro(
+      (data as { id: string }).id,
+      tabela === 'receitas' ? 'receita' : 'despesa',
+      anexoFile,
+      tipoAnexo,
+    );
+  };
+
+  /** Anexa o arquivo (se houver) ao registro recém-criado. Retorna true se o anexo falhou. */
+  async function anexarAoRegistro(
+    registroId: string,
+    tipoRegistro: TipoRegistroAnexo,
+    anexoFile: File | null | undefined,
+    tipoAnexo: string | undefined,
+  ) {
     if (!anexoFile) return false;
     try {
       await uploadParaFinanceiroAnexos({
-        registroId: (data as { id: string }).id,
-        tipoRegistro: tabela === 'receitas' ? 'receita' : 'despesa',
+        registroId,
+        tipoRegistro,
         tipoAnexo: tipoAnexo || 'nota_fiscal',
         file: anexoFile,
       });
@@ -117,22 +133,41 @@ export function useFinanceiroMutations() {
       console.warn('Falha ao enviar anexo', e);
       return true;
     }
-  };
+  }
 
   /* ---------------- RECEITAS ---------------- */
 
   const criarReceita = useMutation({
     mutationFn: async ({
       payload,
+      parcelas,
       anexoFile,
       tipoAnexo,
     }: {
-      payload: TablesInsert<'receitas'>;
+      payload: {
+        obra_id: string;
+        descricao: string;
+        valor_total: number;
+        forma_pagamento: string;
+        observacoes: string | null;
+      };
+      parcelas: { valor: number; data_vencimento: string }[];
       anexoFile?: File | null;
       tipoAnexo?: string;
-    }) => criarComAnexo('receitas', payload, anexoFile, tipoAnexo),
+    }) => {
+      const { data: id, error } = await supabase.rpc('criar_receita_com_parcelas', {
+        _obra_id: payload.obra_id,
+        _descricao: payload.descricao,
+        _valor_total: payload.valor_total,
+        _forma_pagamento: payload.forma_pagamento,
+        _observacoes: payload.observacoes as string,
+        _parcelas: parcelas,
+      });
+      if (error) throw error;
+      return anexarAoRegistro(id as string, 'receita', anexoFile, tipoAnexo);
+    },
     onSuccess: (anexoFalhou) => {
-      toast.success('Receita criada! Parcelas geradas automaticamente.');
+      toast.success('Receita criada!');
       if (anexoFalhou)
         toast.warning('Receita salva, mas o anexo não foi enviado. Abra o registro e anexe novamente.');
       invalidateListas();
@@ -199,18 +234,18 @@ export function useFinanceiroMutations() {
 
   /** Atualização otimista: a parcela aparece como recebida antes da resposta. */
   const receberParcela = useMutation({
-    mutationFn: async ({ parcelaId, formaPagamento }: ReceberParcelaInput) => {
+    mutationFn: async ({ parcelaId, formaPagamento, dataRecebimento }: ReceberParcelaInput) => {
       const { error } = await supabase
         .from('parcelas')
         .update({
-          data_recebimento: new Date().toISOString().split('T')[0],
+          data_recebimento: dataRecebimento,
           status: 'recebido',
           forma_pagamento: formaPagamento,
         })
         .eq('id', parcelaId);
       if (error) throw error;
     },
-    onMutate: async ({ parcelaId, receitaId, formaPagamento }: ReceberParcelaInput) => {
+    onMutate: async ({ parcelaId, receitaId, formaPagamento, dataRecebimento }: ReceberParcelaInput) => {
       const key = ['parcelas', receitaId];
       await qc.cancelQueries({ queryKey: key });
       const snapshot = qc.getQueryData<Parcela[]>(key);
@@ -221,7 +256,7 @@ export function useFinanceiroMutations() {
                 ...p,
                 status: 'recebido',
                 forma_pagamento: formaPagamento,
-                data_recebimento: new Date().toISOString().split('T')[0],
+                data_recebimento: dataRecebimento,
               }
             : p,
         ),
@@ -236,6 +271,35 @@ export function useFinanceiroMutations() {
       toast.success('Parcela marcada como recebida!');
     },
     onSettled: () => invalidateListas(),
+  });
+
+  /** Cria uma parcela com o saldo não parcelado e atualiza o nº de parcelas da receita. */
+  const criarParcelaSaldo = useMutation({
+    mutationFn: async (input: {
+      receitaId: string;
+      valor: number;
+      data_vencimento: string;
+      numero_parcela: number;
+      quantidade: number;
+    }) => {
+      const { error } = await supabase.from('parcelas').insert({
+        receita_id: input.receitaId,
+        numero_parcela: input.numero_parcela,
+        valor: input.valor,
+        data_vencimento: input.data_vencimento,
+      });
+      if (error) throw error;
+      const { error: rErr } = await supabase
+        .from('receitas')
+        .update({ numero_parcelas: input.quantidade })
+        .eq('id', input.receitaId);
+      if (rErr) throw rErr;
+    },
+    onSuccess: () => {
+      toast.success('Parcela criada!');
+      invalidateListas();
+    },
+    onError,
   });
 
   /* ---------------- DESPESAS ---------------- */
@@ -381,6 +445,7 @@ export function useFinanceiroMutations() {
     editarParcela,
     excluirParcela,
     receberParcela,
+    criarParcelaSaldo,
     criarDespesa,
     editarDespesa,
     excluirDespesa,
