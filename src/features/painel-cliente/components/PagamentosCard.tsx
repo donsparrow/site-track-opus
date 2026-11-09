@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import PainelCard from './PainelCard';
 import { usePagamentosCliente } from '../hooks/usePagamentosCliente';
 import { fmtDataCurta, fmtDiaMes, fmtMoeda, situacaoParcela } from '../utils';
+import { Button } from '@/components/ui/button';
 import { hojeLocal } from '@/lib/dataLocal';
 
 export default function PagamentosCard({ obraId }: { obraId: string }) {
@@ -10,6 +12,12 @@ export default function PagamentosCard({ obraId }: { obraId: string }) {
   const pagas = data.filter((p) => p.data_recebimento);
   const total = data.reduce((s, p) => s + Number(p.valor), 0);
   const pago = pagas.reduce((s, p) => s + Number(p.valor), 0);
+  const [todas, setTodas] = useState(false);
+  const ordenadas = [...data].sort((a, b) => a.data_vencimento.localeCompare(b.data_vencimento) || a.numero_parcela - b.numero_parcela);
+  const proxima = ordenadas.find((p) => !p.data_recebimento);
+  const ultimasPagas = ordenadas.filter((p) => p.data_recebimento).slice(-2);
+  const resumo = ordenadas.filter((p) => p === proxima || ultimasPagas.includes(p));
+  const linhas = todas ? ordenadas : resumo;
   const pct = data.length ? Math.round((pagas.length / data.length) * 100) : 0;
 
   return (
@@ -24,13 +32,20 @@ export default function PagamentosCard({ obraId }: { obraId: string }) {
               <div className="h-full bg-success" style={{ width: `${pct}%` }} />
             </div>
           </div>
+          <p className="text-sm">Total pago <strong className="data-tech">{fmtMoeda(pago)}</strong> de <strong className="data-tech">{fmtMoeda(total)}</strong></p>
+          <div className="rounded-md bg-muted/50 p-3 text-sm">
+            {proxima ? (
+              <span>{situacaoParcela(proxima, hoje) === 'vencida' ? <strong className="text-destructive">Vencida: </strong> : <strong>Próxima parcela: </strong>}
+                <span className="data-tech">{proxima.numero_parcela}/{proxima.total_parcelas} · vence {fmtDataCurta(proxima.data_vencimento)} · {fmtMoeda(Number(proxima.valor))}</span></span>
+            ) : <strong className="text-success">Todas as parcelas foram pagas</strong>}
+          </div>
           <div className="overflow-x-auto rounded-md border">
             <table className="w-full text-sm">
               <thead className="bg-muted/50 text-left">
                 <tr><th className="p-2">Parcela</th><th className="p-2">Vencimento</th><th className="p-2">Situação</th><th className="p-2 text-right">Valor</th></tr>
               </thead>
               <tbody>
-                {data.map((p) => {
+                {linhas.map((p) => {
                   const s = situacaoParcela(p, hoje);
                   return (
                     <tr key={p.numero_parcela} className="border-t">
@@ -48,7 +63,11 @@ export default function PagamentosCard({ obraId }: { obraId: string }) {
               </tbody>
             </table>
           </div>
-          <p className="text-sm">Total pago <strong className="data-tech">{fmtMoeda(pago)}</strong> de <strong className="data-tech">{fmtMoeda(total)}</strong></p>
+          {ordenadas.length > resumo.length && (
+            <Button type="button" variant="link" size="sm" className="h-auto px-0 text-accent" aria-expanded={todas} onClick={() => setTodas((v) => !v)}>
+              {todas ? 'Ver menos' : `Ver todas as parcelas (${ordenadas.length})`}
+            </Button>
+          )}
         </div>
       )}
     </PainelCard>
