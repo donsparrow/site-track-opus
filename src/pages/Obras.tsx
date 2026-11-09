@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -97,6 +98,7 @@ export default function Obras() {
       data_fim_prevista: editObra.data_fim_prevista || null,
       prazo_contratual_dias: editObra.prazo_contratual_dias || 0,
       status: editObra.status,
+      ...(canManage ? { exibir_pagamentos_cliente: !!editObra.exibir_pagamentos_cliente } : {}),
     }).eq('id', editObra.id);
     setLoading(false);
     if (error) toast.error('Erro ao salvar: ' + error.message);
@@ -257,6 +259,16 @@ export default function Obras() {
                 />
                 <p className="text-xs text-muted-foreground mt-1">Calculado automaticamente pelas datas, mas pode ser ajustado manualmente.</p>
               </div>
+              {canManage && (
+                <div className="flex items-start justify-between gap-4 rounded-md border p-3">
+                  <div>
+                    <Label htmlFor="exibir-pagamentos">Exibir pagamentos ao cliente</Label>
+                    <p className="text-xs text-muted-foreground mt-1">Síndico e cliente verão as parcelas desta obra (pagas, a vencer e vencidas)</p>
+                  </div>
+                  <Switch id="exibir-pagamentos" checked={!!editObra.exibir_pagamentos_cliente}
+                    onCheckedChange={(v) => setEditObra({ ...editObra, exibir_pagamentos_cliente: v })} />
+                </div>
+              )}
               <Button onClick={handleEditSave} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={loading}>
                 {loading ? 'Salvando...' : 'Salvar Alterações'}
               </Button>

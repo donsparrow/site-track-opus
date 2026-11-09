@@ -1,4 +1,5 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { statusLiberacaoLote } from '@/features/relatorios/pdfArquivado';
@@ -52,6 +53,16 @@ export default function Relatorios() {
     ? listaQuery.relatorios.filter((r) => liberacoes[r.id]?.pendente)
     : listaQuery.relatorios;
   const m = useRelatorioMutations();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const assinarParam = searchParams.get('assinar');
+
+  // Atalho do Painel da Obra: abre direto o diálogo de assinatura do relatório indicado.
+  useEffect(() => {
+    if (!assinarParam || !isCliente || !listaQuery.isSuccess) return;
+    const alvo = listaQuery.relatorios.find((r) => r.id === assinarParam);
+    if (alvo) setAssinandoRel(alvo);
+    setSearchParams({}, { replace: true });
+  }, [assinarParam, isCliente, listaQuery.isSuccess, listaQuery.relatorios, setSearchParams]);
 
   const abrir = (rel: RelatorioComObra | null, somenteLeitura: boolean) => {
     setRelatorioAtual(rel);
