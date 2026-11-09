@@ -24,7 +24,7 @@ import type { RelatorioFinalFoto } from '@/features/relatorio-final/types';
 
 export default function RelatorioFinalPage() {
   const { empresaId, role } = useAuth();
-  const isSindico = role === 'sindico';
+  const isExterno = role === 'sindico' || role === 'cliente';
   const { pode } = usePermissions();
   const qc = useQueryClient();
   const params = new URLSearchParams(window.location.search);
@@ -143,7 +143,7 @@ export default function RelatorioFinalPage() {
             )}
           </CardContent>
         </Card>
-      ) : isSindico ? (
+      ) : isExterno ? (
         <RelatorioFinalViewer
           relatorio={relatorio}
           fotos={fotos}
