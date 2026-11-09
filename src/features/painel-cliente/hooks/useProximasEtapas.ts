@@ -8,7 +8,7 @@ export function useProximasEtapas(obraId: string) {
   const etapas = ativ.atividades
     .filter((a) => a.percentual_concluido < 100 && a.status !== 'concluido')
     .sort((a, b) => (a.data_inicio || '9999').localeCompare(b.data_inicio || '9999'))
-    .slice(0, 5);
+    .slice(0, 10);
   return {
     etapas,
     isLoading: cron.isLoading || (!!cron.cronograma && ativ.isLoading),
