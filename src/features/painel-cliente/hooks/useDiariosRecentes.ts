@@ -22,7 +22,7 @@ export function useDiariosRecentes(obraId: string) {
         .select('id, data, observacoes_gerais, diario_atividades(descricao), diario_paralisacoes(motivo), diario_imagens(url, created_at)')
         .eq('obra_id', obraId)
         .order('data', { ascending: false })
-        .limit(5);
+        .limit(10);
       if (error) throw error;
       return Promise.all(
         (data ?? []).map(async (d) => {

@@ -18,14 +18,14 @@ export function useDocumentosRecentes(obraId: string, podeLaudos: boolean) {
     queryFn: async (): Promise<DocumentoRecente[]> => {
       const [rel, laudos, arqs] = await Promise.all([
         supabase.from('relatorios').select('id, data_inicio, data_fim, updated_at')
-          .eq('obra_id', obraId).eq('status', 'assinado').order('updated_at', { ascending: false }).limit(5),
+          .eq('obra_id', obraId).eq('status', 'assinado').order('updated_at', { ascending: false }).limit(10),
         podeLaudos
           ? supabase.from('relatorios_finais').select('id, tipo_relatorio, updated_at')
-              .eq('obra_id', obraId).eq('status', 'assinado').order('updated_at', { ascending: false }).limit(5)
+              .eq('obra_id', obraId).eq('status', 'assinado').order('updated_at', { ascending: false }).limit(10)
           : Promise.resolve({ data: [], error: null }),
         supabase.from('documentos_arquivos').select('id, nome_arquivo, created_at, documentos_pastas!inner(obra_id)')
           .eq('visivel_cliente', true).eq('documentos_pastas.obra_id', obraId)
-          .order('created_at', { ascending: false }).limit(5),
+          .order('created_at', { ascending: false }).limit(10),
       ]);
       if (rel.error) throw rel.error;
       if (laudos.error) throw laudos.error;
@@ -45,7 +45,7 @@ export function useDocumentosRecentes(obraId: string, podeLaudos: boolean) {
           id: a.id, titulo: a.nome_arquivo, origem: 'Documentação' as const, data: a.created_at, link: '/documentacao',
         })),
       ];
-      return itens.sort((a, b) => b.data.localeCompare(a.data)).slice(0, 5);
+      return itens.sort((a, b) => b.data.localeCompare(a.data)).slice(0, 10);
     },
   });
 }

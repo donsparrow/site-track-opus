@@ -47,9 +47,9 @@ export default function PainelObraCliente() {
         <div key={obra.id} className="space-y-6">
           <DashboardErrorBoundary fallbackTitle={FALHA}><CabecalhoObraCard obra={obra} /></DashboardErrorBoundary>
           <DashboardErrorBoundary fallbackTitle={FALHA}><AguardandoAssinaturaCard obraId={obra.id} podeLaudos={podeLaudos} /></DashboardErrorBoundary>
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 [&>*]:min-w-0">
             <DashboardErrorBoundary fallbackTitle={FALHA}><DiariosRecentesCard obraId={obra.id} /></DashboardErrorBoundary>
-            <div className="space-y-6">
+            <div className="min-w-0 space-y-6">
               <DashboardErrorBoundary fallbackTitle={FALHA}><ProximasEtapasCard obraId={obra.id} /></DashboardErrorBoundary>
               <DashboardErrorBoundary fallbackTitle={FALHA}><DocumentosRecentesCard obraId={obra.id} podeLaudos={podeLaudos} /></DashboardErrorBoundary>
             </div>
