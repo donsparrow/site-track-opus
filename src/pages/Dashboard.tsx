@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const PainelObraCliente = lazy(() => import('@/features/painel-cliente/components/PainelObraCliente'));
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Plus, ClipboardList, LayoutGrid, Save, X, Eye, EyeOff } from 'lucide-react';
@@ -233,9 +236,15 @@ function DashboardInner() {
 }
 
 export default function Dashboard() {
+  const { role } = useAuth();
+  const isCliente = role === 'sindico' || role === 'cliente';
   return (
     <DashboardErrorBoundary fallbackTitle="Ocorreu um erro inesperado no Dashboard.">
-      <DashboardInner />
+      {isCliente ? (
+        <Suspense fallback={<Skeleton className="h-48 w-full" />}><PainelObraCliente /></Suspense>
+      ) : (
+        <DashboardInner />
+      )}
     </DashboardErrorBoundary>
   );
 }
