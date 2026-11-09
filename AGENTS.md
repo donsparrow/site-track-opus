@@ -7,6 +7,8 @@
 - Share signer-name lookup through `useNomeAssinante` between report list and editor; this keeps profile-based prefilling consistent without duplicate query logic.
 - Keep archived-PDF storage SELECT governed by record RLS without filtering soft-deletion, and restrict direct company INSERT to super admins while preserving the protected onboarding RPC; storage removal needs SELECT after soft-deletion.
 
+- Keep the auth context object in `src/contexts/authContextObject.ts`, separate from the Provider/hook file; live reloads of the provider must not create a new context identity.
+
 # Performance rules
 
 - Toda leitura do Supabase feita por componentes ou hooks usa React Query
