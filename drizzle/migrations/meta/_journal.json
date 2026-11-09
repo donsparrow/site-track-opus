@@ -78,6 +78,13 @@
       "when": 1794247374469,
       "tag": "0010_painel_cliente_pagamentos",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794248070854,
+      "tag": "0011_laudos_acesso_externo",
+      "breakpoints": true
     }
   ]
 }
