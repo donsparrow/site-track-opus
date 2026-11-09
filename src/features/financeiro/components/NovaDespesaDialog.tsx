@@ -27,6 +27,7 @@ export default function NovaDespesaDialog({ open, onOpenChange }: Props) {
   const [tipoPagamento, setTipoPagamento] = useState('avista');
   const [dataVencimento, setDataVencimento] = useState('');
   const [anexoFile, setAnexoFile] = useState<File | null>(null);
+  const [tipoAnexo, setTipoAnexo] = useState('nota_fiscal');
   const fileRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -44,6 +45,7 @@ export default function NovaDespesaDialog({ open, onOpenChange }: Props) {
           data_vencimento: tipoPagamento === 'prazo' ? dataVencimento : null,
         },
         anexoFile,
+        tipoAnexo,
       },
       {
         onSuccess: () => {
@@ -106,15 +108,24 @@ export default function NovaDespesaDialog({ open, onOpenChange }: Props) {
             <Label>Anexo (PDF, JPG, PNG)</Label>
             <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden"
               onChange={(e) => setAnexoFile(e.target.files?.[0] || null)} />
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex flex-wrap items-center gap-2 mt-1">
               <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
                 <Paperclip className="h-4 w-4 mr-1" /> Anexar arquivo
               </Button>
               {anexoFile && (
                 <span className="text-sm text-muted-foreground flex items-center gap-1">
                   {anexoFile.name}
-                  <button type="button" onClick={() => setAnexoFile(null)}><X className="h-3 w-3" /></button>
+                  <button type="button" onClick={() => { setAnexoFile(null); setTipoAnexo('nota_fiscal'); }}><X className="h-3 w-3" /></button>
                 </span>
+              )}
+              {anexoFile && (
+                <Select value={tipoAnexo} onValueChange={setTipoAnexo}>
+                  <SelectTrigger className="w-40" aria-label="Tipo do anexo"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="nota_fiscal">Nota Fiscal</SelectItem>
+                    <SelectItem value="boleto">Boleto</SelectItem>
+                  </SelectContent>
+                </Select>
               )}
             </div>
           </div>
