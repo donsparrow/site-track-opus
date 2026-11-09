@@ -108,3 +108,25 @@ export const statusVariant = (status: string): 'default' | 'secondary' | 'outlin
   };
   return map[status] || 'outline';
 };
+
+export interface ImagemRelatorio {
+  id: string;
+  url: string;
+  descricao?: string | null;
+  data_diario?: string | null;
+  created_at?: string | null;
+}
+
+/** Agrupa fotos por data do diário, mesma ordem do PDF (data_diario, depois created_at); figura contínua. */
+export function agruparImagensPorData<T extends ImagemRelatorio>(imagens: T[]): { data: string; itens: (T & { figura: number })[] }[] {
+  const ord = [...imagens].sort((a, b) =>
+    (a.data_diario ?? '').localeCompare(b.data_diario ?? '') || (a.created_at ?? '').localeCompare(b.created_at ?? ''));
+  const grupos: { data: string; itens: (T & { figura: number })[] }[] = [];
+  ord.forEach((img, i) => {
+    const data = img.data_diario ?? '';
+    let g = grupos[grupos.length - 1];
+    if (!g || g.data !== data) { g = { data, itens: [] }; grupos.push(g); }
+    g.itens.push({ ...img, figura: i + 1 });
+  });
+  return grupos;
+}
