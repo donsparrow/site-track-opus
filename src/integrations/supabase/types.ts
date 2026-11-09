@@ -1561,6 +1561,7 @@ export type Database = {
           data_inicio: string | null
           empresa_id: string | null
           endereco: string | null
+          exibir_pagamentos_cliente: boolean
           id: string
           nome: string
           prazo_contratual_dias: number | null
@@ -1577,6 +1578,7 @@ export type Database = {
           data_inicio?: string | null
           empresa_id?: string | null
           endereco?: string | null
+          exibir_pagamentos_cliente?: boolean
           id?: string
           nome: string
           prazo_contratual_dias?: number | null
@@ -1593,6 +1595,7 @@ export type Database = {
           data_inicio?: string | null
           empresa_id?: string | null
           endereco?: string | null
+          exibir_pagamentos_cliente?: boolean
           id?: string
           nome?: string
           prazo_contratual_dias?: number | null
@@ -2461,6 +2464,16 @@ export type Database = {
         Returns: boolean
       }
       is_operacional: { Args: { _uid: string }; Returns: boolean }
+      pagamentos_cliente_obra: {
+        Args: { _obra_id: string }
+        Returns: {
+          data_recebimento: string
+          data_vencimento: string
+          numero_parcela: number
+          total_parcelas: number
+          valor: number
+        }[]
+      }
       pasta_obra_acessivel: { Args: { _pasta_id: string }; Returns: boolean }
       pasta_visivel_cliente: { Args: { _pasta_id: string }; Returns: boolean }
       set_default_permissions: {

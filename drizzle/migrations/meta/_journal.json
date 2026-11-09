@@ -71,6 +71,13 @@
       "when": 1794246888049,
       "tag": "0009_parcelas_manuais_e_travas",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794247374469,
+      "tag": "0010_painel_cliente_pagamentos",
+      "breakpoints": true
     }
   ]
 }
