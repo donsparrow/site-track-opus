@@ -14,14 +14,14 @@
 - [x] Laudos Técnicos: igualar acesso de cliente ao síndico e blindar assinatura externa.
 - [x] Laudos: restringir rascunhos, bloquear conteúdo/fotos após duas assinaturas e fixar data de emissão sem backfill.
 - [x] Testar regras de laudos em PostgreSQL isolado (11 testes aprovados).
-- [ ] Conferir aviso e assinaturas de laudos na tela (aguarda sessão no preview; não foi possível obter sessão própria).
+- [x] Conferir aviso e bloqueio de laudo assinado na tela; assinatura nova validada apenas nos testes, sem alterar laudos existentes.
 - [x] Laudos: lista em cartões, filtros internos, criação reaproveitada e leitura externa com índice e fotos ampliadas.
 - [x] Confirmação de leitura opcional na assinatura, sem mudar o módulo Relatórios.
 - [x] Testar os três estados derivados de assinatura; aplicativo sem erros de compilação.
-- [ ] Verificar filtros, navegação e leitura em 390px e desktop (sessão disponível redireciona ao Dashboard por falta de acesso a Laudos; requer sessão autorizada).
+- [x] Conferir navegação pela lista e leitura em 390px/desktop com conta interna autorizada; fotos ampliadas e PDF real conferidos.
 
 - [x] Laudos: editor em quatro etapas, salvamento automático, checklist e prévia de capa/cliente, preservando banco e PDF.
 - [x] Testar checklist/diff (7), salvamento/concorrência/retry/bloqueio (5), status (3) e segurança existente (11): 26 testes aprovados.
-- [ ] Conferir editor, assinatura com pendências, prévia e PDF em desktop/390px (sessão disponível redireciona ao Dashboard; aguarda acesso autorizado a Laudos).
-- [ ] Laudos: divisões persistentes, orientação/rotação de fotos e ajustes de capa sem backfill.
-- [ ] Testar regras de grupos, quadros, herança e segurança; conferir editor/PDF com sessão autorizada.
+- [x] Conferir editor, prévia e PDF em desktop/390px e bloqueio de assinado; sem novas assinaturas ou alterações nos laudos existentes.
+- [x] Laudos: divisões persistentes, orientação/rotação de fotos e ajustes de capa sem backfill.
+- [x] Testar grupos, quadros, herança, persistência e segurança (35 testes + 5 autosave); conferir editor autorizado, controles bloqueados, lightbox, celular e PDF real/variantes em memória sem alterar laudos existentes.
