@@ -15,3 +15,7 @@
 - [x] Laudos: restringir rascunhos, bloquear conteúdo/fotos após duas assinaturas e fixar data de emissão sem backfill.
 - [x] Testar regras de laudos em PostgreSQL isolado (11 testes aprovados).
 - [ ] Conferir aviso e assinaturas de laudos na tela (aguarda sessão no preview; não foi possível obter sessão própria).
+- [x] Laudos: lista em cartões, filtros internos, criação reaproveitada e leitura externa com índice e fotos ampliadas.
+- [x] Confirmação de leitura opcional na assinatura, sem mudar o módulo Relatórios.
+- [x] Testar os três estados derivados de assinatura; aplicativo sem erros de compilação.
+- [ ] Verificar filtros, navegação e leitura em 390px e desktop (sessão disponível redireciona ao Dashboard por falta de acesso a Laudos; requer sessão autorizada).

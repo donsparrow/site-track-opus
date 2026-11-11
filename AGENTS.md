@@ -9,6 +9,7 @@
 
 - Keep the auth context object in `src/contexts/authContextObject.ts`, separate from the Provider/hook file; live reloads of the provider must not create a new context identity.
 - Enforce technical-report visibility and signed-content/photo locks in database policies and ordered triggers; UI guards alone cannot protect API writes, and issuance dates must survive later PDF generation.
+- Route technical-report list/detail through search parameters, share signature-derived status and invalidate the list prefix after mutations; this preserves panel deep links and consistent state across list and reader.
 
 # Performance rules
 

@@ -1,17 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileDown, FilePlus2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { FileDown, ChevronLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { fetchEmpresaConfigOrBranding } from '@/lib/empresaBranding';
-import { gerarPdfRelatorioFinal } from '@/lib/pdfRelatorioFinal';
-import { relatorioFinalKeys } from '@/features/relatorio-final/queryKeys';
+import LaudosLista from '@/features/relatorio-final/components/LaudosLista';
+import StatusLaudoBadge from '@/features/relatorio-final/components/StatusLaudoBadge';
+import { statusLaudo } from '@/features/relatorio-final/lib/status';
 import { useObrasRelatorioFinal, useRelatorioFinal, useRelatorioFinalFotos } from '@/features/relatorio-final/hooks/useRelatorioFinal';
 import { useRelatorioFinalMutations } from '@/features/relatorio-final/hooks/useRelatorioFinalMutations';
 import RelatorioFinalEditor from '@/features/relatorio-final/components/RelatorioFinalEditor';
@@ -23,14 +22,12 @@ import type { EmpresaPDFData } from '@/lib/pdfShared';
 import type { RelatorioFinalFoto } from '@/features/relatorio-final/types';
 
 export default function RelatorioFinalPage() {
-  const { empresaId, role } = useAuth();
+  const { role } = useAuth();
   const isExterno = role === 'sindico' || role === 'cliente';
   const { pode } = usePermissions();
-  const qc = useQueryClient();
-  const params = new URLSearchParams(window.location.search);
-  const [obraId, setObraId] = useState<string | null>(params.get('obra'));
-  const [tipoRelatorio, setTipoRelatorio] = useState<string>(params.get('tipo') || 'entrega_obra');
-  const [criando, setCriando] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const obraId = params.get('obra');
+  const tipoRelatorio = params.get('tipo') || 'entrega_obra';
   const [gerando, setGerando] = useState(false);
 
   const { obras, isLoading: loadingObras } = useObrasRelatorioFinal();
@@ -38,42 +35,9 @@ export default function RelatorioFinalPage() {
   const { fotos } = useRelatorioFinalFotos(relatorio?.id ?? null);
   const m = useRelatorioFinalMutations(obraId, relatorio?.id ?? null, tipoRelatorio);
 
-  useEffect(() => {
-    if (!obraId && obras.length) setObraId(obras[0].id);
-  }, [obras, obraId]);
-
   const obra = useMemo(() => obras.find((o) => o.id === obraId) || null, [obras, obraId]);
   const canEdit = pode('relatorio_final', 'editar') && relatorio?.status !== 'assinado';
-  const canCreate = pode('relatorio_final', 'criar');
   const tituloTipo = tipoRelatorio === 'vistoria_previa' ? 'Vistoria Prévia' : 'Entrega de Obra';
-
-  const criarRelatorio = async () => {
-    if (!obra) return;
-    setCriando(true);
-    const { data: comTemplate } = await supabase
-      .from('relatorios_finais')
-      .select('template_capa_url')
-      .not('template_capa_url', 'is', null)
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    const { error } = await supabase.from('relatorios_finais').insert({
-      tipo_relatorio: tipoRelatorio,
-      template_capa_url: comTemplate?.template_capa_url ?? null,
-      obra_id: obra.id,
-      empresa_id: empresaId,
-      cliente_nome: obra.clientes?.nome ?? null,
-      cliente_cpf_cnpj: obra.clientes?.cpf_cnpj ?? null,
-      endereco: obra.endereco,
-      responsavel: obra.responsavel_tecnico,
-      data_inicio: obra.data_inicio,
-      data_fim_prevista: obra.data_fim_prevista,
-    });
-    setCriando(false);
-    if (error) { toast.error(`Erro ao criar laudo: ${error.message}`); return; }
-    toast.success('Laudo criado');
-    qc.invalidateQueries({ queryKey: relatorioFinalKeys.relatorio(obra.id, tipoRelatorio) });
-  };
 
   const moverFoto = (id: string, dir: -1 | 1) => {
     const foto = fotos.find((f) => f.id === id);
@@ -90,6 +54,7 @@ export default function RelatorioFinalPage() {
     if (!relatorio || !obra) return;
     setGerando(true);
     try {
+      const { gerarPdfRelatorioFinal } = await import('@/lib/pdfRelatorioFinal');
       const empresa = (await fetchEmpresaConfigOrBranding()) as EmpresaPDFData | null;
       await gerarPdfRelatorioFinal({ relatorio, fotos, obraNome: obra.nome, empresa });
     } catch (e) {
@@ -99,35 +64,14 @@ export default function RelatorioFinalPage() {
     }
   };
 
+  if (!obraId) return <LaudosLista externo={isExterno} onAbrir={(obra, tipo) => setParams({ obra, tipo })} />;
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold">Laudos Técnicos</h1>
-          <p className="text-sm text-muted-foreground">{tituloTipo} — Relatório com registro fotográfico e assinaturas.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Select value={tipoRelatorio} onValueChange={setTipoRelatorio}>
-            <SelectTrigger className="w-52"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="entrega_obra">Entrega de Obra</SelectItem>
-              <SelectItem value="vistoria_previa">Vistoria Prévia</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={obraId ?? ''} onValueChange={setObraId}>
-            <SelectTrigger className="w-64"><SelectValue placeholder="Selecione a obra" /></SelectTrigger>
-            <SelectContent>
-              {obras.map((o) => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          {relatorio && (
-            <Button variant="outline" disabled={gerando} onClick={gerarPdf}>
-              <FileDown className="h-4 w-4 mr-1" /> {gerando ? 'Gerando...' : 'PDF'}
-            </Button>
-          )}
-        </div>
-      </div>
-
+      {!isExterno && <header className="space-y-3">
+        <Button variant="link" className="h-auto p-0" onClick={() => setParams({})}><ChevronLeft />Laudos Técnicos / {obra?.nome}</Button>
+        <div className="flex flex-wrap items-center justify-between gap-3"><div className="min-w-0 space-y-2"><div className="flex flex-wrap items-center gap-3"><h1 className="font-display text-2xl font-bold break-words">{obra?.nome || 'Laudo'}</h1>{relatorio && <StatusLaudoBadge status={statusLaudo(relatorio)} />}</div><p className="label-tech">{tituloTipo}</p></div>{relatorio && <Button variant="outline" disabled={gerando} onClick={gerarPdf}><FileDown />{gerando ? 'Gerando...' : 'PDF'}</Button>}</div>
+      </header>}
       {loadingObras || loadingRelatorio ? (
         <div className="space-y-4"><Skeleton className="h-40 w-full" /><Skeleton className="h-64 w-full" /></div>
       ) : !obra ? (
@@ -136,11 +80,6 @@ export default function RelatorioFinalPage() {
         <Card>
           <CardContent className="py-10 text-center space-y-4">
             <p className="text-muted-foreground">Esta obra ainda não possui laudo de {tituloTipo}.</p>
-            {canCreate && (
-              <Button className="bg-accent text-accent-foreground hover:bg-accent/90" disabled={criando} onClick={criarRelatorio}>
-                <FilePlus2 className="h-4 w-4 mr-1" /> {criando ? 'Criando...' : 'Gerar Laudo'}
-              </Button>
-            )}
           </CardContent>
         </Card>
       ) : isExterno ? (
@@ -151,6 +90,9 @@ export default function RelatorioFinalPage() {
           tipoRelatorio={tipoRelatorio}
           onAssinar={(tipo, values) => m.assinar.mutate({ tipo, ...values })}
           assinarPending={m.assinar.isPending}
+          onVoltar={() => setParams({})}
+          onPdf={gerarPdf}
+          gerandoPdf={gerando}
         />
       ) : (
         <div className="space-y-6">

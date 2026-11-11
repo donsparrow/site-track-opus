@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 
 /** Canvas de assinatura carregado sob demanda (só ao abrir o diálogo). */
@@ -18,20 +19,25 @@ interface Props {
   tipoFixo?: 'responsavel_tecnico' | 'cliente';
   nomeInicial?: string;
   subtitulo?: string;
+  confirmacaoLeitura?: string;
   onConfirm: (values: { dataUrl: string; nome: string; cargo: string; tipo: string }) => void;
 }
 
-export default function AssinarDialog({ open, onOpenChange, saving, onConfirm, tipoFixo, nomeInicial, subtitulo }: Props) {
+export default function AssinarDialog({ open, onOpenChange, saving, onConfirm, tipoFixo, nomeInicial, subtitulo, confirmacaoLeitura }: Props) {
   const sigRef = useRef<SignatureCanvasType>(null);
   const [nome, setNome] = useState('');
   const [cargo, setCargo] = useState('');
   const [tipo, setTipo] = useState('responsavel_tecnico');
+  const [leituraConfirmada, setLeituraConfirmada] = useState(false);
+  const [assinaturaDesenhada, setAssinaturaDesenhada] = useState(false);
+  useEffect(() => { if (open && confirmacaoLeitura) { setLeituraConfirmada(false); setAssinaturaDesenhada(false); } }, [open, confirmacaoLeitura]);
 
   useEffect(() => {
     if (open && nomeInicial) setNome(nomeInicial);
   }, [open, nomeInicial]);
 
   const handleConfirm = () => {
+    if (confirmacaoLeitura && !leituraConfirmada) return;
     if (!sigRef.current || sigRef.current.isEmpty()) { toast.error('Desenhe sua assinatura'); return; }
     if (!nome.trim() || (tipoFixo === 'cliente' && !cargo.trim())) return;
     onConfirm({ dataUrl: sigRef.current.toDataURL('image/png'), nome: nome.trim(), cargo: cargo.trim(), tipo: tipoFixo ?? tipo });
@@ -43,6 +49,7 @@ export default function AssinarDialog({ open, onOpenChange, saving, onConfirm, t
       <DialogContent className="max-w-lg">
         <DialogHeader><DialogTitle className="font-display">Assinatura Digital</DialogTitle>{subtitulo && <DialogDescription className="break-words">{subtitulo}</DialogDescription>}</DialogHeader>
         <div className="space-y-4">
+          {confirmacaoLeitura && <div className="flex items-start gap-3"><Checkbox id="confirmacao-leitura" checked={leituraConfirmada} onCheckedChange={v => setLeituraConfirmada(v === true)} /><Label htmlFor="confirmacao-leitura" className="leading-relaxed">{confirmacaoLeitura}</Label></div>}
           <div><Label>Nome *</Label><Input value={nome} onChange={(e) => setNome(e.target.value)} required /></div>
           <div><Label>Cargo{tipoFixo === 'cliente' ? ' *' : ''}</Label><Input value={cargo} onChange={(e) => setCargo(e.target.value)} required={tipoFixo === 'cliente'} placeholder={tipoFixo === 'cliente' ? 'Ex.: Síndico, Fiscal de obra' : undefined} /></div>
           {!tipoFixo && <div>
@@ -61,14 +68,15 @@ export default function AssinarDialog({ open, onOpenChange, saving, onConfirm, t
               <Suspense fallback={<Skeleton className="h-40 w-full" />}>
                 <SignatureCanvas
                   ref={sigRef}
+                  onEnd={confirmacaoLeitura ? () => setAssinaturaDesenhada(!sigRef.current?.isEmpty()) : undefined}
                   canvasProps={{ className: 'w-full h-40', style: { width: '100%', height: '160px' } }}
                   penColor="black"
                 />
               </Suspense>
             </div>
-            <Button variant="ghost" size="sm" className="mt-1" onClick={() => sigRef.current?.clear()}>Limpar</Button>
+            <Button variant="ghost" size="sm" className="mt-1" onClick={() => { sigRef.current?.clear(); if (confirmacaoLeitura) setAssinaturaDesenhada(false); }}>Limpar</Button>
           </div>
-          <Button onClick={handleConfirm} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={!nome.trim() || (tipoFixo === 'cliente' && !cargo.trim()) || saving}>
+          <Button onClick={handleConfirm} className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={!nome.trim() || (tipoFixo === 'cliente' && !cargo.trim()) || saving || (!!confirmacaoLeitura && (!leituraConfirmada || !assinaturaDesenhada))}>
             {saving ? 'Registrando...' : 'Confirmar Assinatura'}
           </Button>
         </div>
