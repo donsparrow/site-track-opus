@@ -154,6 +154,11 @@ export default function RelatorioFinalPage() {
         />
       ) : (
         <div className="space-y-6">
+          {relatorio.status === 'assinado' && (
+            <p className="text-sm text-muted-foreground" role="status">
+              Laudo assinado pelas duas partes. Conteúdo e assinaturas bloqueados para edição.
+            </p>
+          )}
           <RelatorioFinalEditor
             relatorio={relatorio}
             tipoRelatorio={tipoRelatorio}
@@ -205,7 +210,7 @@ export default function RelatorioFinalPage() {
 
           <AssinaturasCard
             relatorio={relatorio}
-            editable={pode('relatorio_final', 'editar')}
+            editable={pode('relatorio_final', 'editar') && relatorio.status !== 'assinado'}
             saving={m.assinar.isPending}
             onAssinar={(tipo, values) => m.assinar.mutate({ tipo, ...values })}
             onRemover={(tipo) => m.removerAssinatura.mutate(tipo)}

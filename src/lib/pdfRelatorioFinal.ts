@@ -151,7 +151,7 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
 
     // Data de emissão
     doc.setFontSize(11);
-    doc.text(`DATA DE EMISSÃO: ${new Date().toLocaleDateString('pt-BR')}`, 8, yCliente + 4);
+    doc.text(`DATA DE EMISSÃO: ${relatorio.data_emissao ? fmtDate(relatorio.data_emissao) : new Date().toLocaleDateString('pt-BR')}`, 8, yCliente + 4);
 
     // Data da vistoria/conclusão
     let yInfo = yCliente + 4;

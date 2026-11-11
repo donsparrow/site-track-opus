@@ -8,6 +8,7 @@
 - Keep archived-PDF storage SELECT governed by record RLS without filtering soft-deletion, and restrict direct company INSERT to super admins while preserving the protected onboarding RPC; storage removal needs SELECT after soft-deletion.
 
 - Keep the auth context object in `src/contexts/authContextObject.ts`, separate from the Provider/hook file; live reloads of the provider must not create a new context identity.
+- Enforce technical-report visibility and signed-content/photo locks in database policies and ordered triggers; UI guards alone cannot protect API writes, and issuance dates must survive later PDF generation.
 
 # Performance rules
 

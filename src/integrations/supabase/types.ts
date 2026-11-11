@@ -2181,6 +2181,7 @@ export type Database = {
           contrato: string | null
           created_at: string
           data_conclusao: string | null
+          data_emissao: string | null
           data_fim_prevista: string | null
           data_inicio: string | null
           data_vistoria: string | null
@@ -2222,6 +2223,7 @@ export type Database = {
           contrato?: string | null
           created_at?: string
           data_conclusao?: string | null
+          data_emissao?: string | null
           data_fim_prevista?: string | null
           data_inicio?: string | null
           data_vistoria?: string | null
@@ -2263,6 +2265,7 @@ export type Database = {
           contrato?: string | null
           created_at?: string
           data_conclusao?: string | null
+          data_emissao?: string | null
           data_fim_prevista?: string | null
           data_inicio?: string | null
           data_vistoria?: string | null
