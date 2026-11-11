@@ -1,13 +1,14 @@
 import { PGlite } from '@electric-sql/pglite';
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { expect, it } from 'vitest';
 const migration = readFileSync('drizzle/migrations/0014_laudos_grupos_orientacao_capa.sql','utf8');
 const locks = readFileSync('drizzle/migrations/0013_laudos_trava_visibilidade_data_emissao.sql','utf8');
 it('novas colunas preservam legado, limites e as travas existentes', async () => {
   const db = new PGlite();
   try {
     await db.exec(`CREATE ROLE authenticated; CREATE SCHEMA auth; CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql AS $$ SELECT NULL::uuid $$;
-      CREATE FUNCTION public.has_role(uuid,text) RETURNS boolean LANGUAGE sql AS $$ SELECT $2 = 'admin' $$;
+      CREATE TYPE public.app_role AS ENUM ('admin','super_admin','sindico','cliente');
+      CREATE FUNCTION public.has_role(uuid,public.app_role) RETURNS boolean LANGUAGE sql AS $$ SELECT $2::text = 'admin' $$;
       CREATE FUNCTION public.can_access_obra(uuid) RETURNS boolean LANGUAGE sql AS $$ SELECT true $$;
       CREATE TABLE public.relatorios_finais(id uuid PRIMARY KEY,obra_id uuid,status text,assinatura_empresa_url text,assinatura_sindico_url text,assinatura_sindico_nome text,assinatura_sindico_cargo text,assinatura_sindico_data date,updated_at timestamptz);
       CREATE TABLE public.relatorio_final_fotos(id uuid PRIMARY KEY,relatorio_id uuid);
