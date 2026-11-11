@@ -60,7 +60,8 @@ export default function RelatorioFinalPage() {
       if (!salvo) return;
       const { gerarPdfRelatorioFinal } = await import('@/lib/pdfRelatorioFinal');
       const empresa = (await fetchEmpresaConfigOrBranding()) as EmpresaPDFData | null;
-      await gerarPdfRelatorioFinal({ relatorio: salvo, fotos, obraNome: obra.nome, empresa });
+      const { falhasFotos } = await gerarPdfRelatorioFinal({ relatorio: salvo, fotos, obraNome: obra.nome, empresa });
+      if (falhasFotos) toast.warning(`${falhasFotos} foto(s) não puderam ser processadas e foram inseridas sem ajuste.`);
     } catch (e) {
       toast.error(`Erro ao gerar PDF: ${e instanceof Error ? e.message : 'desconhecido'}`);
     } finally {

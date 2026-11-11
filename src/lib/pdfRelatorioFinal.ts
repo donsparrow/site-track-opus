@@ -39,12 +39,63 @@ function measureImage(dataUrl: string): Promise<{ w: number; h: number } | null>
 
 export async function prepararFotoQuadro(dataUrl: string, larguraMm: number, alturaMm: number, rotacao = 0): Promise<string> {
   const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const imagem = new Image(); imagem.onload = () => resolve(imagem); imagem.onerror = () => reject(new Error('Imagem não disponível')); imagem.src = dataUrl;
+    const imagem = new Image(); imagem.crossOrigin = 'anonymous'; imagem.onload = () => resolve(imagem); imagem.onerror = () => reject(new Error('Imagem não disponível')); imagem.src = dataUrl;
   });
   const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Imagem não disponível');
-  desenharFoto(ctx, img, larguraMm / alturaMm, rotacao);
-  return canvas.toDataURL('image/jpeg', 0.92);
+  try {
+    desenharFoto(ctx, img, larguraMm / alturaMm, rotacao, 4000);
+    const resultado = canvas.toDataURL('image/jpeg', 0.92);
+    if (!resultado.startsWith('data:image/jpeg')) throw new Error('Imagem não disponível');
+    return resultado;
+  } finally {
+    canvas.width = 0; canvas.height = 0;
+  }
+}
+
+// Keep source bytes intact: the shared logo loader rasterizes at full resolution,
+// which would exceed mobile canvas limits before the photo's bounded crop runs.
+async function loadFotoOriginal(path: string): Promise<string | null> {
+  try {
+    const url = await resolveAnexoUrl(path);
+    if (!url) return null;
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return await new Promise<string | null>(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : null);
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  } catch { return null; }
+}
+
+/** Returns true once a photo needs fallback or a visible unavailable placeholder. */
+export async function inserirFotoQuadro(doc: jsPDF, dataUrl: string | null, x: number, y: number, largura: number, altura: number, rotacao: number): Promise<boolean> {
+  if (dataUrl) {
+    try {
+      const preparada = await prepararFotoQuadro(dataUrl, largura, altura, rotacao);
+      doc.addImage(preparada, 'JPEG', x, y, largura, altura, undefined, 'FAST');
+      return false;
+    } catch {
+      try {
+        const dims = await measureImage(dataUrl);
+        if (!dims || dims.w <= 0 || dims.h <= 0) throw new Error('Imagem não disponível');
+        const escala = Math.min(largura / dims.w, altura / dims.h);
+        const w = dims.w * escala; const h = dims.h * escala;
+        doc.addImage(dataUrl, x + (largura - w) / 2, y + (altura - h) / 2, w, h, undefined, 'FAST');
+        return true;
+      } catch { /* A failed original remains visible as a labeled frame below. */ }
+    }
+  }
+  doc.setDrawColor(200);
+  doc.rect(x, y, largura, altura);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+  doc.setTextColor(120, 120, 120);
+  doc.text('Foto indisponível', x + largura / 2, y + altura / 2, { align: 'center' });
+  doc.setTextColor(30, 30, 30);
+  return true;
 }
 
 async function loadStorageImage(path?: string | null): Promise<string | null> {
@@ -344,6 +395,7 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
   }
 
   // ---------- FOTOS ----------
+  let falhasFotos = 0;
   const grupos = resolverGruposFotos(relatorio, fotos).map(g => ({ tipo: g.chave, label: isVistoria ? g.titulo.toUpperCase() : `REGISTRO FOTOGRÁFICO — ${g.titulo.toUpperCase()}` }));
 
   for (const g of grupos) {
@@ -367,13 +419,8 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
       if (y + imgH + 14 > pageH - 20) {
         y = newPage();
       }
-      const dataUrl = await loadStorageImage(foto.foto_url);
-      if (dataUrl) {
-        try { const preparada = await prepararFotoQuadro(dataUrl, imgW, imgH, foto.rotacao ?? 0); doc.addImage(preparada, 'JPEG', imgX, y, imgW, imgH, undefined, 'FAST'); } catch { /* ignore */ }
-      } else {
-        doc.setDrawColor(200);
-        doc.rect(imgX, y, imgW, imgH);
-      }
+      const dataUrl = await loadFotoOriginal(foto.foto_url);
+      if (await inserirFotoQuadro(doc, dataUrl, imgX, y, imgW, imgH, foto.rotacao ?? 0)) falhasFotos += 1;
       y += imgH + 5;
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9.5);
@@ -432,4 +479,5 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
   }
   const safe = obraNome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w-]+/g, '-');
   downloadPdf(doc, `relatorio-final-${safe}.pdf`);
+  return { falhasFotos };
 }
