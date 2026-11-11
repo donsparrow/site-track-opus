@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileDown, ChevronLeft } from 'lucide-react';
+import { FileDown, ChevronLeft, Eye, Clock, CloudCheck } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { fetchEmpresaConfigOrBranding } from '@/lib/empresaBranding';
@@ -13,13 +13,10 @@ import StatusLaudoBadge from '@/features/relatorio-final/components/StatusLaudoB
 import { statusLaudo } from '@/features/relatorio-final/lib/status';
 import { useObrasRelatorioFinal, useRelatorioFinal, useRelatorioFinalFotos } from '@/features/relatorio-final/hooks/useRelatorioFinal';
 import { useRelatorioFinalMutations } from '@/features/relatorio-final/hooks/useRelatorioFinalMutations';
-import RelatorioFinalEditor from '@/features/relatorio-final/components/RelatorioFinalEditor';
-import FotosManager from '@/features/relatorio-final/components/FotosManager';
-import GruposFotosManager from '@/features/relatorio-final/components/GruposFotosManager';
-import AssinaturasCard from '@/features/relatorio-final/components/AssinaturasCard';
+import LaudoEditorEtapas from '@/features/relatorio-final/components/LaudoEditorEtapas';
+import { useLaudoAutosave } from '@/features/relatorio-final/hooks/useLaudoAutosave';
 import RelatorioFinalViewer from '@/features/relatorio-final/components/RelatorioFinalViewer';
 import type { EmpresaPDFData } from '@/lib/pdfShared';
-import type { RelatorioFinalFoto } from '@/features/relatorio-final/types';
 
 export default function RelatorioFinalPage() {
   const { role } = useAuth();
@@ -37,6 +34,11 @@ export default function RelatorioFinalPage() {
 
   const obra = useMemo(() => obras.find((o) => o.id === obraId) || null, [obras, obraId]);
   const canEdit = pode('relatorio_final', 'editar') && relatorio?.status !== 'assinado';
+  const auto = useLaudoAutosave(relatorio, !isExterno && canEdit, m.salvarAuto.mutateAsync);
+  const preview = !isExterno && params.get('preview') === '1';
+  const voltar = async () => { try { await auto.flush(); setParams({}); } catch { /* Retry remains available. */ } };
+  const verCliente = async () => { try { await auto.flush(); const p = new URLSearchParams(params); p.set('preview', '1'); setParams(p); } catch { /* Retry remains available. */ } };
+  const voltarEditor = () => { const p = new URLSearchParams(params); p.delete('preview'); setParams(p); };
   const tituloTipo = tipoRelatorio === 'vistoria_previa' ? 'Vistoria Prévia' : 'Entrega de Obra';
 
   const moverFoto = (id: string, dir: -1 | 1) => {
@@ -54,9 +56,11 @@ export default function RelatorioFinalPage() {
     if (!relatorio || !obra) return;
     setGerando(true);
     try {
+      const salvo = isExterno ? relatorio : await auto.flush();
+      if (!salvo) return;
       const { gerarPdfRelatorioFinal } = await import('@/lib/pdfRelatorioFinal');
       const empresa = (await fetchEmpresaConfigOrBranding()) as EmpresaPDFData | null;
-      await gerarPdfRelatorioFinal({ relatorio, fotos, obraNome: obra.nome, empresa });
+      await gerarPdfRelatorioFinal({ relatorio: salvo, fotos, obraNome: obra.nome, empresa });
     } catch (e) {
       toast.error(`Erro ao gerar PDF: ${e instanceof Error ? e.message : 'desconhecido'}`);
     } finally {
@@ -68,9 +72,9 @@ export default function RelatorioFinalPage() {
 
   return (
     <div className="space-y-6">
-      {!isExterno && <header className="space-y-3">
-        <Button variant="link" className="h-auto p-0" onClick={() => setParams({})}><ChevronLeft />Laudos Técnicos / {obra?.nome}</Button>
-        <div className="flex flex-wrap items-center justify-between gap-3"><div className="min-w-0 space-y-2"><div className="flex flex-wrap items-center gap-3"><h1 className="font-display text-2xl font-bold break-words">{obra?.nome || 'Laudo'}</h1>{relatorio && <StatusLaudoBadge status={statusLaudo(relatorio)} />}</div><p className="label-tech">{tituloTipo}</p></div>{relatorio && <Button variant="outline" disabled={gerando} onClick={gerarPdf}><FileDown />{gerando ? 'Gerando...' : 'PDF'}</Button>}</div>
+      {!isExterno && !preview && <header className="space-y-3">
+        <Button variant="link" className="h-auto p-0" onClick={() => void voltar()}><ChevronLeft />Laudos Técnicos / {obra?.nome}</Button>
+        <div className="flex flex-wrap items-center justify-between gap-3"><div className="min-w-0 space-y-2"><div className="flex flex-wrap items-center gap-3"><h1 className="font-display text-2xl font-bold break-words">{obra?.nome || 'Laudo'}</h1>{relatorio && <StatusLaudoBadge status={statusLaudo(relatorio)} />}</div><div className="flex flex-wrap items-center gap-3"><p className="label-tech">{tituloTipo}</p>{auto.estado === 'saving' && <span className="flex items-center gap-1 text-xs text-muted-foreground"><Clock className="h-4 w-4" />Salvando…</span>}{auto.estado === 'saved' && <span className="flex items-center gap-1 text-xs text-muted-foreground"><CloudCheck className="h-4 w-4" />Salvo automaticamente às {auto.hora}</span>}{auto.estado === 'error' && <span className="flex flex-wrap items-center gap-2 text-xs text-destructive">Não foi possível salvar<Button variant="ghost" className="text-destructive" onClick={() => void auto.flush().catch(() => {})}>Tentar de novo</Button></span>}</div></div>{relatorio && <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => void verCliente()}><Eye />Ver como cliente</Button><Button variant="outline" disabled={gerando} onClick={gerarPdf}><FileDown />{gerando ? 'Gerando...' : 'PDF'}</Button></div>}</div>
       </header>}
       {loadingObras || loadingRelatorio ? (
         <div className="space-y-4"><Skeleton className="h-40 w-full" /><Skeleton className="h-64 w-full" /></div>
@@ -82,82 +86,21 @@ export default function RelatorioFinalPage() {
             <p className="text-muted-foreground">Esta obra ainda não possui laudo de {tituloTipo}.</p>
           </CardContent>
         </Card>
-      ) : isExterno ? (
+      ) : isExterno || preview ? (
         <RelatorioFinalViewer
-          relatorio={relatorio}
+          relatorio={preview ? auto.form || relatorio : relatorio}
+          preview={preview}
           fotos={fotos}
           obraNome={obra.nome}
           tipoRelatorio={tipoRelatorio}
           onAssinar={(tipo, values) => m.assinar.mutate({ tipo, ...values })}
           assinarPending={m.assinar.isPending}
-          onVoltar={() => setParams({})}
+          onVoltar={preview ? voltarEditor : () => setParams({})}
           onPdf={gerarPdf}
           gerandoPdf={gerando}
         />
       ) : (
-        <div className="space-y-6">
-          {relatorio.status === 'assinado' && (
-            <p className="text-sm text-muted-foreground" role="status">
-              Laudo assinado pelas duas partes. Conteúdo e assinaturas bloqueados para edição.
-            </p>
-          )}
-          <RelatorioFinalEditor
-            relatorio={relatorio}
-            tipoRelatorio={tipoRelatorio}
-            editable={canEdit}
-            saving={m.salvar.isPending}
-            uploadingCapa={m.uploadCapa.isPending}
-            uploadingTemplate={m.uploadTemplateCapa.isPending}
-            onSalvar={(values) => m.salvar.mutate(values)}
-            onUploadCapa={(file) => m.uploadCapa.mutate(file)}
-            onUploadTemplate={(file) => m.uploadTemplateCapa.mutate(file)}
-            onRemoverTemplate={() => m.removerTemplateCapa.mutate(relatorio.template_capa_url)}
-          />
-
-          {tipoRelatorio === 'vistoria_previa' ? (
-            <GruposFotosManager
-              fotos={fotos}
-              editable={canEdit}
-              uploading={m.adicionarFotos.isPending}
-              onUpload={(files, grupo) => m.adicionarFotos.mutate({
-                files,
-                tipo: grupo,
-                ordemInicial: fotos.filter((f) => f.tipo === grupo).length,
-              })}
-              onLegenda={(id, legenda) => m.atualizarFoto.mutate({ id, legenda })}
-              onMover={moverFoto}
-              onExcluir={(foto: RelatorioFinalFoto) => m.excluirFoto.mutate({ id: foto.id, fotoUrl: foto.foto_url })}
-              onRenomearGrupo={(antigoNome, novoNome) => m.renomearGrupoFotos.mutate({ antigoNome, novoNome })}
-            />
-          ) : (
-            (['pre_obra', 'pos_obra'] as string[]).map((tipo) => (
-              <FotosManager
-                key={tipo}
-                tipo={tipo}
-                titulo={tipo === 'pre_obra' ? 'Registro fotográfico — Pré-obra' : 'Registro fotográfico — Pós-obra'}
-                fotos={fotos}
-                editable={canEdit}
-                uploading={m.adicionarFotos.isPending}
-                onUpload={(files) => m.adicionarFotos.mutate({
-                  files,
-                  tipo,
-                  ordemInicial: fotos.filter((f) => f.tipo === tipo).length,
-                })}
-                onLegenda={(id, legenda) => m.atualizarFoto.mutate({ id, legenda })}
-                onMover={moverFoto}
-                onExcluir={(foto: RelatorioFinalFoto) => m.excluirFoto.mutate({ id: foto.id, fotoUrl: foto.foto_url })}
-              />
-            ))
-          )}
-
-          <AssinaturasCard
-            relatorio={relatorio}
-            editable={pode('relatorio_final', 'editar') && relatorio.status !== 'assinado'}
-            saving={m.assinar.isPending}
-            onAssinar={(tipo, values) => m.assinar.mutate({ tipo, ...values })}
-            onRemover={(tipo) => m.removerAssinatura.mutate(tipo)}
-          />
-        </div>
+        <LaudoEditorEtapas key={relatorio.id} form={auto.form || relatorio} fotos={fotos} obraNome={obra.nome} editable={canEdit} alterar={auto.alterar} flush={auto.flush} mutations={m} moverFoto={moverFoto} />
       )}
     </div>
   );
