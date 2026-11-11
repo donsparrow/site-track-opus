@@ -1,4 +1,5 @@
 import { useSearchParams } from 'react-router-dom';
+import { useEffect } from 'react';
 import { CheckCircle2, Circle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +19,10 @@ export default function LaudoEditorEtapas({ form, fotos, obraNome, editable, alt
   const checklist = checklistLaudo(form, fotos, secoes);
   const parametro = Number(params.get('etapa'));
   const etapa = parametro >= 1 && parametro <= 4 && Number.isInteger(parametro) ? parametro : form.assinatura_empresa_url ? 4 : checklist.find(i => !i.ok)?.etapa || 1;
+  useEffect(() => {
+    if (parametro >= 1 && parametro <= 4 && Number.isInteger(parametro)) return;
+    const p = new URLSearchParams(params); p.set('etapa', String(etapa)); setParams(p, { replace: true });
+  }, [parametro, etapa, params, setParams]);
   const pendencias = checklist.filter(i => !i.ok && i.chave !== 'f');
   const ir = async (n: number) => { try { await flush(); const p = new URLSearchParams(params); p.set('etapa', String(n)); setParams(p); } catch { /* Keep edits available for retry. */ } };
   const percentual = Math.round(checklist.filter(i => i.ok).length / checklist.length * 100);
