@@ -23,3 +23,5 @@
 - [x] Laudos: editor em quatro etapas, salvamento automático, checklist e prévia de capa/cliente, preservando banco e PDF.
 - [x] Testar checklist/diff (7), salvamento/concorrência/retry/bloqueio (5), status (3) e segurança existente (11): 26 testes aprovados.
 - [ ] Conferir editor, assinatura com pendências, prévia e PDF em desktop/390px (sessão disponível redireciona ao Dashboard; aguarda acesso autorizado a Laudos).
+- [ ] Laudos: divisões persistentes, orientação/rotação de fotos e ajustes de capa sem backfill.
+- [ ] Testar regras de grupos, quadros, herança e segurança; conferir editor/PDF com sessão autorizada.

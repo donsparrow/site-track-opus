@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { extractAnexoPath } from '@/lib/anexoUrl';
 import { relatorioFinalKeys } from '../queryKeys';
 import { useAuth } from '@/contexts/AuthContext';
+import { defaultsNovoLaudo, type GrupoFotos } from '../lib/gruposFotos';
 import type { ObraOption, RelatorioFinal, TipoFoto } from '../types';
 
 const sanitize = (name: string) =>
@@ -38,9 +39,10 @@ export function useRelatorioFinalMutations(
   const criar = useMutation({
     mutationFn: async ({ obra, tipo }: { obra: ObraOption; tipo: 'entrega_obra' | 'vistoria_previa' }) => {
       const { data: comTemplate } = await supabase.from('relatorios_finais')
-        .select('template_capa_url').not('template_capa_url', 'is', null)
+        .select('template_capa_url,capa_texto_escala').not('template_capa_url', 'is', null)
         .order('updated_at', { ascending: false }).limit(1).maybeSingle();
       const { error } = await supabase.from('relatorios_finais').insert({
+        ...defaultsNovoLaudo(tipo, comTemplate),
         tipo_relatorio: tipo, template_capa_url: comTemplate?.template_capa_url ?? null,
         obra_id: obra.id, empresa_id: empresaId, cliente_nome: obra.clientes?.nome ?? null, cliente_cpf_cnpj: obra.clientes?.cpf_cnpj ?? null,
         endereco: obra.endereco, responsavel: obra.responsavel_tecnico, data_inicio: obra.data_inicio, data_fim_prevista: obra.data_fim_prevista,
@@ -78,6 +80,20 @@ export function useRelatorioFinalMutations(
       qc.invalidateQueries({ queryKey: relatorioFinalKeys.lista() });
     },
     onError: e => toast.error(mensagemErro(e, 'Erro ao salvar')),
+  });
+
+  const salvarGruposFotos = useMutation({
+    mutationFn: async (grupos: GrupoFotos[]) => {
+      if (!relatorioId) throw new Error('Relatório não encontrado');
+      const { data, error } = await supabase.from('relatorios_finais').update({ grupos_fotos: grupos.map(g => ({ ...g })) }).eq('id', relatorioId).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: data => {
+      qc.setQueryData(relatorioFinalKeys.relatorio(obraId, tipoRelatorio), data);
+      qc.invalidateQueries({ queryKey: relatorioFinalKeys.lista() });
+    },
+    onError: e => toast.error(mensagemErro(e, 'Erro ao salvar divisões')),
   });
 
   const uploadCapa = useMutation({
@@ -148,7 +164,7 @@ export function useRelatorioFinalMutations(
   });
 
   const atualizarFoto = useMutation({
-    mutationFn: async ({ id, ...values }: { id: string; legenda?: string | null; ordem?: number; tipo?: TipoFoto }) => {
+    mutationFn: async ({ id, ...values }: { id: string; legenda?: string | null; ordem?: number; tipo?: TipoFoto; orientacao?: 'horizontal' | 'vertical'; rotacao?: number }) => {
       const { error } = await supabase.from('relatorio_final_fotos').update(values).eq('id', id);
       if (error) throw error;
     },
@@ -195,5 +211,5 @@ export function useRelatorioFinalMutations(
     onError: (e) => toast.error(mensagemErro(e, 'Erro ao remover assinatura')),
   });
 
-  return { criar, salvar, salvarAuto, uploadCapa, uploadTemplateCapa, removerTemplateCapa, adicionarFotos, renomearGrupoFotos, atualizarFoto, excluirFoto, assinar, removerAssinatura };
+  return { criar, salvar, salvarAuto, salvarGruposFotos, uploadCapa, uploadTemplateCapa, removerTemplateCapa, adicionarFotos, renomearGrupoFotos, atualizarFoto, excluirFoto, assinar, removerAssinatura };
 }
