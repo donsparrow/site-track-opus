@@ -11,6 +11,8 @@
 - Enforce technical-report visibility and signed-content/photo locks in database policies and ordered triggers; UI guards alone cannot protect API writes, and issuance dates must survive later PDF generation.
 - Route technical-report list/detail through search parameters, share signature-derived status and invalidate the list prefix after mutations; this preserves panel deep links and consistent state across list and reader.
 
+- Resolve technical-report photo groups through the shared ordered-key helper and use shared crop/rotation geometry in previews and PDF; titles stay independent from photo keys and legacy NULL groups keep their order.
+
 # Performance rules
 
 - Keep technical-report autosave serialized, diff-only and local form initialization keyed by report ID; flush before navigation, preview, PDF and signing to avoid losing or overwriting active edits.

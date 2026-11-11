@@ -10,7 +10,7 @@ export function checklistLaudo(r: Partial<RelatorioFinal>, fotos: Pick<Relatorio
     { chave: 'a', etapa: 1, ok: preenchido(r.cliente_nome) && preenchido(r.endereco) && preenchido(r.responsavel), texto: 'Cliente, endereço e responsável preenchidos' },
     { chave: 'b', etapa: 1, ok: preenchido(vistoria ? r.data_vistoria : r.data_conclusao), texto: vistoria ? 'Data da vistoria informada' : 'Data de conclusão informada' },
     { chave: 'c', etapa: 1, ok: !!r.foto_capa_url, texto: 'Foto de capa definida' },
-    { chave: 'd', etapa: 2, ok: secoes.length > 0 && vazios === 0, texto: vazios || !secoes.length ? `${vazios || 1} bloco(s) de texto vazio(s)` : 'Todos os blocos com texto' },
+    { chave: 'd', etapa: 2, ok: secoes.length > 0 && vazios === 0, texto: !secoes.length ? 'Nenhum bloco de texto' : vazios ? `${vazios} bloco(s) de texto vazio(s)` : 'Todos os blocos com texto' },
     { chave: 'e', etapa: 3, ok: fotos.length > 0 && semLegenda === 0, texto: !fotos.length ? 'Nenhuma foto adicionada' : semLegenda ? `${semLegenda} foto(s) sem legenda` : 'Todas as fotos com legenda' },
     { chave: 'f', etapa: 4, ok: !!r.assinatura_empresa_url, texto: 'Assinatura do responsável técnico' },
   ];

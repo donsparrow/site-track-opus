@@ -10,6 +10,8 @@ import { statusLaudo, tipoLaudo } from '../lib/status';
 import StatusLaudoBadge from './StatusLaudoBadge';
 import FotoLightbox from './FotoLightbox';
 import CapaPreview from './CapaPreview';
+import FotoQuadro from './FotoQuadro';
+import { resolverGruposFotos } from '../lib/gruposFotos';
 
 interface Props {
   relatorio: RelatorioFinal; fotos: RelatorioFinalFoto[]; obraNome: string; tipoRelatorio?: string;
@@ -27,8 +29,7 @@ export default function RelatorioFinalViewer({ relatorio: r, fotos, obraNome, ti
   const tipo = tipoLaudo(tipoRelatorio);
   const vistoria = tipoRelatorio === 'vistoria_previa';
   const secoes = resolverSecoes(r).filter(s => s.conteudo.replace(/<[^>]*>/g, '').replace(/&nbsp;/g,' ').trim());
-  const nomes = vistoria ? [...new Set(fotos.map(f => f.tipo))].sort((a,b) => a.localeCompare(b,'pt-BR')) : ['pre_obra','pos_obra'];
-  const grupos = nomes.map(nome => ({ nome, titulo: vistoria ? nome : nome === 'pre_obra' ? 'Registro Fotográfico — Pré-Obra' : 'Registro Fotográfico — Pós-Obra', fotos: fotos.filter(f => f.tipo === nome).sort((a,b) => a.ordem - b.ordem) })).filter(g => g.fotos.length);
+  const grupos = resolverGruposFotos(r, fotos).map(g => ({ nome: g.chave, titulo: vistoria ? g.titulo : `Registro Fotográfico — ${g.titulo}`, fotos: fotos.filter(f => f.tipo === g.chave).sort((a,b) => a.ordem - b.ordem) })).filter(g => g.fotos.length);
   const ordenadas = grupos.flatMap(g => g.fotos);
   const urls = useSignedUrls([r.template_capa_url,r.foto_capa_url,r.assinatura_empresa_url,r.assinatura_sindico_url,...ordenadas.map(f => f.foto_url)]);
   const capa = true;
@@ -54,7 +55,7 @@ export default function RelatorioFinalViewer({ relatorio: r, fotos, obraNome, ti
         {capa && <section id="capa" className={secaoClass}><h2 className="font-display text-lg font-semibold">Capa</h2><div className="mx-auto w-full max-w-[300px]"><CapaPreview values={r} obraNome={obraNome} /></div></section>}
         <section id="dados" className={secaoClass}><h2 className="font-display text-lg font-semibold">Dados da obra</h2><dl className="grid gap-4 sm:grid-cols-2">{dados.filter(([,v]) => v).map(([label,v]) => <div key={label} className="min-w-0"><dt className="text-xs text-muted-foreground">{label}</dt><dd className="break-words text-sm">{v}</dd></div>)}</dl></section>
         {secoes.map((s,i) => <section key={s.id} id={`secao-${i}`} className={secaoClass}><h2 className="font-display text-lg font-semibold">{s.titulo}</h2><div className="prose prose-sm max-w-none break-words dark:prose-invert" dangerouslySetInnerHTML={{__html:s.conteudo}} /></section>)}
-        {grupos.map((g,i) => <section key={g.nome} id={`fotos-${i}`} className={secaoClass}><h2 className="font-display text-lg font-semibold">{g.titulo} ({g.fotos.length})</h2><div className="grid gap-4 sm:grid-cols-2">{g.fotos.map(f => <figure key={f.id} className="min-w-0 space-y-2"><Button variant="ghost" className="h-auto w-full overflow-hidden p-0" aria-label={`Ampliar foto ${ordenadas.indexOf(f)+1}`} onClick={() => setFotoIndice(ordenadas.indexOf(f))}>{urls[f.foto_url] ? <img src={urls[f.foto_url]} alt={f.legenda || 'Registro fotográfico'} className="aspect-[4/3] w-full object-cover" loading="lazy" decoding="async" /> : <span className="flex aspect-[4/3] w-full items-center justify-center bg-muted">Imagem indisponível</span>}</Button><figcaption className="break-words text-sm text-muted-foreground">Foto {ordenadas.indexOf(f)+1}{f.legenda ? ` — ${f.legenda}` : ''}</figcaption></figure>)}</div></section>)}
+        {grupos.map((g,i) => <section key={g.nome} id={`fotos-${i}`} className={secaoClass}><h2 className="font-display text-lg font-semibold">{g.titulo} ({g.fotos.length})</h2><div className="grid gap-4 sm:grid-cols-2">{g.fotos.map(f => <figure key={f.id} className="min-w-0 space-y-2"><Button variant="ghost" className="h-auto w-full overflow-hidden p-0" aria-label={`Ampliar foto ${ordenadas.indexOf(f)+1}`} onClick={() => setFotoIndice(ordenadas.indexOf(f))}><FotoQuadro src={urls[f.foto_url]} alt={f.legenda || 'Registro fotográfico'} orientacao={f.orientacao} rotacao={f.rotacao} /></Button><figcaption className="break-words text-sm text-muted-foreground">Foto {ordenadas.indexOf(f)+1}{f.legenda ? ` — ${f.legenda}` : ''}</figcaption></figure>)}</div></section>)}
         {r.link_externo && <section id="link" className={secaoClass}><h2 className="font-display text-lg font-semibold">{r.link_externo_label || 'Link de acesso'}</h2><a href={r.link_externo} target="_blank" rel="noopener noreferrer" className="block break-all text-primary underline">{r.link_externo}</a></section>}
         <section id="assinaturas" className={secaoClass}><h2 className="font-display text-lg font-semibold">Assinaturas</h2><div className="grid gap-6 sm:grid-cols-2">{(['empresa','sindico'] as const).map(t => {
           const path = t === 'empresa' ? r.assinatura_empresa_url : r.assinatura_sindico_url;

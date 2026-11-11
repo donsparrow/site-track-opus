@@ -1,0 +1,3 @@
+ALTER TABLE public.relatorios_finais ADD COLUMN IF NOT EXISTS grupos_fotos jsonb;
+ALTER TABLE public.relatorio_final_fotos ADD COLUMN IF NOT EXISTS orientacao text NOT NULL DEFAULT 'horizontal' CHECK (orientacao IN ('horizontal','vertical')), ADD COLUMN IF NOT EXISTS rotacao smallint NOT NULL DEFAULT 0 CHECK (rotacao IN (0,90,180,270));
+ALTER TABLE public.relatorios_finais ADD COLUMN IF NOT EXISTS capa_texto_escala smallint NOT NULL DEFAULT 100 CHECK (capa_texto_escala BETWEEN 60 AND 100);

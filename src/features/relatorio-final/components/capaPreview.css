@@ -3,7 +3,13 @@
 .laudo-capa-titulo { position: absolute; top: 5.05%; left: 7.14%; width: 85.72%; text-align: center; font-weight: 700; font-size: 3.4cqw; line-height: 1.3; }
 .laudo-capa-barra { top: 0; left: 0; width: 100%; padding: 5% 7%; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
 .laudo-capa-barra p { margin-top: 2%; font-size: 3cqw; }
-.laudo-capa-foto { position: absolute; left: 7.14%; top: 13.47%; width: 85.72%; height: 48.82%; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid hsl(var(--primary)); }
-.laudo-capa-foto img { width: 100%; height: 100%; object-fit: contain; }
+.laudo-capa-foto { position: absolute; left: 7.14%; top: 13.47%; width: 85.72%; height: 48.82%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.laudo-capa-foto img { flex-shrink: 0; object-fit: contain; }
+.laudo-capa-foto-borda { position: absolute; pointer-events: none; border: 1px solid hsl(var(--primary)); }
 .laudo-capa-dados { position: absolute; top: 69.02%; left: 3.81%; width: 66.67%; font-size: 3.2cqw; font-weight: 700; line-height: 1.5; overflow-wrap: anywhere; }
 .laudo-capa-dados p { margin-bottom: 2%; }
+.laudo-capa-dados-template { font-family: Arial, Helvetica, sans-serif; top: 67.48%; font-size: calc(1.848cqw * var(--texto-escala)); line-height: calc(2.857cqw * var(--texto-escala)); }
+.laudo-capa-dados-template p { margin: 0; }
+.laudo-capa-dados-template .laudo-capa-cliente { font-size: calc(2.184cqw * var(--texto-escala)); line-height: calc(3.333cqw * var(--texto-escala)); }
+.laudo-capa-dados-template .laudo-capa-emissao { margin-top: calc(1.905cqw * var(--texto-escala)); }
+.laudo-capa-dados-template .laudo-capa-vistoria, .laudo-capa-dados-template .laudo-capa-contrato { margin-top: calc(.952cqw * var(--texto-escala)); }

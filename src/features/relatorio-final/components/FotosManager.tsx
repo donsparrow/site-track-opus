@@ -2,8 +2,10 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowDown, ArrowUp, ImagePlus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ImagePlus, Trash2, RotateCw } from 'lucide-react';
 import { useSignedUrls } from '../hooks/useSignedUrls';
+import FotoQuadro from './FotoQuadro';
+import { proximaRotacao } from '../lib/fotoQuadro';
 import type { RelatorioFinalFoto, TipoFoto } from '../types';
 
 interface Props {
@@ -16,6 +18,7 @@ interface Props {
   onLegenda: (id: string, legenda: string) => void;
   onMover: (id: string, direcao: -1 | 1) => void;
   onExcluir: (foto: RelatorioFinalFoto) => void;
+  onFormato?: (id: string, values: { orientacao?: 'horizontal' | 'vertical'; rotacao?: number }) => void;
   abas?: ReactNode;
   grupoLabel?: string;
 }
@@ -53,7 +56,7 @@ function FotoLegendaInput({
   );
 }
 
-export default function FotosManager({ tipo, titulo, fotos, editable, uploading, onUpload, onLegenda, onMover, onExcluir, abas, grupoLabel }: Props) {
+export default function FotosManager({ tipo, titulo, fotos, editable, uploading, onUpload, onLegenda, onMover, onExcluir, onFormato, abas, grupoLabel }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const lista = fotos.filter((f) => f.tipo === tipo);
   const urls = useSignedUrls(lista.map((f) => f.foto_url));
@@ -90,12 +93,9 @@ export default function FotosManager({ tipo, titulo, fotos, editable, uploading,
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {lista.map((foto, i) => (
               <div key={foto.id} className={`border rounded-lg overflow-hidden ${!foto.legenda?.trim() ? 'border-warning' : ''}`}>
-                {urls[foto.foto_url] ? (
-                  <img src={urls[foto.foto_url]} alt={foto.legenda || `Foto ${i + 1}`} className="h-40 w-full object-cover" loading="lazy" decoding="async" />
-                ) : (
-                  <div className="h-40 w-full bg-muted" />
-                )}
+                <FotoQuadro src={urls[foto.foto_url]} alt={foto.legenda || `Foto ${i + 1}`} orientacao={foto.orientacao} rotacao={foto.rotacao} />
                 <div className="p-2 space-y-2">
+                  <div className="flex flex-wrap items-center gap-1">{(['horizontal','vertical'] as const).map(o => <Button key={o} size="sm" variant={(foto.orientacao ?? 'horizontal') === o ? 'secondary' : 'outline'} className="min-h-11" disabled={!editable} aria-pressed={(foto.orientacao ?? 'horizontal') === o} onClick={() => onFormato?.(foto.id, { orientacao: o })}>{o === 'horizontal' ? 'Horizontal' : 'Vertical'}</Button>)}<Button size="icon" variant="ghost" className="min-h-11 min-w-11" title="Girar 90°" aria-label="Girar 90°" disabled={!editable} onClick={() => onFormato?.(foto.id, { rotacao: proximaRotacao(foto.rotacao) })}><RotateCw className="h-4 w-4" /></Button></div>
                   <FotoLegendaInput foto={foto} index={i} editable={editable} onLegenda={onLegenda} />
                   {!foto.legenda?.trim() && <p className="text-xs text-warning">Sem legenda</p>}
                   {editable && (

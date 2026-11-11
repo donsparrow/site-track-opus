@@ -4,7 +4,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     environment: 'node',
-    include: ['src/features/relatorio-final/laudosSeguranca.test.ts'],
+    include: ['src/features/relatorio-final/laudosSeguranca.test.ts', 'src/features/relatorio-final/laudosFotosSchema.test.ts', 'src/features/relatorio-final/lib/*.test.ts'],
     testTimeout: 20000,
     hookTimeout: 20000,
   },
