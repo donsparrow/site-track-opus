@@ -92,6 +92,13 @@
       "when": 1794249559766,
       "tag": "0012_receitas_chave_envio",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794424827997,
+      "tag": "0013_laudos_trava_visibilidade_data_emissao",
+      "breakpoints": true
     }
   ]
 }
