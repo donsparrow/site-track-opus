@@ -1882,7 +1882,9 @@ export type Database = {
           id: string
           legenda: string | null
           ordem: number
+          orientacao: string
           relatorio_id: string
+          rotacao: number
           tipo: string
         }
         Insert: {
@@ -1891,7 +1893,9 @@ export type Database = {
           id?: string
           legenda?: string | null
           ordem?: number
+          orientacao?: string
           relatorio_id: string
+          rotacao?: number
           tipo?: string
         }
         Update: {
@@ -1900,7 +1904,9 @@ export type Database = {
           id?: string
           legenda?: string | null
           ordem?: number
+          orientacao?: string
           relatorio_id?: string
+          rotacao?: number
           tipo?: string
         }
         Relationships: [
@@ -2172,6 +2178,7 @@ export type Database = {
           assinatura_sindico_data: string | null
           assinatura_sindico_nome: string | null
           assinatura_sindico_url: string | null
+          capa_texto_escala: number
           cliente_cpf_cnpj: string | null
           cliente_nome: string | null
           conteudo_aditivo: string | null
@@ -2189,6 +2196,7 @@ export type Database = {
           endereco: string | null
           foto_capa_escala: number
           foto_capa_url: string | null
+          grupos_fotos: Json | null
           id: string
           link_externo: string | null
           link_externo_label: string | null
@@ -2214,6 +2222,7 @@ export type Database = {
           assinatura_sindico_data?: string | null
           assinatura_sindico_nome?: string | null
           assinatura_sindico_url?: string | null
+          capa_texto_escala?: number
           cliente_cpf_cnpj?: string | null
           cliente_nome?: string | null
           conteudo_aditivo?: string | null
@@ -2231,6 +2240,7 @@ export type Database = {
           endereco?: string | null
           foto_capa_escala?: number
           foto_capa_url?: string | null
+          grupos_fotos?: Json | null
           id?: string
           link_externo?: string | null
           link_externo_label?: string | null
@@ -2256,6 +2266,7 @@ export type Database = {
           assinatura_sindico_data?: string | null
           assinatura_sindico_nome?: string | null
           assinatura_sindico_url?: string | null
+          capa_texto_escala?: number
           cliente_cpf_cnpj?: string | null
           cliente_nome?: string | null
           conteudo_aditivo?: string | null
@@ -2273,6 +2284,7 @@ export type Database = {
           endereco?: string | null
           foto_capa_escala?: number
           foto_capa_url?: string | null
+          grupos_fotos?: Json | null
           id?: string
           link_externo?: string | null
           link_externo_label?: string | null
