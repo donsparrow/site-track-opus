@@ -66,6 +66,20 @@ export function useRelatorioFinalMutations(
     onError: (e) => toast.error(mensagemErro(e, 'Erro ao salvar')),
   });
 
+  const salvarAuto = useMutation({
+    mutationFn: async (values: Partial<RelatorioFinal>) => {
+      if (!relatorioId) throw new Error('Relatório não encontrado');
+      const { data, error } = await supabase.from('relatorios_finais').update(values).eq('id', relatorioId).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: data => {
+      qc.setQueryData(relatorioFinalKeys.relatorio(obraId, tipoRelatorio), data);
+      qc.invalidateQueries({ queryKey: relatorioFinalKeys.lista() });
+    },
+    onError: e => toast.error(mensagemErro(e, 'Erro ao salvar')),
+  });
+
   const uploadCapa = useMutation({
     mutationFn: async (file: File) => {
       if (!obraId || !relatorioId) throw new Error('Relatório não encontrado');
@@ -181,5 +195,5 @@ export function useRelatorioFinalMutations(
     onError: (e) => toast.error(mensagemErro(e, 'Erro ao remover assinatura')),
   });
 
-  return { criar, salvar, uploadCapa, uploadTemplateCapa, removerTemplateCapa, adicionarFotos, renomearGrupoFotos, atualizarFoto, excluirFoto, assinar, removerAssinatura };
+  return { criar, salvar, salvarAuto, uploadCapa, uploadTemplateCapa, removerTemplateCapa, adicionarFotos, renomearGrupoFotos, atualizarFoto, excluirFoto, assinar, removerAssinatura };
 }

@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import AssinarDialog from '@/features/relatorios/components/AssinarDialog';
 import { useSignedUrls } from '../hooks/useSignedUrls';
 import type { RelatorioFinal } from '../types';
+import type { ItemChecklist } from '../lib/checklist';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
 
 interface Props {
   relatorio: RelatorioFinal;
@@ -12,10 +14,12 @@ interface Props {
   saving?: boolean;
   onAssinar: (tipo: 'empresa' | 'sindico', values: { dataUrl: string; nome: string; cargo: string }) => void;
   onRemover: (tipo: 'empresa' | 'sindico') => void;
+  pendencias?: ItemChecklist[];
 }
 
-export default function AssinaturasCard({ relatorio, editable, saving, onAssinar, onRemover }: Props) {
+export default function AssinaturasCard({ relatorio, editable, saving, onAssinar, onRemover, pendencias = [] }: Props) {
   const [dialog, setDialog] = useState<'empresa' | 'sindico' | null>(null);
+  const [confirmar, setConfirmar] = useState(false);
   const urls = useSignedUrls([relatorio.assinatura_empresa_url, relatorio.assinatura_sindico_url]);
 
   const blocos = [
@@ -52,25 +56,27 @@ export default function AssinaturasCard({ relatorio, editable, saving, onAssinar
             {b.url ? (
               <>
                 {urls[b.url] ? (
-                  <img src={urls[b.url]} alt={`Assinatura ${b.label}`} className="h-20 object-contain bg-white rounded border" />
+                  <img src={urls[b.url]} alt={`Assinatura ${b.label}`} className="h-20 object-contain bg-card rounded border" />
                 ) : (
                   <div className="h-20 bg-muted rounded" />
                 )}
                 <p className="text-sm">{b.nome}{b.cargo ? ` — ${b.cargo}` : ''}</p>
                 {b.data && <p className="text-xs text-muted-foreground">Assinado em {new Date(`${b.data}T00:00:00`).toLocaleDateString('pt-BR')}</p>}
-                {editable && (
+                {editable && relatorio.status !== 'assinado' && (
                   <Button size="sm" variant="ghost" className="text-destructive" onClick={() => onRemover(b.tipo)}>Remover assinatura</Button>
                 )}
               </>
             ) : (
               <>
-                <p className="text-sm text-muted-foreground">Sem assinatura registrada.</p>
-                {editable && <Button size="sm" variant="outline" onClick={() => setDialog(b.tipo)}>Assinar</Button>}
+                <p className="text-sm text-muted-foreground">{b.tipo === 'empresa' ? 'Sem assinatura registrada.' : relatorio.assinatura_empresa_url ? 'Aguardando assinatura do cliente no sistema.' : 'Disponível após a assinatura da empresa.'}</p>
+                {editable && relatorio.status !== 'assinado' && (b.tipo === 'empresa' || relatorio.assinatura_empresa_url) && <Button className="h-auto min-h-11 whitespace-normal" size="sm" variant="outline" onClick={() => b.tipo === 'empresa' && pendencias.length ? setConfirmar(true) : setDialog(b.tipo)}>{b.tipo === 'empresa' ? 'Assinar e liberar ao cliente' : 'Coletar assinatura presencial'}</Button>}
+                {b.tipo === 'empresa' && pendencias.length > 0 && <p className="text-xs text-warning">Há {pendencias.length} pendência(s) no checklist. Você pode assinar mesmo assim.</p>}
               </>
             )}
           </div>
         ))}
 
+        <AlertDialog open={confirmar} onOpenChange={setConfirmar}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Assinar com pendências?</AlertDialogTitle><AlertDialogDescription>A assinatura não é bloqueada. Ao confirmar, o laudo fica visível para o síndico/cliente.</AlertDialogDescription></AlertDialogHeader><ul className="space-y-2 text-sm">{pendencias.map(p => <li key={p.chave}>{p.texto}</li>)}</ul><AlertDialogFooter><AlertDialogCancel>Voltar e corrigir</AlertDialogCancel><AlertDialogAction onClick={() => setDialog('empresa')}>Assinar mesmo assim</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
         <AssinarDialog
           open={dialog !== null}
           onOpenChange={(o) => !o && setDialog(null)}

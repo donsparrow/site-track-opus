@@ -16,6 +16,7 @@ interface Props {
   onMover: (id: string, direcao: -1 | 1) => void;
   onExcluir: (foto: RelatorioFinalFoto) => void;
   onRenomearGrupo: (antigoNome: string, novoNome: string) => void;
+  entrega?: boolean;
 }
 
 function TituloGrupo({
@@ -61,37 +62,44 @@ export default function GruposFotosManager({
   onMover,
   onExcluir,
   onRenomearGrupo,
+  entrega = false,
 }: Props) {
   const [novosGrupos, setNovosGrupos] = useState<string[]>([]);
   const [dialogAberto, setDialogAberto] = useState(false);
   const [nomeNovo, setNomeNovo] = useState('');
+  const [selecionado, setSelecionado] = useState('');
 
   const grupos = useMemo(() => {
+    if (entrega) return ['pre_obra', 'pos_obra'];
     const doBanco = Array.from(new Set(fotos.map((f) => f.tipo))).sort((a, b) =>
       a.localeCompare(b, 'pt-BR'),
     );
     const locais = novosGrupos.filter((g) => !doBanco.includes(g));
     return [...doBanco, ...locais];
-  }, [fotos, novosGrupos]);
+  }, [fotos, novosGrupos, entrega]);
+  const ativo = grupos.includes(selecionado) ? selecionado : grupos[0];
+  const label = (g: string) => entrega ? g === 'pre_obra' ? 'Pré-obra' : 'Pós-obra' : g;
+  const abas = <div className="flex flex-wrap gap-2">{grupos.map(g => <Button key={g} variant={ativo === g ? 'secondary' : 'outline'} className="min-h-11 h-auto whitespace-normal" onClick={() => setSelecionado(g)}>{label(g)} ({fotos.filter(f => f.tipo === g).length}){fotos.some(f => f.tipo === g && !f.legenda?.trim()) && <span className="text-warning"> · {fotos.filter(f => f.tipo === g && !f.legenda?.trim()).length} sem legenda</span>}</Button>)}{editable && !entrega && <Button variant="outline" onClick={() => setDialogAberto(true)}><FolderPlus /> Ambiente</Button>}</div>;
 
   const criarGrupo = () => {
     const nome = nomeNovo.trim();
     if (!nome) return;
     if (!grupos.includes(nome)) setNovosGrupos((g) => [...g, nome]);
+    setSelecionado(nome);
     setNomeNovo('');
     setDialogAberto(false);
   };
 
   return (
     <div className="space-y-6">
-      {editable && (
+      {editable && !entrega && grupos.length === 0 && (
         <div className="flex justify-end">
           <Button
             size="sm"
             className="bg-accent text-accent-foreground hover:bg-accent/90"
             onClick={() => setDialogAberto(true)}
           >
-            <FolderPlus className="h-4 w-4 mr-1" /> Adicionar Ambiente
+            <FolderPlus className="h-4 w-4 mr-1" /> Ambiente
           </Button>
         </div>
       )}
@@ -103,16 +111,18 @@ export default function GruposFotosManager({
           </CardContent>
         </Card>
       ) : (
-        grupos.map((grupo) => (
+        grupos.filter(grupo => grupo === ativo).map((grupo) => (
           <FotosManager
             key={grupo}
             tipo={grupo}
-            titulo={
+            abas={abas}
+            grupoLabel={label(grupo)}
+            titulo={entrega ? 'Registro fotográfico' :
               <TituloGrupo
                 nome={grupo}
                 editable={editable}
                 total={fotos.filter((f) => f.tipo === grupo).length}
-                onRenomear={(novo) => onRenomearGrupo(grupo, novo)}
+                onRenomear={(novo) => { onRenomearGrupo(grupo, novo); setNovosGrupos(gs => gs.map(g => g === grupo ? novo : g)); setSelecionado(novo); }}
               />
             }
             fotos={fotos}
