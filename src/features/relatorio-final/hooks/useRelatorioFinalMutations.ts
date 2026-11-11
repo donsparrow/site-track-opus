@@ -8,6 +8,12 @@ import type { RelatorioFinal, TipoFoto } from '../types';
 const sanitize = (name: string) =>
   name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w.-]+/g, '-');
 
+const mensagemErro = (erro: unknown, prefixo: string) => {
+  const mensagem = typeof erro === 'object' && erro !== null && 'message' in erro && typeof erro.message === 'string'
+    ? erro.message : 'desconhecido';
+  return mensagem.includes('Laudo assinado') ? mensagem : `${prefixo}: ${mensagem}`;
+};
+
 export async function uploadRelatorioFinalArquivo(obraId: string, file: Blob, fileName: string) {
   const path = `relatorio-final/${obraId}/${crypto.randomUUID()}_${sanitize(fileName)}`;
   const { error } = await supabase.storage.from('anexos').upload(path, file, { upsert: false });
@@ -33,7 +39,7 @@ export function useRelatorioFinalMutations(
       if (error) throw error;
     },
     onSuccess: () => { toast.success('Relatório salvo'); invalidate(); },
-    onError: (e) => toast.error(`Erro ao salvar: ${e instanceof Error ? e.message : 'desconhecido'}`),
+    onError: (e) => toast.error(mensagemErro(e, 'Erro ao salvar')),
   });
 
   const uploadCapa = useMutation({
@@ -44,7 +50,7 @@ export function useRelatorioFinalMutations(
       if (error) throw error;
     },
     onSuccess: () => { toast.success('Capa atualizada'); invalidate(); },
-    onError: (e) => toast.error(`Erro no upload: ${e instanceof Error ? e.message : 'desconhecido'}`),
+    onError: (e) => toast.error(mensagemErro(e, 'Erro no upload')),
   });
 
   const uploadTemplateCapa = useMutation({
@@ -55,7 +61,7 @@ export function useRelatorioFinalMutations(
       if (error) throw error;
     },
     onSuccess: () => { toast.success('Template da capa atualizado'); invalidate(); },
-    onError: (e) => toast.error(`Erro no upload: ${e instanceof Error ? e.message : 'desconhecido'}`),
+    onError: (e) => toast.error(mensagemErro(e, 'Erro no upload')),
   });
 
   const removerTemplateCapa = useMutation({
@@ -67,7 +73,7 @@ export function useRelatorioFinalMutations(
       if (path) await supabase.storage.from('anexos').remove([path]);
     },
     onSuccess: () => { toast.success('Template removido'); invalidate(); },
-    onError: (e) => toast.error(`Erro ao remover template: ${e instanceof Error ? e.message : 'desconhecido'}`),
+    onError: (e) => toast.error(mensagemErro(e, 'Erro ao remover template')),
   });
 
   const adicionarFotos = useMutation({
@@ -83,7 +89,7 @@ export function useRelatorioFinalMutations(
       }
     },
     onSuccess: () => { toast.success('Fotos adicionadas'); invalidate(); },
-    onError: (e) => toast.error(`Erro ao enviar fotos: ${e instanceof Error ? e.message : 'desconhecido'}`),
+    onError: (e) => toast.error(mensagemErro(e, 'Erro ao enviar fotos')),
   });
 
   const renomearGrupoFotos = useMutation({
@@ -100,7 +106,7 @@ export function useRelatorioFinalMutations(
       qc.invalidateQueries({ queryKey: relatorioFinalKeys.fotos(relatorioId) });
       toast.success('Ambiente renomeado');
     },
-    onError: (e) => toast.error(`Erro ao renomear ambiente: ${e instanceof Error ? e.message : 'desconhecido'}`),
+    onError: (e) => toast.error(mensagemErro(e, 'Erro ao renomear ambiente')),
   });
 
   const atualizarFoto = useMutation({
@@ -109,7 +115,7 @@ export function useRelatorioFinalMutations(
       if (error) throw error;
     },
     onSuccess: () => invalidate(),
-    onError: (e) => toast.error(`Erro ao atualizar foto: ${e instanceof Error ? e.message : 'desconhecido'}`),
+    onError: (e) => toast.error(mensagemErro(e, 'Erro ao atualizar foto')),
   });
 
   const excluirFoto = useMutation({
@@ -120,7 +126,7 @@ export function useRelatorioFinalMutations(
       if (path) await supabase.storage.from('anexos').remove([path]);
     },
     onSuccess: () => { toast.success('Foto removida'); invalidate(); },
-    onError: (e) => toast.error(`Erro ao remover foto: ${e instanceof Error ? e.message : 'desconhecido'}`),
+    onError: (e) => toast.error(mensagemErro(e, 'Erro ao remover foto')),
   });
 
   const assinar = useMutation({
@@ -135,7 +141,7 @@ export function useRelatorioFinalMutations(
       if (error) throw error;
     },
     onSuccess: () => { toast.success('Assinatura registrada'); invalidate(); },
-    onError: (e) => toast.error(`Erro ao assinar: ${e instanceof Error ? e.message : 'desconhecido'}`),
+    onError: (e) => toast.error(mensagemErro(e, 'Erro ao assinar')),
   });
 
   const removerAssinatura = useMutation({
@@ -148,7 +154,7 @@ export function useRelatorioFinalMutations(
       if (error) throw error;
     },
     onSuccess: () => { toast.success('Assinatura removida'); invalidate(); },
-    onError: (e) => toast.error(`Erro ao remover assinatura: ${e instanceof Error ? e.message : 'desconhecido'}`),
+    onError: (e) => toast.error(mensagemErro(e, 'Erro ao remover assinatura')),
   });
 
   return { salvar, uploadCapa, uploadTemplateCapa, removerTemplateCapa, adicionarFotos, renomearGrupoFotos, atualizarFoto, excluirFoto, assinar, removerAssinatura };
