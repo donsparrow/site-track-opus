@@ -6,6 +6,7 @@ import type { LaudoLista } from '../hooks/useLaudosLista';
 
 export default function LaudoCard({ laudo, externo, mostrarObra = true, onAbrir }: { laudo: LaudoLista; externo: boolean; mostrarObra?: boolean; onAbrir: () => void }) {
   const status = statusLaudo(laudo);
+  const dataEvento = laudo.tipo_relatorio === 'vistoria_previa' ? laudo.data_vistoria : laudo.data_conclusao;
   return (
     <Button variant="outline" onClick={onAbrir} className="h-auto min-w-0 w-full flex-col items-stretch justify-start whitespace-normal p-5 text-left shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -19,7 +20,7 @@ export default function LaudoCard({ laudo, externo, mostrarObra = true, onAbrir 
       <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs">
         {[['Empresa', laudo.assinatura_empresa_url], ['Cliente', laudo.assinatura_sindico_url]].map(([nome, assinatura]) => <span key={nome} className={`flex items-center gap-1 ${assinatura ? 'text-success' : 'text-muted-foreground'}`}>{assinatura ? <Check /> : <Clock />}{nome}{!assinatura && ' pendente'}</span>)}
       </div>
-      <p className="data-tech mt-3 text-xs text-muted-foreground">Atualizado em {new Date(laudo.updated_at).toLocaleDateString('pt-BR')}</p>
+      <p className="data-tech mt-3 text-xs text-muted-foreground">{externo && dataEvento ? `${laudo.tipo_relatorio === 'vistoria_previa' ? 'Vistoria' : 'Conclusão'} em ${new Date(`${dataEvento}T00:00:00`).toLocaleDateString('pt-BR')}` : `Atualizado em ${new Date(laudo.updated_at).toLocaleDateString('pt-BR')}`}</p>
       <div className="mt-3 flex items-center justify-between border-t pt-3 text-sm">{!externo && status === 'rascunho' ? 'Continuar edição' : 'Abrir laudo'}<ChevronRight /></div>
     </Button>
   );

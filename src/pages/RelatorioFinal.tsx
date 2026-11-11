@@ -8,7 +8,6 @@ import { FileDown, ChevronLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/hooks/usePermissions';
 import { fetchEmpresaConfigOrBranding } from '@/lib/empresaBranding';
-import { gerarPdfRelatorioFinal } from '@/lib/pdfRelatorioFinal';
 import LaudosLista from '@/features/relatorio-final/components/LaudosLista';
 import StatusLaudoBadge from '@/features/relatorio-final/components/StatusLaudoBadge';
 import { statusLaudo } from '@/features/relatorio-final/lib/status';
@@ -55,6 +54,7 @@ export default function RelatorioFinalPage() {
     if (!relatorio || !obra) return;
     setGerando(true);
     try {
+      const { gerarPdfRelatorioFinal } = await import('@/lib/pdfRelatorioFinal');
       const empresa = (await fetchEmpresaConfigOrBranding()) as EmpresaPDFData | null;
       await gerarPdfRelatorioFinal({ relatorio, fotos, obraNome: obra.nome, empresa });
     } catch (e) {
