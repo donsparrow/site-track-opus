@@ -1,0 +1,26 @@
+import { useRef } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { ImagePlus, X } from 'lucide-react';
+import type { RelatorioFinal } from '../types';
+import CapaPreview from './CapaPreview';
+import { useSignedUrls } from '../hooks/useSignedUrls';
+interface Props { form: RelatorioFinal; obraNome: string; editable: boolean; alterar: (v: Partial<RelatorioFinal>, agendar?: boolean) => void; flush: () => Promise<unknown>; onUploadCapa: (f: File) => void; onUploadTemplate: (f: File) => void; onRemoverTemplate: () => void; uploadingCapa: boolean; uploadingTemplate: boolean }
+export default function DadosCapaEtapa(p: Props) {
+  const capa = useRef<HTMLInputElement>(null); const template = useRef<HTMLInputElement>(null);
+  const urls = useSignedUrls([p.form.foto_capa_url, p.form.template_capa_url]);
+  const campos = (lista: [keyof RelatorioFinal, string, string?][]) => <div className="grid gap-4 sm:grid-cols-2">{lista.map(([k, label, type]) => <div key={k} className="min-w-0 space-y-1"><Label htmlFor={`laudo-${k}`}>{label}</Label><Input id={`laudo-${k}`} type={type || 'text'} disabled={!p.editable} value={String(p.form[k] ?? '')} placeholder={k === 'contrato' ? 'Ex.: nº 802/2026, assinado em 25/03/2026' : k === 'link_externo_label' ? 'Ex.: Tour virtual 360°, Álbum de fotos, Projeto' : undefined} onChange={e => p.alterar({ [k]: e.target.value || null })} /></div>)}</div>;
+  return <div className="space-y-5">
+    <Card><CardHeader><CardTitle className="text-base">Cliente e obra</CardTitle><Badge variant="secondary" className="w-fit whitespace-normal">Copiado do cadastro da obra ao criar · editável</Badge></CardHeader><CardContent>{campos([['cliente_nome','Cliente'],['cliente_cpf_cnpj','CPF/CNPJ'],['endereco','Endereço'],['responsavel','Responsável']])}</CardContent></Card>
+    <Card><CardHeader><CardTitle className="text-base">Datas e contrato</CardTitle></CardHeader><CardContent>{campos([['data_inicio','Data de início','date'],['data_conclusao','Data de conclusão','date'],['data_vistoria','Data da vistoria','date'],['contrato','Contrato']])}</CardContent></Card>
+    <Card><CardHeader><CardTitle className="text-base">Link externo (opcional)</CardTitle></CardHeader><CardContent className="space-y-3">{campos([['link_externo_label','Rótulo do link externo'],['link_externo','Link externo']])}<p className="text-xs text-muted-foreground">No PDF e na tela do cliente aparecem o rótulo e o endereço completo, sempre visível.</p></CardContent></Card>
+    <Card><CardHeader><CardTitle className="text-base">Capa</CardTitle><p className="text-sm text-muted-foreground">Prévia ao vivo da 1ª página do PDF</p></CardHeader><CardContent className="grid items-start gap-5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]"><div className="mx-auto w-full max-w-[240px]"><CapaPreview values={p.form} obraNome={p.obraNome} /></div><div className="min-w-0 space-y-5">
+      {(['template','capa'] as const).map(t => { const path = t === 'template' ? p.form.template_capa_url : p.form.foto_capa_url; const ref = t === 'template' ? template : capa; const busy = t === 'template' ? p.uploadingTemplate : p.uploadingCapa; return <div key={t} className="space-y-2"><Label>{t === 'template' ? 'Template da capa' : 'Foto de capa'}</Label>{path && urls[path] && <img src={urls[path]} className="h-20 max-w-full rounded border object-contain" alt={t === 'template' ? 'Template' : 'Foto de capa'} decoding="async" />}<input ref={ref} type="file" accept="image/png,image/jpeg" hidden disabled={!p.editable} onChange={e => { const f = e.target.files?.[0]; if (f) (t === 'template' ? p.onUploadTemplate : p.onUploadCapa)(f); e.target.value = ''; }} /><div className="flex flex-wrap gap-2"><Button variant="outline" disabled={!p.editable || busy} onClick={() => ref.current?.click()} className="h-auto min-h-11 whitespace-normal"><ImagePlus />{busy ? 'Enviando…' : t === 'template' ? path ? 'Trocar template' : 'Enviar template' : path ? 'Trocar foto' : 'Escolher foto'}</Button>{t === 'template' && path && <Button variant="ghost" disabled={!p.editable} onClick={p.onRemoverTemplate}><X />Remover</Button>}</div>{t === 'template' && <p className="text-xs text-muted-foreground">Fundo feito no Canva. PNG 1414×2000 px (A4). Um laudo novo já vem com o último template usado.</p>}</div>; })}
+      <div className="space-y-3"><div className="flex flex-wrap justify-between gap-2"><Label>Escala da foto na capa</Label><span className="data-tech text-xs">{p.form.foto_capa_escala ?? 100}%</span></div><Slider aria-label="Escala da foto na capa" disabled={!p.editable} min={30} max={150} step={5} value={[p.form.foto_capa_escala ?? 100]} onValueChange={([v]) => p.alterar({ foto_capa_escala: v }, false)} onValueCommit={([v]) => { p.alterar({ foto_capa_escala: v }, false); void p.flush().catch(() => {}); }} /></div>
+    </div></CardContent></Card>
+  </div>;
+}
