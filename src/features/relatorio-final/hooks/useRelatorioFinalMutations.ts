@@ -3,7 +3,8 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { extractAnexoPath } from '@/lib/anexoUrl';
 import { relatorioFinalKeys } from '../queryKeys';
-import type { RelatorioFinal, TipoFoto } from '../types';
+import { useAuth } from '@/contexts/AuthContext';
+import type { ObraOption, RelatorioFinal, TipoFoto } from '../types';
 
 const sanitize = (name: string) =>
   name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\w.-]+/g, '-');
@@ -27,10 +28,33 @@ export function useRelatorioFinalMutations(
   tipoRelatorio: string = 'entrega_obra'
 ) {
   const qc = useQueryClient();
+  const { empresaId } = useAuth();
   const invalidate = () => {
+    qc.invalidateQueries({ queryKey: relatorioFinalKeys.lista() });
     qc.invalidateQueries({ queryKey: relatorioFinalKeys.relatorio(obraId, tipoRelatorio) });
     qc.invalidateQueries({ queryKey: relatorioFinalKeys.fotos(relatorioId) });
   };
+
+  const criar = useMutation({
+    mutationFn: async ({ obra, tipo }: { obra: ObraOption; tipo: 'entrega_obra' | 'vistoria_previa' }) => {
+      const { data: comTemplate } = await supabase.from('relatorios_finais')
+        .select('template_capa_url').not('template_capa_url', 'is', null)
+        .order('updated_at', { ascending: false }).limit(1).maybeSingle();
+      const { error } = await supabase.from('relatorios_finais').insert({
+        tipo_relatorio: tipo, template_capa_url: comTemplate?.template_capa_url ?? null,
+        obra_id: obra.id, empresa_id: empresaId, cliente_nome: obra.clientes?.nome ?? null, cliente_cpf_cnpj: obra.clientes?.cpf_cnpj ?? null,
+        endereco: obra.endereco, responsavel: obra.responsavel_tecnico, data_inicio: obra.data_inicio, data_fim_prevista: obra.data_fim_prevista,
+      });
+      if (error) throw error;
+      return { obra: obra.id, tipo };
+    },
+    onSuccess: ({ obra, tipo }) => {
+      toast.success('Laudo criado');
+      qc.invalidateQueries({ queryKey: relatorioFinalKeys.lista() });
+      qc.invalidateQueries({ queryKey: relatorioFinalKeys.relatorio(obra, tipo) });
+    },
+    onError: e => toast.error(mensagemErro(e, 'Erro ao criar laudo')),
+  });
 
   const salvar = useMutation({
     mutationFn: async (values: Partial<RelatorioFinal>) => {
@@ -157,5 +181,5 @@ export function useRelatorioFinalMutations(
     onError: (e) => toast.error(mensagemErro(e, 'Erro ao remover assinatura')),
   });
 
-  return { salvar, uploadCapa, uploadTemplateCapa, removerTemplateCapa, adicionarFotos, renomearGrupoFotos, atualizarFoto, excluirFoto, assinar, removerAssinatura };
+  return { criar, salvar, uploadCapa, uploadTemplateCapa, removerTemplateCapa, adicionarFotos, renomearGrupoFotos, atualizarFoto, excluirFoto, assinar, removerAssinatura };
 }
