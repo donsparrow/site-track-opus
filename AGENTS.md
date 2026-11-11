@@ -13,6 +13,8 @@
 
 # Performance rules
 
+- Keep technical-report autosave serialized, diff-only and local form initialization keyed by report ID; flush before navigation, preview, PDF and signing to avoid losing or overwriting active edits.
+
 - Toda leitura do Supabase feita por componentes ou hooks usa React Query
   (useQuery/useQueries). PROIBIDO buscar dados com useEffect + useState.
 - Hooks de dados usados por vários componentes usam a MESMA queryKey,
