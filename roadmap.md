@@ -12,5 +12,6 @@
 - [ ] Conferir assinatura na lista e botões no celular com conta de síndico (aguarda login autorizado no preview).
 - [x] Aplicar somente índice do caminho do PDF e INSERT de empresas exclusivo do super admin; banco confirmado e Quick security scan com alerta de Storage mantido, sem alerta de INSERT de empresas.- [x] Painel da Obra para síndico/cliente (cards, pagamentos opcionais por obra).
 - [x] Laudos Técnicos: igualar acesso de cliente ao síndico e blindar assinatura externa.
-- [ ] Laudos: restringir rascunhos, bloquear conteúdo/fotos após duas assinaturas e fixar data de emissão sem backfill.
-- [ ] Verificar as novas regras de laudos com testes e conferir o aviso e as assinaturas na tela.
+- [x] Laudos: restringir rascunhos, bloquear conteúdo/fotos após duas assinaturas e fixar data de emissão sem backfill.
+- [x] Testar regras de laudos em PostgreSQL isolado (11 testes aprovados).
+- [ ] Conferir aviso e assinaturas de laudos na tela (aguarda sessão no preview; não foi possível obter sessão própria).
