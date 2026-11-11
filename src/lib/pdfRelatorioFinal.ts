@@ -4,6 +4,8 @@ import { downloadPdf } from '@/lib/pdfDownload';
 import { resolveAnexoUrl } from '@/lib/anexoUrl';
 import type { RelatorioFinal, RelatorioFinalFoto } from '@/features/relatorio-final/types';
 import { resolverSecoes } from '@/features/relatorio-final/lib/secoes';
+import { resolverGruposFotos } from '@/features/relatorio-final/lib/gruposFotos';
+import { desenharFoto, quadroFoto } from '@/features/relatorio-final/lib/fotoQuadro';
 import { renderRichText } from '@/lib/pdfRichText';
 
 const fmtDate = (v?: string | null) => (v ? new Date(`${v}T00:00:00`).toLocaleDateString('pt-BR') : '—');
@@ -33,6 +35,16 @@ function measureImage(dataUrl: string): Promise<{ w: number; h: number } | null>
     img.onerror = () => resolve(null);
     img.src = dataUrl;
   });
+}
+
+export async function prepararFotoQuadro(dataUrl: string, larguraMm: number, alturaMm: number, rotacao = 0): Promise<string> {
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const imagem = new Image(); imagem.onload = () => resolve(imagem); imagem.onerror = () => reject(new Error('Imagem não disponível')); imagem.src = dataUrl;
+  });
+  const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Imagem não disponível');
+  desenharFoto(ctx, img, larguraMm / alturaMm, rotacao);
+  return canvas.toDataURL('image/jpeg', 0.92);
 }
 
 async function loadStorageImage(path?: string | null): Promise<string | null> {
@@ -120,13 +132,19 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
         const drawX = areaX + (areaW - drawW) / 2;
         const drawY = areaY + (areaH - drawH) / 2;
 
-        // Desenhar a foto (sem recorte)
+        // Zoom remains clipped to the original cover frame.
+        doc.saveGraphicsState();
+        doc.rect(areaX, areaY, areaW, areaH, null); doc.clip(); doc.discardPath();
         doc.addImage(capa, 'JPEG', drawX, drawY, drawW, drawH, undefined, 'FAST');
+        doc.restoreGraphicsState();
 
         // Borda azul ao redor da foto (acompanha o tamanho real)
         doc.setDrawColor(30, 58, 95);
         doc.setLineWidth(0.8);
-        doc.rect(drawX - 0.5, drawY - 0.5, drawW + 1, drawH + 1);
+        const bx = Math.max(areaX, drawX); const by = Math.max(areaY, drawY);
+        const bw = Math.min(areaX + areaW, drawX + drawW) - bx;
+        const bh = Math.min(areaY + areaH, drawY + drawH) - by;
+        doc.rect(bx - 0.5, by - 0.5, bw + 1, bh + 1);
         doc.setLineWidth(0.2);
 
       } catch {
@@ -137,33 +155,34 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
       }
     }
 
+    const s = (relatorio.capa_texto_escala ?? 100) / 100;
     // Identificação do cliente
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(13);
+    doc.setFontSize(13 * s);
     doc.setTextColor(30, 30, 30);
     const clienteTexto = `CLIENTE: ${relatorio.cliente_nome || ''}${relatorio.endereco ? ' — ' + relatorio.endereco : ''}`;
     const clienteLines = doc.splitTextToSize(clienteTexto, 140) as string[];
     let yCliente = 205;
     clienteLines.forEach((line: string) => {
       doc.text(line, 8, yCliente);
-      yCliente += 7;
+      yCliente += 7 * s;
     });
 
     // Data de emissão
-    doc.setFontSize(11);
-    doc.text(`DATA DE EMISSÃO: ${relatorio.data_emissao ? fmtDate(relatorio.data_emissao) : new Date().toLocaleDateString('pt-BR')}`, 8, yCliente + 4);
+    doc.setFontSize(11 * s);
+    doc.text(`DATA DE EMISSÃO: ${relatorio.data_emissao ? fmtDate(relatorio.data_emissao) : new Date().toLocaleDateString('pt-BR')}`, 8, yCliente + 4 * s);
 
     // Data da vistoria/conclusão
-    let yInfo = yCliente + 4;
+    let yInfo = yCliente + 4 * s;
     if (relatorio.data_vistoria) {
-      yInfo += 8;
+      yInfo += 8 * s;
       doc.text(`DATA DA VISTORIA: ${fmtDate(relatorio.data_vistoria)}`, 8, yInfo);
     }
     if (relatorio.contrato?.trim()) {
-      yInfo += 8;
+      yInfo += 8 * s;
       const contratoLines = doc.splitTextToSize(`CONTRATO: ${relatorio.contrato.trim()}`, 140) as string[];
       contratoLines.forEach((line: string, i: number) => {
-        doc.text(line, 8, yInfo + i * 6);
+        doc.text(line, 8, yInfo + i * 6 * s);
       });
     }
   } else {
@@ -325,14 +344,7 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
   }
 
   // ---------- FOTOS ----------
-  const grupos: { tipo: string; label: string }[] = isVistoria
-    ? Array.from(new Set(fotos.map((f) => f.tipo)))
-        .sort((a, b) => a.localeCompare(b, 'pt-BR'))
-        .map((tipo) => ({ tipo, label: tipo.toUpperCase() }))
-    : [
-        { tipo: 'pre_obra', label: 'REGISTRO FOTOGRÁFICO — PRÉ-OBRA' },
-        { tipo: 'pos_obra', label: 'REGISTRO FOTOGRÁFICO — PÓS-OBRA' },
-      ];
+  const grupos = resolverGruposFotos(relatorio, fotos).map(g => ({ tipo: g.chave, label: isVistoria ? g.titulo.toUpperCase() : `REGISTRO FOTOGRÁFICO — ${g.titulo.toUpperCase()}` }));
 
   for (const g of grupos) {
     const lista = fotos.filter((f) => f.tipo === g.tipo).sort((a, b) => a.ordem - b.ordem);
@@ -349,22 +361,25 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
     let idx = 0;
     for (const foto of lista) {
       idx += 1;
-      const imgH = 95;
+      const quadro = quadroFoto(foto.orientacao, contentW);
+      const imgH = quadro.altura; const imgW = quadro.largura;
+      const imgX = MARGIN + (contentW - imgW) / 2;
       if (y + imgH + 14 > pageH - 20) {
         y = newPage();
       }
       const dataUrl = await loadStorageImage(foto.foto_url);
       if (dataUrl) {
-        try { doc.addImage(dataUrl, 'JPEG', MARGIN, y, contentW, imgH, undefined, 'FAST'); } catch { /* ignore */ }
+        try { const preparada = await prepararFotoQuadro(dataUrl, imgW, imgH, foto.rotacao ?? 0); doc.addImage(preparada, 'JPEG', imgX, y, imgW, imgH, undefined, 'FAST'); } catch { /* ignore */ }
       } else {
         doc.setDrawColor(200);
-        doc.rect(MARGIN, y, contentW, imgH);
+        doc.rect(imgX, y, imgW, imgH);
       }
       y += imgH + 5;
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9.5);
       const legenda = `Foto ${String(idx).padStart(2, '0')}${foto.legenda ? ` — ${foto.legenda}` : ''}`;
-      doc.text(doc.splitTextToSize(legenda, contentW) as string[], MARGIN, y);
+      if (foto.orientacao === 'vertical') doc.text(doc.splitTextToSize(legenda, imgW) as string[], imgX + imgW / 2, y, { align: 'center' });
+      else doc.text(doc.splitTextToSize(legenda, contentW) as string[], MARGIN, y);
       y += 10;
     }
 

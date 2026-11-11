@@ -7,7 +7,7 @@ export function geometriaFoto(w: number, h: number, ratio: number, rotacao: numb
   const rw = troca ? h : w; const rh = troca ? w : h;
   const escala = contain ? Math.min(ratio / rw, 1 / rh) : Math.max(ratio / rw, 1 / rh);
   // PDF: preserve original pixel density, including all source detail needed by the crop.
-  const maior = limite ? Math.min(limite, Math.max(rw, rh)) : Math.max(2000, Math.max(rw, rh));
+  const maior = limite ? Math.min(limite, Math.max(rw, rh)) : Math.max(rw, rh);
   const outW = ratio >= 1 ? maior : maior * ratio; const outH = ratio >= 1 ? maior / ratio : maior;
   const k = outH * escala;
   return { outW: Math.round(outW), outH: Math.round(outH), drawW: w * k, drawH: h * k };
