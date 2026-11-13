@@ -34,7 +34,7 @@ export default function RelatorioFinalViewer({ relatorio: r, fotos, obraNome, ti
   const urls = useSignedUrls([r.template_capa_url,r.foto_capa_url,r.assinatura_empresa_url,r.assinatura_sindico_url,...ordenadas.map(f => f.foto_url)]);
   const capa = true;
   const indice = [{id:'resumo',titulo:'Resumo'},...(capa ? [{id:'capa',titulo:'Capa'}] : []),{id:'dados',titulo:'Dados da obra'},...secoes.map((s,i) => ({id:`secao-${i}`,titulo:s.titulo})),...grupos.map((g,i) => ({id:`fotos-${i}`,titulo:g.titulo})),...(r.link_externo ? [{id:'link',titulo:'Link externo'}] : []),{id:'assinaturas',titulo:'Assinaturas'}];
-  const dados = [['Obra',obraNome],['Cliente',r.cliente_nome],['CPF/CNPJ',r.cliente_cpf_cnpj],['Endereço',r.endereco],['Responsável',r.responsavel],['Data de início',fmt(r.data_inicio)],['Data de conclusão',fmt(r.data_conclusao)],['Data da vistoria',fmt(r.data_vistoria)],['Contrato',r.contrato]];
+  const dados = [['Obra',obraNome],['Cliente',r.cliente_nome],['CPF/CNPJ',r.cliente_cpf_cnpj],['Endereço',r.endereco],['Responsável',r.responsavel],...(vistoria ? [] : [['Data de início',fmt(r.data_inicio)],['Data de conclusão',fmt(r.data_conclusao)]]),['Data da vistoria',fmt(r.data_vistoria)],['Contrato',r.contrato]];
   const renderIndice = () => <nav aria-label="Índice do laudo" className="space-y-1">{indice.map(s => <Button key={s.id} asChild variant="ghost" className="h-auto min-h-10 w-full justify-start whitespace-normal text-left"><a href={`#${s.id}`} onClick={() => setIndiceAberto(false)}>{s.titulo}</a></Button>)}</nav>;
   const secaoClass = 'scroll-mt-56 lg:scroll-mt-36 space-y-4 border-b pb-8';
   return <div>
