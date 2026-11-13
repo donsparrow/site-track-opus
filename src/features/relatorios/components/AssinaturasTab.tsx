@@ -13,7 +13,7 @@ import type { Assinatura, EmpresaConfig } from '../types';
 import {
   baixarPdfArquivado, listarPdfsArquivados, type PdfArquivado,
 } from '../pdfArquivado';
-import { nomeArquivoRelatorioPorId } from '../nomeArquivo';
+import { nomeArquivoRelatorioPorId, sanitizarNomeObra } from '../nomeArquivo';
 import { useRelatorioMutations } from '../hooks/useRelatorioMutations';
 
 interface Props {
@@ -47,7 +47,7 @@ function DocumentoArquivado({ relatorioId, isAdmin, nomeObra, pendente }: { rela
 
   const handleBaixar = async (registro: PdfArquivado) => {
     let nome: string;
-    try { nome = await nomeArquivoRelatorioPorId(relatorioId); } catch { nome = `${nomeObra || 'Obra'} - Relatorio.pdf`; }
+    try { nome = await nomeArquivoRelatorioPorId(relatorioId); } catch { nome = `${sanitizarNomeObra(nomeObra)} - Relatorio.pdf`; }
     await baixarPdfArquivado(registro, nome);
   };
 
