@@ -29,3 +29,4 @@
 - [x] Testar grade de fotos (25 testes: 2/4/6/8, 4:3, 3:4, rotação 90/270) e conferir PDFs reais em 2 e 4 por página, com laudo assinado no layout antigo.
 - [x] Configurar quantidade de fotos por página no editor do laudo (parte 2).
 - [x] Conferir editor (seletor 2/4/6/8, sem Horizontal/Vertical, miniatura inteira, prévia A4 com Anterior/Próxima), visualização do cliente e laudo antigo sem grade; 48 testes aprovados e typecheck limpo.
+- [x] Importar texto de outro laudo (etapa Conteúdo): diálogo em 2 passos, blocos acrescentados ao fim com ids novos, troca automática de obra/cliente; 58 testes aprovados, conferido no navegador e laudo de origem intacto.
