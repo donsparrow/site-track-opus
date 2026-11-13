@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import { vi } from 'vitest';
+vi.mock('@/integrations/supabase/client', () => ({ supabase: {} }));
 import { calcularEmissao, montarNomeArquivoRelatorio, sanitizarNomeObra, formatarNumero } from './nomeArquivo';
 
 const nome = (a: Parameters<typeof calcularEmissao>[0], numero: number | null = 5) => {
