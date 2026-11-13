@@ -72,11 +72,6 @@ export default function ObraDetail() {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabsListRef = useRef<HTMLDivElement>(null);
   const tabAtual = searchParams.get('tab');
-  // Mantém a aba ativa visível na barra com rolagem horizontal (celular)
-  useEffect(() => {
-    const el = tabsListRef.current?.querySelector<HTMLElement>('[data-state="active"]');
-    el?.scrollIntoView({ block: 'nearest', inline: 'center' });
-  }, [tabAtual, data]);
 
   // Delete obra
   const [deleteObraOpen, setDeleteObraOpen] = useState(false);
@@ -166,6 +161,11 @@ export default function ObraDetail() {
   const saldoPrazo = data?.saldoPrazo ?? null;
   const docStats = data?.docStats ?? EMPTY_DOC_STATS;
   const loading = obrasFilterLoading || permissionsLoading || isLoading;
+  // Mantém a aba ativa visível na barra com rolagem horizontal (celular)
+  useEffect(() => {
+    const el = tabsListRef.current?.querySelector<HTMLElement>('[data-state="active"]');
+    el?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }, [tabAtual, loading]);
 
   // Mesmo nome da função anterior: invalida o detalhe da obra e o dashboard
   const fetchData = useCallback(() => {
