@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,7 +28,23 @@ function eventStart(e: GoogleEvent): Date {
   return parseISO(e.start.dateTime ?? `${e.start.date}T00:00:00`);
 }
 function eventEnd(e: GoogleEvent): Date {
-  return parseISO(e.end.dateTime ?? `${e.end.date}T23:59:59`);
+  if (e.end.dateTime) return parseISO(e.end.dateTime);
+  // Dia todo: no Google a data final é exclusiva — último dia real = end.date - 1
+  return parseISO(`${format(addDays(parseISO(`${e.end.date}T00:00:00`), -1), "yyyy-MM-dd")}T23:59:59`);
+}
+function isAllDay(e: GoogleEvent): boolean {
+  return !e.start.dateTime && !!e.start.date;
+}
+/** Evento ocorre no dia d (dia todo de vários dias aparece em todos os dias do intervalo). */
+function occursOn(e: GoogleEvent, d: Date): boolean {
+  if (!isAllDay(e)) return isSameDay(eventStart(e), d);
+  const day = startOfDay(d).getTime();
+  return startOfDay(eventStart(e)).getTime() <= day && day <= startOfDay(eventEnd(e)).getTime();
+}
+function sortEvents(a: GoogleEvent, b: GoogleEvent): number {
+  const ad = isAllDay(a) ? 0 : 1, bd = isAllDay(b) ? 0 : 1;
+  if (ad !== bd) return ad - bd;
+  return eventStart(a).getTime() - eventStart(b).getTime();
 }
 function eventColor(e: GoogleEvent): string {
   return GOOGLE_COLORS[e.colorId ?? "7"]?.bg ?? "#039be5";
@@ -271,7 +288,7 @@ function MonthGrid({
             <div key={w} className="py-2 text-center text-xs font-semibold text-muted-foreground">{w}</div>
           ))}
           {days.map(d => {
-            const dayEvent = events.find(e => isSameDay(eventStart(e), d));
+            const dayEvent = events.filter(e => occursOn(e, d)).sort(sortEvents)[0];
             const selected = isSameDay(d, activeDay);
             return (
               <button
@@ -304,7 +321,7 @@ function MonthGrid({
       </div>
       <div className="grid grid-cols-7 gap-1">
         {days.map((d) => {
-          const dayEvents = events.filter(e => isSameDay(eventStart(e), d));
+          const dayEvents = events.filter(e => occursOn(e, d)).sort(sortEvents);
           const inMonth = isSameMonth(d, cursor);
           const isToday = isSameDay(d, new Date());
           return (
@@ -328,7 +345,7 @@ function MonthGrid({
                     className="text-[10px] truncate rounded px-1 py-0.5 text-white"
                     style={{ background: eventColor(e) }}
                   >
-                    {e.start.dateTime && <span className="opacity-80 mr-1">{format(eventStart(e), "HH:mm")}</span>}
+                    <span className="opacity-80 mr-1">{e.start.dateTime ? format(eventStart(e), "HH:mm") : "Dia todo"}</span>
                     {e.summary ?? "(sem título)"}
                   </div>
                 ))}
@@ -355,8 +372,8 @@ function WeekDayList({
     <div className="space-y-4">
       {days.map(d => {
         const dayEvents = events
-          .filter(e => isSameDay(eventStart(e), d))
-          .sort((a, b) => eventStart(a).getTime() - eventStart(b).getTime());
+          .filter(e => occursOn(e, d))
+          .sort(sortEvents);
         const isToday = isSameDay(d, new Date());
         return (
           <div key={d.toISOString()}>
@@ -385,7 +402,7 @@ function WeekDayList({
                         <span>
                           {e.start.dateTime
                             ? `${format(eventStart(e), "HH:mm")} – ${format(eventEnd(e), "HH:mm")}`
-                            : "Dia inteiro"}
+                            : "Dia todo"}
                         </span>
                         {e.location && (
                           <span className="flex items-center gap-1 truncate">
@@ -418,6 +435,9 @@ function EventModal({
   const [date, setDate] = useState(format(defaultDate, "yyyy-MM-dd"));
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:00");
+  const [allDay, setAllDay] = useState(false);
+  const [dateFrom, setDateFrom] = useState(format(defaultDate, "yyyy-MM-dd"));
+  const [dateTo, setDateTo] = useState(format(defaultDate, "yyyy-MM-dd"));
   const [attendees, setAttendees] = useState("");
   const [colorId, setColorId] = useState("7");
   const [saving, setSaving] = useState(false);
@@ -434,30 +454,49 @@ function EventModal({
       setDate(format(s, "yyyy-MM-dd"));
       setStartTime(editing.start.dateTime ? format(s, "HH:mm") : "09:00");
       setEndTime(editing.end.dateTime ? format(e, "HH:mm") : "10:00");
+      const ad = isAllDay(editing);
+      setAllDay(ad);
+      setDateFrom(format(s, "yyyy-MM-dd"));
+      setDateTo(ad ? format(e, "yyyy-MM-dd") : format(s, "yyyy-MM-dd"));
       setAttendees((editing.attendees ?? []).map(a => a.email).join(", "));
     } else {
       setSummary(""); setDescription(""); setLocation(""); setAttendees(""); setColorId("7");
       setDate(format(defaultDate, "yyyy-MM-dd"));
       setStartTime("09:00"); setEndTime("10:00");
+      setAllDay(false);
+      setDateFrom(format(defaultDate, "yyyy-MM-dd"));
+      setDateTo(format(defaultDate, "yyyy-MM-dd"));
     }
   }, [open, editing, defaultDate]);
 
   const handleSave = async () => {
     if (!summary.trim()) { toast.error("Título é obrigatório"); return; }
+    let start: Record<string, string | null>;
+    let end: Record<string, string | null>;
+    if (allDay) {
+      if (!dateFrom || !dateTo) { toast.error("Informe as datas De e Até"); return; }
+      if (dateTo < dateFrom) { toast.error("A data Até deve ser igual ou posterior à data De"); return; }
+      const endExclusive = format(addDays(parseISO(`${dateTo}T00:00:00`), 1), "yyyy-MM-dd");
+      start = { date: dateFrom, dateTime: null, timeZone: null };
+      end = { date: endExclusive, dateTime: null, timeZone: null };
+    } else {
+      if (endTime <= startTime) { toast.error("O horário de fim deve ser depois do início"); return; }
+      start = { date: null, dateTime: new Date(`${date}T${startTime}:00`).toISOString(), timeZone: tz };
+      end = { date: null, dateTime: new Date(`${date}T${endTime}:00`).toISOString(), timeZone: tz };
+    }
     setSaving(true);
     try {
-      const startISO = new Date(`${date}T${startTime}:00`).toISOString();
-      const endISO = new Date(`${date}T${endTime}:00`).toISOString();
+      // nulls limpam o formato anterior no PATCH ao trocar o tipo do evento
       const payload = {
         summary,
         description: description || undefined,
         location: location || undefined,
         colorId,
-        start: { dateTime: startISO, timeZone: tz },
-        end: { dateTime: endISO, timeZone: tz },
+        start,
+        end,
         attendees: attendees
           .split(",").map(s => s.trim()).filter(Boolean).map(email => ({ email })),
-      };
+      } as unknown as Parameters<typeof googleCalendar.createEvent>[0];
       if (editing) await googleCalendar.updateEvent(editing.id, payload);
       else await googleCalendar.createEvent(payload);
       toast.success(editing ? "Evento atualizado" : "Evento criado");
@@ -486,7 +525,7 @@ function EventModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{editing ? "Editar evento" : "Novo evento"}</DialogTitle>
         </DialogHeader>
@@ -495,7 +534,34 @@ function EventModal({
             <Label>Título *</Label>
             <Input value={summary} onChange={e => setSummary(e.target.value)} />
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <label className="flex min-h-10 cursor-pointer items-center gap-3">
+            <Switch
+              checked={allDay}
+              onCheckedChange={(v) => {
+                setAllDay(v);
+                if (v) { setDateFrom(date); setDateTo(date); }
+                else if (dateFrom) setDate(dateFrom);
+              }}
+            />
+            <span className="text-sm font-medium">Dia todo</span>
+          </label>
+          {allDay ? (
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+            <div>
+              <Label>De</Label>
+              <Input type="date" value={dateFrom} onChange={e => {
+                const v = e.target.value;
+                setDateFrom(v);
+                if (v && dateTo < v) setDateTo(v);
+              }} />
+            </div>
+            <div>
+              <Label>Até</Label>
+              <Input type="date" value={dateTo} min={dateFrom} onChange={e => setDateTo(e.target.value)} />
+            </div>
+          </div>
+          ) : (
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-3">
             <div>
               <Label>Data</Label>
               <Input type="date" value={date} onChange={e => setDate(e.target.value)} />
@@ -509,6 +575,7 @@ function EventModal({
               <Input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
             </div>
           </div>
+          )}
           <div>
             <Label>Local</Label>
             <Input value={location} onChange={e => setLocation(e.target.value)} />
