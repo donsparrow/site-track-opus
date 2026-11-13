@@ -18,4 +18,9 @@ export const queryKeys = {
     ['obraDetalhe', obraId, userId] as const,
   timelineObra: (obraId: string) =>
     ['timelineObra', obraId] as const,
+  obraDiarios: (obraId: string) => ['obraDetalhe', obraId, 'diarios'] as const,
+  obraRelatorios: (obraId: string) => ['obraDetalhe', obraId, 'relatorios'] as const,
+  obraLaudos: (obraId: string) => ['obraDetalhe', obraId, 'laudos'] as const,
+  obraFuncionarios: (obraId: string) => ['obraDetalhe', obraId, 'funcionarios'] as const,
+  obraFerramentas: (obraId: string) => ['obraDetalhe', obraId, 'ferramentas'] as const,
 };

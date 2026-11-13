@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback } from 'react';
-import { useParams, Link, Navigate } from 'react-router-dom';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { useParams, Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { fetchEmpresaConfigOrBranding } from '@/lib/empresaBranding';
@@ -10,7 +10,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ClipboardList, FileText, Clock, Timer, Download, Trash2, FolderOpen, FileImage, File } from 'lucide-react';
+import { ChevronRight, ClipboardList, FileText, Clock, Timer, Download, Trash2, FolderOpen, FileImage, File } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
@@ -18,6 +18,9 @@ import AnotacoesObra from '@/components/AnotacoesObra';
 import TimelineObra from '@/components/TimelineObra';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { gerarDashboardPDF } from '@/lib/pdfDashboard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import ClienteCard from '@/features/obra-detalhe/ClienteCard';
+import { AndamentoPrazoCard, CronogramaAba, DiarioAba, RelatoriosAba, LaudosAba, EquipeAba } from '@/features/obra-detalhe/Abas';
 
 interface Parcela {
   id: string;
@@ -66,6 +69,9 @@ export default function ObraDetail() {
   const { isObraAllowed, loading: obrasFilterLoading } = useObrasFiltered();
   const [exportingPdf, setExportingPdf] = useState(false);
   const chartRef = useRef<HTMLDivElement>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabsListRef = useRef<HTMLDivElement>(null);
+  const tabAtual = searchParams.get('tab');
 
   // Delete obra
   const [deleteObraOpen, setDeleteObraOpen] = useState(false);
@@ -79,7 +85,7 @@ export default function ObraDetail() {
     queryFn: async (): Promise<ObraDetalheData> => {
       // Tudo que não depende de outro resultado roda em paralelo
       const [obraRes, relRes, recRes, despRes, pastasRes] = await Promise.all([
-        supabase.from('obras').select('*, clientes(nome)').eq('id', id!).single(),
+        supabase.from('obras').select('*, clientes(nome, cpf_cnpj, telefone, email, endereco, administradora)').eq('id', id!).single(),
         supabase.from('relatorios').select('saldo_prazo').eq('obra_id', id!).order('created_at', { ascending: false }).limit(1).single(),
         supabase.from('receitas').select('id, valor_total').eq('obra_id', id!),
         supabase.from('despesas').select('*').eq('obra_id', id!).order('data', { ascending: false }),
@@ -155,6 +161,11 @@ export default function ObraDetail() {
   const saldoPrazo = data?.saldoPrazo ?? null;
   const docStats = data?.docStats ?? EMPTY_DOC_STATS;
   const loading = obrasFilterLoading || permissionsLoading || isLoading;
+  // Mantém a aba ativa visível na barra com rolagem horizontal (celular)
+  useEffect(() => {
+    const el = tabsListRef.current?.querySelector<HTMLElement>('[data-state="active"]');
+    el?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }, [tabAtual, loading]);
 
   // Mesmo nome da função anterior: invalida o detalhe da obra e o dashboard
   const fetchData = useCallback(() => {
@@ -283,19 +294,43 @@ export default function ObraDetail() {
     { name: 'Saldo', value: Math.abs(financeiro.saldo), color: financeiro.saldo >= 0 ? 'hsl(142, 70%, 40%)' : 'hsl(0, 72%, 51%)' },
   ];
 
-  return (
-    <div>
-      <Link to="/dashboard" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
-        <ArrowLeft className="h-4 w-4" /> Voltar ao Dashboard
-      </Link>
+  const abas = [
+    { id: 'geral', label: 'Visão Geral', ok: true },
+    { id: 'cronograma', label: 'Cronograma', ok: pode('cronograma', 'visualizar') },
+    { id: 'diario', label: 'Diário', ok: pode('diario_obra', 'visualizar') },
+    { id: 'relatorios', label: 'Relatórios', ok: pode('relatorios', 'visualizar') },
+    { id: 'laudos', label: 'Laudos', ok: pode('relatorio_final', 'visualizar') },
+    { id: 'financeiro', label: 'Financeiro', ok: pode('financeiro', 'visualizar') },
+    { id: 'documentos', label: 'Documentos', ok: pode('documentos', 'visualizar') },
+    { id: 'equipe', label: 'Equipe', ok: pode('funcionarios', 'visualizar') || pode('ferramentas', 'visualizar') },
+    { id: 'anotacoes', label: 'Anotações', ok: role === 'admin' || role === 'trabalhador' },
+  ].filter(a => a.ok);
+  const tabParam = searchParams.get('tab');
+  const tab = abas.some(a => a.id === tabParam) ? tabParam! : 'geral';
+  const mudarAba = (v: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (v === 'geral') next.delete('tab'); else next.set('tab', v);
+    setSearchParams(next, { replace: true });
+  };
+  const mostrarCliente = role === 'admin' || role === 'trabalhador' || role === 'super_admin' || isSuperAdmin;
+  const btnCls = 'min-h-10 lg:min-h-9 max-sm:w-full';
+  const tableWrap = 'hidden md:block overflow-x-auto';
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-8">
-        <div>
+  return (
+    <div className="min-w-0">
+      <nav aria-label="Trilha" className="mb-6 flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
+        <Link to="/obras" className="shrink-0 hover:text-foreground">Obras</Link>
+        <ChevronRight className="h-4 w-4 shrink-0" />
+        <span className="truncate font-medium text-foreground" aria-current="page">{obra.nome}</span>
+      </nav>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-6">
+        <div className="min-w-0">
           <h1 className="text-2xl md:text-3xl font-display font-bold break-words">{obra.nome}</h1>
           <div className="flex items-center gap-3 mt-1 flex-wrap">
             <Badge variant="secondary">{statusLabels[obra.status] || obra.status}</Badge>
             {obra.clientes?.nome && <span className="text-sm text-muted-foreground">{obra.clientes.nome}</span>}
-            {obra.endereco && <span className="text-sm text-muted-foreground">· {obra.endereco}</span>}
+            {obra.endereco && <span className="text-sm text-muted-foreground break-words">· {obra.endereco}</span>}
             {obra.data_inicio && (
               <span className="text-sm text-muted-foreground">
                 · {new Date(obra.data_inicio + 'T00:00:00').toLocaleDateString('pt-BR')}
@@ -304,166 +339,220 @@ export default function ObraDetail() {
             )}
           </div>
         </div>
-        <div className="flex gap-2 flex-wrap w-full sm:w-auto">
-          <Button variant="outline" size="sm" onClick={handleExportPDF} disabled={exportingPdf}>
+        <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:justify-end w-full sm:w-auto">
+          <Button variant="outline" size="sm" className={btnCls} onClick={handleExportPDF} disabled={exportingPdf}>
             <Download className="h-4 w-4 mr-1" /> {exportingPdf ? 'Exportando...' : 'Exportar PDF'}
           </Button>
           {(isSuperAdmin || isAdmin) && (
-            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={handleCheckDeleteObra}>
+            <Button variant="outline" size="sm" className={`${btnCls} text-destructive hover:text-destructive`} onClick={handleCheckDeleteObra}>
               <Trash2 className="h-4 w-4 mr-1" /> Excluir Obra
             </Button>
           )}
-          <Link to={`/diario?obra=${id}`}>
-            <Button variant="outline" size="sm"><ClipboardList className="h-4 w-4 mr-1" /> Diário</Button>
-          </Link>
-          <Link to={`/relatorios?obra=${id}`}>
-            <Button variant="outline" size="sm"><FileText className="h-4 w-4 mr-1" /> Relatório</Button>
-          </Link>
+          <Button asChild variant="outline" size="sm" className={btnCls}>
+            <Link to={`/diario?obra=${id}`}><ClipboardList className="h-4 w-4 mr-1" /> Diário</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm" className={btnCls}>
+            <Link to={`/relatorios?obra=${id}`}><FileText className="h-4 w-4 mr-1" /> Relatório</Link>
+          </Button>
         </div>
       </div>
 
-      {/* Prazo + Financial summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8 [&>*]:min-w-0 max-md:gap-3 max-md:[&_p]:truncate">
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Prazo Contratual</p>
-            <p className="text-lg font-display font-bold text-foreground">{obra.prazo_contratual_dias != null ? `${obra.prazo_contratual_dias} dias` : '—'}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-4 pb-4">
-            <p className="text-xs text-muted-foreground flex items-center gap-1"><Timer className="h-3 w-3" /> Saldo de Prazo</p>
-            <p className={`text-lg font-display font-bold ${saldoPrazo != null && saldoPrazo < 0 ? 'text-destructive' : 'text-success'}`}>
-              {saldoPrazo != null ? `${saldoPrazo} dias` : '—'}
-            </p>
-          </CardContent>
-        </Card>
-        {[
-          { label: 'Total Contrato', value: financeiro.contrato, color: 'text-foreground' },
-          { label: 'Recebido', value: financeiro.recebido, color: 'text-success' },
-          { label: 'A Receber', value: financeiro.aReceber, color: 'text-warning' },
-          { label: 'Gastos', value: financeiro.gasto, color: 'text-destructive' },
-          { label: 'Saldo', value: financeiro.saldo, color: financeiro.saldo < 0 ? 'text-destructive' : 'text-success' },
-        ].map((item) => (
-          <Card key={item.label}>
-            <CardContent className="pt-4 pb-4">
-              <p className="text-xs text-muted-foreground">{item.label}</p>
-              <p className={`text-lg font-display font-bold ${item.color}`}>{fmt(item.value)}</p>
+      {mostrarCliente && (
+        <ClienteCard cliente={obra.clientes ?? null} podeAbrirCadastro={pode('clientes', 'visualizar')} />
+      )}
+
+      <Tabs value={tab} onValueChange={mudarAba} className="min-w-0">
+        <div className="-mx-1 mb-6 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <TabsList ref={tabsListRef} className="h-auto w-max min-w-full justify-start">
+            {abas.map(a => (
+              <TabsTrigger key={a.id} value={a.id} className="min-h-10 shrink-0 px-3 lg:min-h-8">{a.label}</TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+
+        <TabsContent value="geral" className="mt-0 space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 [&>*]:min-w-0 max-md:gap-3 max-md:[&_p]:truncate">
+            <Card>
+              <CardContent className="pt-4 pb-4">
+                <p className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="h-3 w-3" /> Prazo Contratual</p>
+                <p className="text-lg font-display font-bold text-foreground">{obra.prazo_contratual_dias != null ? `${obra.prazo_contratual_dias} dias` : '—'}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-4 pb-4">
+                <p className="text-xs text-muted-foreground flex items-center gap-1"><Timer className="h-3 w-3" /> Saldo de Prazo</p>
+                <p className={`text-lg font-display font-bold ${saldoPrazo != null && saldoPrazo < 0 ? 'text-destructive' : 'text-success'}`}>
+                  {saldoPrazo != null ? `${saldoPrazo} dias` : '—'}
+                </p>
+              </CardContent>
+            </Card>
+            {[
+              { label: 'Total Contrato', value: financeiro.contrato, color: 'text-foreground' },
+              { label: 'Recebido', value: financeiro.recebido, color: 'text-success' },
+              { label: 'A Receber', value: financeiro.aReceber, color: 'text-warning' },
+              { label: 'Gastos', value: financeiro.gasto, color: 'text-destructive' },
+              { label: 'Saldo', value: financeiro.saldo, color: financeiro.saldo < 0 ? 'text-destructive' : 'text-success' },
+            ].map((item) => (
+              <Card key={item.label}>
+                <CardContent className="pt-4 pb-4">
+                  <p className="text-xs text-muted-foreground">{item.label}</p>
+                  <p className={`text-lg font-display font-bold ${item.color}`}>{fmt(item.value)}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {financeiro.saldo < 0 && (
+            <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+              ⚠️ Atenção: Saldo negativo! Os gastos superam os recebimentos em {fmt(Math.abs(financeiro.saldo))}.
+            </div>
+          )}
+          {atrasadas > 0 && (
+            <div className="rounded-lg border border-warning/30 bg-warning/5 p-4 text-sm text-warning">
+              ⏰ {atrasadas} parcela{atrasadas > 1 ? 's' : ''} atrasada{atrasadas > 1 ? 's' : ''}!
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] [&>*]:min-w-0">
+            {pode('cronograma', 'visualizar') && <AndamentoPrazoCard obraId={id!} ativo={tab === 'geral'} />}
+            <div className="min-w-0"><TimelineObra obraId={id!} obraData={obra} /></div>
+          </div>
+        </TabsContent>
+
+        {pode('cronograma', 'visualizar') && (
+          <TabsContent value="cronograma" className="mt-0"><CronogramaAba obraId={id!} ativo={tab === 'cronograma'} /></TabsContent>
+        )}
+        {pode('diario_obra', 'visualizar') && (
+          <TabsContent value="diario" className="mt-0"><DiarioAba obraId={id!} ativo={tab === 'diario'} /></TabsContent>
+        )}
+        {pode('relatorios', 'visualizar') && (
+          <TabsContent value="relatorios" className="mt-0"><RelatoriosAba obraId={id!} ativo={tab === 'relatorios'} /></TabsContent>
+        )}
+        {pode('relatorio_final', 'visualizar') && (
+          <TabsContent value="laudos" className="mt-0"><LaudosAba obraId={id!} ativo={tab === 'laudos'} /></TabsContent>
+        )}
+
+        {/* Financeiro fica sempre montado (oculto) para o gráfico continuar disponível na exportação do PDF */}
+        <TabsContent value="financeiro" forceMount className="mt-0 space-y-6 data-[state=inactive]:hidden">
+          {financeiro.contrato > 0 && (
+            <Card>
+              <CardHeader><CardTitle className="font-display text-base">Visão Financeira</CardTitle></CardHeader>
+              <CardContent>
+                <div ref={chartRef} className="w-full h-[250px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                      <YAxis tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
+                      <Tooltip formatter={(v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)} />
+                      <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                        {chartData.map((entry, index) => (<Cell key={index} fill={entry.color} />))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {pode('financeiro', 'visualizar') && (<>
+          <Card className="min-w-0">
+            <CardHeader><CardTitle className="font-display">Parcelas</CardTitle></CardHeader>
+            <CardContent>
+              {parcelas.length === 0 ? (
+                <p className="text-muted-foreground text-sm py-4 text-center">Nenhuma parcela registrada.</p>
+              ) : (<>
+                <div className={tableWrap}>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Nº</TableHead>
+                      <TableHead>Valor</TableHead>
+                      <TableHead>Vencimento</TableHead>
+                      <TableHead>Recebimento</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Forma Pgto</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {parcelas.map((p) => (
+                      <TableRow key={p.id} className={p.status === 'atrasado' ? 'bg-destructive/5' : ''}>
+                        <TableCell>{p.numero_parcela}</TableCell>
+                        <TableCell className="font-medium">{fmt(Number(p.valor))}</TableCell>
+                        <TableCell className="data-tech">{new Date(p.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
+                        <TableCell className="data-tech">{p.data_recebimento ? new Date(p.data_recebimento + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
+                        <TableCell>{statusBadge(p.status)}</TableCell>
+                        <TableCell className="capitalize">{p.forma_pagamento || '—'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                </div>
+                <div className="space-y-2 md:hidden">
+                  {parcelas.map((p) => (
+                    <div key={p.id} className={`rounded-md border p-3 text-sm ${p.status === 'atrasado' ? 'bg-destructive/5' : ''}`}>
+                      <div className="flex items-center justify-between gap-2"><span className="font-medium">Parcela {p.numero_parcela} · {fmt(Number(p.valor))}</span>{statusBadge(p.status)}</div>
+                      <p className="mt-1 text-xs text-muted-foreground">Venc. {new Date(p.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')} · Receb. {p.data_recebimento ? new Date(p.data_recebimento + 'T00:00:00').toLocaleDateString('pt-BR') : '—'} · <span className="capitalize">{p.forma_pagamento || '—'}</span></p>
+                    </div>
+                  ))}
+                </div>
+              </>)}
             </CardContent>
           </Card>
-        ))}
-      </div>
 
-      {financeiro.saldo < 0 && (
-        <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
-          ⚠️ Atenção: Saldo negativo! Os gastos superam os recebimentos em {fmt(Math.abs(financeiro.saldo))}.
-        </div>
-      )}
-      {atrasadas > 0 && (
-        <div className="mb-6 rounded-lg border border-warning/30 bg-warning/5 p-4 text-sm text-warning">
-          ⏰ {atrasadas} parcela{atrasadas > 1 ? 's' : ''} atrasada{atrasadas > 1 ? 's' : ''}!
-        </div>
-      )}
+          <Card className="min-w-0">
+            <CardHeader><CardTitle className="font-display">Despesas</CardTitle></CardHeader>
+            <CardContent>
+              {despesas.length === 0 ? (
+                <p className="text-muted-foreground text-sm py-4 text-center">Nenhuma despesa registrada.</p>
+              ) : (<>
+                <div className={tableWrap}>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Valor</TableHead>
+                      <TableHead>Forma Pgto</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {despesas.map((d) => (
+                      <TableRow key={d.id}>
+                        <TableCell className="data-tech">{new Date(d.data + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
+                        <TableCell><Badge variant="secondary">{tipoLabels[d.tipo] || d.tipo}</Badge></TableCell>
+                        <TableCell>{d.descricao}</TableCell>
+                        <TableCell className="font-medium text-destructive">{fmt(Number(d.valor))}</TableCell>
+                        <TableCell className="capitalize">{d.forma_pagamento || '—'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                </div>
+                <div className="space-y-2 md:hidden">
+                  {despesas.map((d) => (
+                    <div key={d.id} className="rounded-md border p-3 text-sm">
+                      <div className="flex items-center justify-between gap-2"><span className="min-w-0 break-words font-medium">{d.descricao}</span><span className="shrink-0 font-medium text-destructive">{fmt(Number(d.valor))}</span></div>
+                      <p className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">{new Date(d.data + 'T00:00:00').toLocaleDateString('pt-BR')}<Badge variant="secondary">{tipoLabels[d.tipo] || d.tipo}</Badge><span className="capitalize">{d.forma_pagamento || '—'}</span></p>
+                    </div>
+                  ))}
+                </div>
+              </>)}
+            </CardContent>
+          </Card>
+          </>)}
+        </TabsContent>
 
-      {/* Financial Chart */}
-      {financeiro.contrato > 0 && (
-        <Card className="mb-8">
-          <CardHeader><CardTitle className="font-display text-base">Visão Financeira</CardTitle></CardHeader>
-          <CardContent>
-            <div ref={chartRef} className="w-full h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 5, right: 20, left: 10, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                  <YAxis tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)} />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                    {chartData.map((entry, index) => (<Cell key={index} fill={entry.color} />))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Parcelas table - read only */}
-      <Card className="mb-8">
-        <CardHeader><CardTitle className="font-display">Parcelas</CardTitle></CardHeader>
-        <CardContent>
-          {parcelas.length === 0 ? (
-            <p className="text-muted-foreground text-sm py-4 text-center">Nenhuma parcela registrada.</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nº</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Vencimento</TableHead>
-                  <TableHead>Recebimento</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Forma Pgto</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {parcelas.map((p) => (
-                  <TableRow key={p.id} className={p.status === 'atrasado' ? 'bg-destructive/5' : ''}>
-                    <TableCell>{p.numero_parcela}</TableCell>
-                    <TableCell className="font-medium">{fmt(Number(p.valor))}</TableCell>
-                    <TableCell className="data-tech">{new Date(p.data_vencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
-                    <TableCell className="data-tech">{p.data_recebimento ? new Date(p.data_recebimento + 'T00:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
-                    <TableCell>{statusBadge(p.status)}</TableCell>
-                    <TableCell className="capitalize">{p.forma_pagamento || '—'}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Despesas table - read only */}
-      <Card className="mb-8">
-        <CardHeader><CardTitle className="font-display">Despesas</CardTitle></CardHeader>
-        <CardContent>
-          {despesas.length === 0 ? (
-            <p className="text-muted-foreground text-sm py-4 text-center">Nenhuma despesa registrada.</p>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead>Valor</TableHead>
-                  <TableHead>Forma Pgto</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {despesas.map((d) => (
-                  <TableRow key={d.id}>
-                    <TableCell className="data-tech">{new Date(d.data + 'T00:00:00').toLocaleDateString('pt-BR')}</TableCell>
-                    <TableCell><Badge variant="secondary">{tipoLabels[d.tipo] || d.tipo}</Badge></TableCell>
-                    <TableCell>{d.descricao}</TableCell>
-                    <TableCell className="font-medium text-destructive">{fmt(Number(d.valor))}</TableCell>
-                    <TableCell className="capitalize">{d.forma_pagamento || '—'}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Documentos card */}
-      {pode('documentos', 'visualizar') && (
-        <Card className="mb-8">
+        {pode('documentos', 'visualizar') && (
+          <TabsContent value="documentos" className="mt-0">
+        <Card className="min-w-0">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="font-display text-base flex items-center gap-2">
               <FolderOpen className="h-5 w-5 text-accent" /> Documentos
             </CardTitle>
             <Link to={`/documentacao?obra=${id}`}>
-              <Button variant="outline" size="sm">Ver Documentos</Button>
+              <Button variant="outline" size="sm" className="min-h-10 lg:min-h-9">Ver Documentos</Button>
             </Link>
           </CardHeader>
           <CardContent>
@@ -508,7 +597,19 @@ export default function ObraDetail() {
             )}
           </CardContent>
         </Card>
-      )}
+          </TabsContent>
+        )}
+        {(pode('funcionarios', 'visualizar') || pode('ferramentas', 'visualizar')) && (
+          <TabsContent value="equipe" className="mt-0">
+            <EquipeAba obraId={id!} ativo={tab === 'equipe'} funcionarios={pode('funcionarios', 'visualizar')} ferramentas={pode('ferramentas', 'visualizar')} />
+          </TabsContent>
+        )}
+        {(role === 'admin' || role === 'trabalhador') && (
+          <TabsContent value="anotacoes" className="mt-0">
+            <AnotacoesObra obraId={id!} initialContent={(obra as any)?.anotacoes} />
+          </TabsContent>
+        )}
+      </Tabs>
 
       {/* Delete Obra Confirm */}
       <AlertDialog open={deleteObraOpen} onOpenChange={setDeleteObraOpen}>
@@ -528,14 +629,6 @@ export default function ObraDetail() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Timeline */}
-      <TimelineObra obraId={id!} obraData={obra} />
-
-      {(role === 'admin' || role === 'trabalhador') && (
-        <div className="mt-8">
-          <AnotacoesObra obraId={id!} initialContent={(obra as any)?.anotacoes} />
-        </div>
-      )}
     </div>
   );
 }
