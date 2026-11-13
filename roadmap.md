@@ -25,3 +25,6 @@
 - [x] Conferir editor, prévia e PDF em desktop/390px e bloqueio de assinado; sem novas assinaturas ou alterações nos laudos existentes.
 - [x] Laudos: divisões persistentes, orientação/rotação de fotos e ajustes de capa sem backfill.
 - [x] Testar grupos, quadros, herança, persistência e segurança (35 testes + 5 autosave); conferir editor autorizado, controles bloqueados, lightbox, celular e PDF real/variantes em memória sem alterar laudos existentes.
+- [x] Laudos: fotos inteiras em grade de 2/4/6/8 por página no PDF (parte 1: banco + PDF), sem alterar laudos assinados.
+- [x] Testar grade de fotos (25 testes: 2/4/6/8, 4:3, 3:4, rotação 90/270) e conferir PDFs reais em 2 e 4 por página, com laudo assinado no layout antigo.
+- [ ] Configurar quantidade de fotos por página no editor do laudo (parte 2).
