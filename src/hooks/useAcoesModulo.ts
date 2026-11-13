@@ -14,7 +14,7 @@ export interface AcoesModulo {
  * Enquanto carrega, tudo falso.
  */
 export function useAcoesModulo(modulo: Modulo): AcoesModulo {
-  const { role, isAdmin, isSuperAdmin, loading: authLoading } = useAuth() as ReturnType<typeof useAuth> & { loading?: boolean };
+  const { role, isAdmin, isSuperAdmin, loading: authLoading } = useAuth();
   const { pode, loading: permLoading } = usePermissions();
   const loading = !!authLoading || permLoading;
   if (loading) return { podeCriar: false, podeEditar: false, podeExcluir: false, loading };
