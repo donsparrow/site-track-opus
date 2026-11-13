@@ -71,6 +71,12 @@ export default function ObraDetail() {
   const chartRef = useRef<HTMLDivElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const tabsListRef = useRef<HTMLDivElement>(null);
+  const tabAtual = searchParams.get('tab');
+  // Mantém a aba ativa visível na barra com rolagem horizontal (celular)
+  useEffect(() => {
+    const el = tabsListRef.current?.querySelector<HTMLElement>('[data-state="active"]');
+    el?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }, [tabAtual, data]);
 
   // Delete obra
   const [deleteObraOpen, setDeleteObraOpen] = useState(false);
