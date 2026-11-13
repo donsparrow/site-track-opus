@@ -3,7 +3,7 @@ import { carregarDadosRelatorio } from '@/lib/relatorioDados';
 import { aplicarIndicadoresCongelados } from './indicadores';
 import { gerarPDFRelatorio, type GerarPdfArgs } from './pdf';
 import type { Assinatura, EmpresaConfig, ObraRelatorio, Relatorio, RelatorioVersao } from './types';
-import { buscarNumerosRelatorios, nomeArquivoRelatorioPorId } from './nomeArquivo';
+import { buscarNumerosRelatorios, nomeArquivoRelatorioPorId, sanitizarNomeObra } from './nomeArquivo';
 import type { Tables } from '@/integrations/supabase/types';
 
 export type PdfArquivado = Tables<'relatorio_pdfs_assinados'>;
@@ -277,7 +277,7 @@ export async function baixarPdfAssinadoOuArquivar({
     fileName = await nomeArquivoRelatorioPorId(relatorioId);
   } catch (e) {
     console.warn('Falha ao montar o nome do arquivo:', e);
-    fileName = `${nomeObra || 'Obra'} - Relatorio.pdf`;
+    fileName = `${sanitizarNomeObra(nomeObra)} - Relatorio.pdf`;
   }
 
   let registro: PdfArquivado | null = null;

@@ -4,7 +4,12 @@ const mocks = vi.hoisted(() => ({ from: vi.fn(), storage: vi.fn() }));
 vi.mock('@/integrations/supabase/client', () => ({ supabase: { from: mocks.from, storage: { from: mocks.storage } } }));
 vi.mock('@/lib/relatorioDados', () => ({ carregarDadosRelatorio: vi.fn() }));
 vi.mock('./indicadores', () => ({ aplicarIndicadoresCongelados: vi.fn() }));
+import { gerarPDFRelatorio } from './pdf';
 vi.mock('./pdf', () => ({ gerarPDFRelatorio: vi.fn() }));
+vi.mock('./nomeArquivo', () => ({
+  buscarNumerosRelatorios: vi.fn().mockResolvedValue({}),
+  nomeArquivoRelatorioPorId: vi.fn().mockResolvedValue('Leal Reis - Relatorio 01 - 01-11-2026.pdf'),
+}));
 
 import { baixarPdfAssinadoOuArquivar, calcularStatusLiberacao, statusLiberacaoLote } from './pdfArquivado';
 
@@ -41,7 +46,7 @@ describe('liberação de assinaturas do cliente', () => {
     mocks.from.mockReturnValue(query);
     mocks.storage.mockReturnValue({ download: vi.fn().mockResolvedValue({ data: null, error: new Error('offline') }) });
     await expect(baixarPdfAssinadoOuArquivar({ relatorioId: 'r1', empresa: null, nomeObra: 'Leal Reis', isCliente: true })).rejects.toThrow('Não foi possível baixar o PDF liberado');
-    expect(mocks.from).toHaveBeenCalledTimes(1);
+    expect(gerarPDFRelatorio).not.toHaveBeenCalled();
     expect(mocks.storage).toHaveBeenCalledTimes(1);
   });
 });
