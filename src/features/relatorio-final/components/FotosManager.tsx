@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ArrowDown, ArrowUp, ImagePlus, Trash2, RotateCw } from 'lucide-react';
 import { useSignedUrls } from '../hooks/useSignedUrls';
 import FotoQuadro from './FotoQuadro';
+import PaginaFotosPreview from './PaginaFotosPreview';
 import { proximaRotacao } from '../lib/fotoQuadro';
 import type { RelatorioFinalFoto, TipoFoto } from '../types';
 
@@ -21,6 +22,8 @@ interface Props {
   onFormato?: (id: string, values: { orientacao?: 'horizontal' | 'vertical'; rotacao?: number }) => void;
   abas?: ReactNode;
   grupoLabel?: string;
+  /** Quando definido (2/4/6/8), as fotos são mostradas inteiras e a miniatura abre a prévia da página. */
+  fotosPorPagina?: number | null;
 }
 
 function FotoLegendaInput({
@@ -56,10 +59,13 @@ function FotoLegendaInput({
   );
 }
 
-export default function FotosManager({ tipo, titulo, fotos, editable, uploading, onUpload, onLegenda, onMover, onExcluir, onFormato, abas, grupoLabel }: Props) {
+export default function FotosManager({ tipo, titulo, fotos, editable, uploading, onUpload, onLegenda, onMover, onExcluir, onFormato, abas, grupoLabel, fotosPorPagina }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [previa, setPrevia] = useState<string | null>(null);
   const lista = fotos.filter((f) => f.tipo === tipo);
   const urls = useSignedUrls(lista.map((f) => f.foto_url));
+  const emGrade = fotosPorPagina != null;
+  const ordenadas = [...lista].sort((a, b) => a.ordem - b.ordem);
 
   return (
     <Card>
@@ -93,9 +99,9 @@ export default function FotosManager({ tipo, titulo, fotos, editable, uploading,
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {lista.map((foto, i) => (
               <div key={foto.id} className={`border rounded-lg overflow-hidden ${!foto.legenda?.trim() ? 'border-warning' : ''}`}>
-                <FotoQuadro src={urls[foto.foto_url]} alt={foto.legenda || `Foto ${i + 1}`} orientacao={foto.orientacao} rotacao={foto.rotacao} />
+                {emGrade ? <Button variant="ghost" className="h-auto w-full rounded-none p-0" aria-label={`Ver prévia da foto ${i + 1} no relatório`} onClick={() => setPrevia(foto.id)}><FotoQuadro src={urls[foto.foto_url]} alt={foto.legenda || `Foto ${i + 1}`} orientacao={foto.orientacao} rotacao={foto.rotacao} modo="inteira" /></Button> : <FotoQuadro src={urls[foto.foto_url]} alt={foto.legenda || `Foto ${i + 1}`} orientacao={foto.orientacao} rotacao={foto.rotacao} />}
                 <div className="p-2 space-y-2">
-                  <div className="flex flex-wrap items-center gap-1">{(['horizontal','vertical'] as const).map(o => <Button key={o} size="sm" variant={(foto.orientacao ?? 'horizontal') === o ? 'secondary' : 'outline'} className="min-h-11" disabled={!editable} aria-pressed={(foto.orientacao ?? 'horizontal') === o} onClick={() => onFormato?.(foto.id, { orientacao: o })}>{o === 'horizontal' ? 'Horizontal' : 'Vertical'}</Button>)}<Button size="icon" variant="ghost" className="min-h-11 min-w-11" title="Girar 90°" aria-label="Girar 90°" disabled={!editable} onClick={() => onFormato?.(foto.id, { rotacao: proximaRotacao(foto.rotacao) })}><RotateCw className="h-4 w-4" /></Button></div>
+                  <div className="flex flex-wrap items-center gap-1">{!emGrade && (['horizontal','vertical'] as const).map(o => <Button key={o} size="sm" variant={(foto.orientacao ?? 'horizontal') === o ? 'secondary' : 'outline'} className="min-h-11" disabled={!editable} aria-pressed={(foto.orientacao ?? 'horizontal') === o} onClick={() => onFormato?.(foto.id, { orientacao: o })}>{o === 'horizontal' ? 'Horizontal' : 'Vertical'}</Button>)}<Button size="icon" variant="ghost" className="min-h-11 min-w-11" title="Girar 90°" aria-label="Girar 90°" disabled={!editable} onClick={() => onFormato?.(foto.id, { rotacao: proximaRotacao(foto.rotacao) })}><RotateCw className="h-4 w-4" /></Button></div>
                   <FotoLegendaInput foto={foto} index={i} editable={editable} onLegenda={onLegenda} />
                   {!foto.legenda?.trim() && <p className="text-xs text-warning">Sem legenda</p>}
                   {editable && (
@@ -111,6 +117,7 @@ export default function FotosManager({ tipo, titulo, fotos, editable, uploading,
           </div>
         )}
       </CardContent>
+      <PaginaFotosPreview fotos={ordenadas} urls={urls} fotosPorPagina={fotosPorPagina} fotoId={previa} titulo={grupoLabel || tipo} onAbrir={setPrevia} />
     </Card>
   );
 }
