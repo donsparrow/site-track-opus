@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,7 +15,7 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { HardHat, Plus, Pencil, Trash2 } from 'lucide-react';
+import { HardHat, Plus, Pencil, Trash2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import NovaObraDialog from '@/components/NovaObraDialog';
 import { calcBusinessDays } from '@/lib/dias';
@@ -52,7 +53,21 @@ export default function Obras() {
       return (data || []) as any[];
     },
   });
-  const obras = filterObras(obrasData ?? []);
+  const navigate = useNavigate();
+  const [busca, setBusca] = useState('');
+  const [filtroStatus, setFiltroStatus] = useState('todos');
+  const todasObras = filterObras(obrasData ?? []);
+  const obras = useMemo(() => {
+    const q = busca.trim().toLowerCase();
+    return todasObras.filter(o =>
+      (filtroStatus === 'todos' || o.status === filtroStatus) &&
+      (!q || (o.nome ?? '').toLowerCase().includes(q) || (o.clientes?.nome ?? '').toLowerCase().includes(q)));
+  }, [todasObras, busca, filtroStatus]);
+  const vazioTexto = todasObras.length === 0 ? 'Nenhuma obra cadastrada' : 'Nenhuma obra encontrada';
+  const abrirObra = (id: string) => navigate(`/obras/${id}`);
+  const onKeyAbrir = (e: React.KeyboardEvent, id: string) => {
+    if (e.key === 'Enter' && e.target === e.currentTarget) abrirObra(id);
+  };
 
   const { data: clientes = [] } = useQuery({
     queryKey: queryKeys.clientesLista(user?.id ?? ''),
@@ -114,11 +129,11 @@ export default function Obras() {
   };
 
   const renderActions = (obra: (typeof obras)[number]) => (
-    <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => openEdit(obra)}>
+    <div className="flex gap-2" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                        <Button size="sm" variant="outline" className="min-h-10 min-w-10 lg:min-h-9 lg:min-w-9" aria-label="Editar obra" onClick={() => openEdit(obra)}>
                           <Pencil className="h-3 w-3" />
                         </Button>
-                        <Button size="sm" variant="destructive" onClick={() => handleDelete(obra.id)}>
+                        <Button size="sm" variant="destructive" className="min-h-10 min-w-10 lg:min-h-9 lg:min-w-9" aria-label="Excluir obra" onClick={() => handleDelete(obra.id)}>
                           <Trash2 className="h-3 w-3" />
                         </Button>
                       </div>
@@ -135,9 +150,23 @@ export default function Obras() {
         )}
       </div>
 
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input value={busca} onChange={e => setBusca(e.target.value)} placeholder="Buscar por obra ou cliente" className="min-h-10 pl-9" aria-label="Buscar obras" />
+        </div>
+        <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+          <SelectTrigger className="min-h-10 sm:w-52" aria-label="Filtrar por status"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos os status</SelectItem>
+            {Object.entries(statusLabels).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+
       <Card>
         <CardContent className="p-0">
-          <div className="hidden md:block">
+          <div className="hidden md:block overflow-x-auto">
 <Table>
             <TableHeader>
               <TableRow>
@@ -153,10 +182,12 @@ export default function Obras() {
             </TableHeader>
             <TableBody>
               {obras.length === 0 && (
-                <TableRow><TableCell colSpan={canManage ? 8 : 7} className="text-center text-muted-foreground py-8">Nenhuma obra cadastrada</TableCell></TableRow>
+                <TableRow><TableCell colSpan={canManage ? 8 : 7} className="text-center text-muted-foreground py-8">{vazioTexto}</TableCell></TableRow>
               )}
               {obras.map(obra => (
-                <TableRow key={obra.id}>
+                <TableRow key={obra.id} tabIndex={0} role="link" aria-label={`Abrir obra ${obra.nome}`}
+                  className="cursor-pointer hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  onClick={() => abrirObra(obra.id)} onKeyDown={(e) => onKeyAbrir(e, obra.id)}>
                   <TableCell className="font-medium">{obra.nome}</TableCell>
                   <TableCell>{obra.clientes?.nome || '—'}</TableCell>
                   <TableCell>{obra.endereco || '—'}</TableCell>
@@ -177,9 +208,11 @@ export default function Obras() {
           </Table>
 </div>
 <div className="md:hidden space-y-3 p-3">
- {obras.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma obra cadastrada</p>}
+ {obras.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">{vazioTexto}</p>}
  {obras.map((obra) => (
- <Card key={obra.id}><CardContent className="p-4 space-y-3">
+ <Card key={obra.id} tabIndex={0} role="link" aria-label={`Abrir obra ${obra.nome}`}
+   className="cursor-pointer transition hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+   onClick={() => abrirObra(obra.id)} onKeyDown={(e) => onKeyAbrir(e, obra.id)}><CardContent className="p-4 space-y-3">
  <h3 className="font-semibold break-words">{obra.nome}</h3>
  <div className="space-y-1 text-sm break-words"><p>Cliente: {obra.clientes?.nome || '—'}</p><p>Endereço: {obra.endereco || '—'}</p><Badge variant="outline">{statusLabels[obra.status] || obra.status}</Badge></div>
  {canManage && renderActions(obra)}
