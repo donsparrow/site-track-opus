@@ -1,4 +1,5 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, lazy, Suspense } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useParams, Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -61,7 +62,7 @@ interface ObraDetalheData {
 const EMPTY_DOC_STATS: DocStats = { totalPastas: 0, totalArquivos: 0, pdfs: 0, imagens: 0, recentFiles: [] };
 const EMPTY_FINANCEIRO = { contrato: 0, recebido: 0, aReceber: 0, gasto: 0, saldo: 0 };
 
-export default function ObraDetail() {
+function ObraDetailInterna() {
   const { id } = useParams<{ id: string }>();
   const { user, canEdit, role, isSuperAdmin, isAdmin } = useAuth();
   const { pode, loading: permissionsLoading } = usePermissions();
@@ -631,4 +632,22 @@ export default function ObraDetail() {
 
     </div>
   );
+}
+
+const PainelObraCliente = lazy(() => import('@/features/painel-cliente/components/PainelObraCliente'));
+
+/** admin/super_admin: tela interna; síndico, cliente e trabalhador: Painel da Obra (hooks internos nem montam). */
+export default function ObraDetail() {
+  const { id } = useParams<{ id: string }>();
+  const { role, loading } = useAuth();
+  const carregandoPapel = loading;
+  if (carregandoPapel) return <div className="space-y-4"><Skeleton className="h-10 w-1/2" /><Skeleton className="h-48 w-full" /></div>;
+  if (role === 'sindico' || role === 'cliente' || role === 'trabalhador') {
+    return (
+      <Suspense fallback={<Skeleton className="h-48 w-full" />}>
+        <PainelObraCliente key={id} obraId={id} />
+      </Suspense>
+    );
+  }
+  return <ObraDetailInterna />;
 }

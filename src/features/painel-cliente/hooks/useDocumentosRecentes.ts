@@ -11,21 +11,25 @@ export interface DocumentoRecente {
 }
 
 /** Últimos 5 itens liberados ao cliente: relatórios assinados, laudos e arquivos visíveis. */
-export function useDocumentosRecentes(obraId: string, podeLaudos: boolean) {
+export function useDocumentosRecentes(obraId: string, podeLaudos: boolean, podeRelatorios = true, podeArquivos = true) {
   return useQuery({
-    queryKey: painelKeys.documentos(obraId, podeLaudos),
-    enabled: !!obraId,
+    queryKey: painelKeys.documentos(obraId, podeLaudos, podeRelatorios, podeArquivos),
+    enabled: !!obraId && (podeLaudos || podeRelatorios || podeArquivos),
     queryFn: async (): Promise<DocumentoRecente[]> => {
       const [rel, laudos, arqs] = await Promise.all([
-        supabase.from('relatorios').select('id, data_inicio, data_fim, updated_at')
-          .eq('obra_id', obraId).eq('status', 'assinado').order('updated_at', { ascending: false }).limit(10),
+        podeRelatorios
+          ? supabase.from('relatorios').select('id, data_inicio, data_fim, updated_at')
+              .eq('obra_id', obraId).eq('status', 'assinado').order('updated_at', { ascending: false }).limit(10)
+          : Promise.resolve({ data: [] as { id: string; data_inicio: string | null; data_fim: string | null; updated_at: string }[], error: null }),
         podeLaudos
           ? supabase.from('relatorios_finais').select('id, tipo_relatorio, updated_at')
               .eq('obra_id', obraId).eq('status', 'assinado').order('updated_at', { ascending: false }).limit(10)
           : Promise.resolve({ data: [], error: null }),
-        supabase.from('documentos_arquivos').select('id, nome_arquivo, created_at, documentos_pastas!inner(obra_id)')
-          .eq('visivel_cliente', true).eq('documentos_pastas.obra_id', obraId)
-          .order('created_at', { ascending: false }).limit(10),
+        podeArquivos
+          ? supabase.from('documentos_arquivos').select('id, nome_arquivo, created_at, documentos_pastas!inner(obra_id)')
+              .eq('visivel_cliente', true).eq('documentos_pastas.obra_id', obraId)
+              .order('created_at', { ascending: false }).limit(10)
+          : Promise.resolve({ data: [] as { id: string; nome_arquivo: string; created_at: string }[], error: null }),
       ]);
       if (rel.error) throw rel.error;
       if (laudos.error) throw laudos.error;

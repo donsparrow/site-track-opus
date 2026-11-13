@@ -14,21 +14,23 @@ export interface ItemAssinatura {
 const tipoLaudo = (t: string) => (t === 'vistoria_previa' ? 'Vistoria Prévia' : 'Entrega de Obra');
 
 /** Relatórios assinados pela empresa ainda sem a assinatura deste usuário e laudos sem assinatura do síndico. */
-export function useAguardandoAssinatura(obraId: string, podeLaudos: boolean) {
+export function useAguardandoAssinatura(obraId: string, podeLaudos: boolean, podeRelatorios = true) {
   const { user } = useAuth();
   const uid = user?.id ?? '';
   return useQuery({
-    queryKey: painelKeys.aguardando(obraId, uid, podeLaudos),
-    enabled: !!obraId && !!uid,
+    queryKey: painelKeys.aguardando(obraId, uid, podeLaudos, podeRelatorios),
+    enabled: !!obraId && !!uid && (podeLaudos || podeRelatorios),
     queryFn: async (): Promise<ItemAssinatura[]> => {
       const [relRes, laudoRes] = await Promise.all([
-        supabase
-          .from('relatorios')
-          .select('id, data_inicio, data_fim, assinaturas(tipo, assinado_por)')
-          .eq('obra_id', obraId)
-          .eq('status', 'assinado')
-          .order('data_fim', { ascending: false })
-          .limit(50),
+        podeRelatorios
+          ? supabase
+              .from('relatorios')
+              .select('id, data_inicio, data_fim, assinaturas(tipo, assinado_por)')
+              .eq('obra_id', obraId)
+              .eq('status', 'assinado')
+              .order('data_fim', { ascending: false })
+              .limit(50)
+          : Promise.resolve({ data: [] as { id: string; data_inicio: string | null; data_fim: string | null; assinaturas: { tipo: string; assinado_por: string | null }[] }[], error: null }),
         podeLaudos
           ? supabase
               .from('relatorios_finais')

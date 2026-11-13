@@ -5,10 +5,10 @@ import PainelCard from './PainelCard';
 import { useDocumentosRecentes } from '../hooks/useDocumentosRecentes';
 import { fmtDataCurta } from '../utils';
 
-export default function DocumentosRecentesCard({ obraId, podeLaudos }: { obraId: string; podeLaudos: boolean }) {
-  const { data = [], isLoading, isError } = useDocumentosRecentes(obraId, podeLaudos);
+export default function DocumentosRecentesCard({ obraId, podeLaudos, podeRelatorios = true, podeArquivos = true }: { obraId: string; podeLaudos: boolean; podeRelatorios?: boolean; podeArquivos?: boolean }) {
+  const { data = [], isLoading, isError } = useDocumentosRecentes(obraId, podeLaudos, podeRelatorios, podeArquivos);
   return (
-    <PainelCard titulo={tituloComTotal('Documentos recentes', data.length)} link={{ to: '/documentacao', label: 'Ver todos' }} isLoading={isLoading} isError={isError}>
+    <PainelCard titulo={tituloComTotal('Documentos recentes', data.length)} link={podeArquivos ? { to: '/documentacao', label: 'Ver todos' } : undefined} isLoading={isLoading} isError={isError}>
       {data.length === 0 ? (
         <p className="text-sm text-muted-foreground">Nenhum documento liberado ainda.</p>
       ) : (

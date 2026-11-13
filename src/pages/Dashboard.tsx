@@ -237,7 +237,7 @@ function DashboardInner() {
 
 export default function Dashboard() {
   const { role } = useAuth();
-  const isCliente = role === 'sindico' || role === 'cliente';
+  const isCliente = role === 'sindico' || role === 'cliente' || role === 'trabalhador';
   return (
     <DashboardErrorBoundary fallbackTitle="Ocorreu um erro inesperado no Dashboard.">
       {isCliente ? (
