@@ -2498,6 +2498,13 @@ export type Database = {
       }
       pasta_obra_acessivel: { Args: { _pasta_id: string }; Returns: boolean }
       pasta_visivel_cliente: { Args: { _pasta_id: string }; Returns: boolean }
+      relatorios_numeros: {
+        Args: { p_ids: string[] }
+        Returns: {
+          numero: number
+          relatorio_id: string
+        }[]
+      }
       set_default_permissions: {
         Args: { _role: string; _user_id: string }
         Returns: undefined
