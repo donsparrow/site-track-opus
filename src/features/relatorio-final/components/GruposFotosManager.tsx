@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { ArrowLeft, ArrowRight, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, Pencil, Plus, Trash2 } from 'lucide-react';
 import FotosManager from './FotosManager';
 import { resolverGruposFotos, type GrupoFotos } from '../lib/gruposFotos';
+import { FOTOS_POR_PAGINA_VALIDAS } from '../lib/fotoQuadro';
 import type { RelatorioFinal, RelatorioFinalFoto } from '../types';
 interface Props {
   relatorio: RelatorioFinal; fotos: RelatorioFinalFoto[]; editable: boolean; uploading?: boolean; saving?: boolean;
@@ -12,6 +13,7 @@ interface Props {
   onUpload: (files: File[], grupo: string) => void; onLegenda: (id: string, legenda: string) => void;
   onFormato: (id: string, values: { orientacao?: 'horizontal' | 'vertical'; rotacao?: number }) => void;
   onMover: (id: string, direcao: -1 | 1) => void; onExcluir: (foto: RelatorioFinalFoto) => void;
+  onAlterar: (v: Partial<RelatorioFinal>) => void;
 }
 export default function GruposFotosManager(p: Props) {
   const [selecionado, setSelecionado] = useState('');

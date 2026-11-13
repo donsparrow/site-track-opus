@@ -117,6 +117,7 @@ export default function FotosManager({ tipo, titulo, fotos, editable, uploading,
           </div>
         )}
       </CardContent>
+      <PaginaFotosPreview fotos={ordenadas} urls={urls} fotosPorPagina={fotosPorPagina} fotoId={previa} titulo={grupoLabel || tipo} onAbrir={setPrevia} />
     </Card>
   );
 }
