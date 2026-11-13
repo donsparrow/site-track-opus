@@ -1,3 +1,4 @@
+import { useAcoesModulo } from '@/hooks/useAcoesModulo';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -25,7 +26,9 @@ const EMPTY_ADITIVO: AditivoFormData = {
 
 /** Orquestra estado de UI + hooks de dados do módulo Cronograma. */
 export function useCronogramaPage() {
-  const { canEdit, isAdmin, isSuperAdmin } = useCronogramaScope();
+  const { isAdmin, isSuperAdmin } = useCronogramaScope();
+  const { podeCriar, podeEditar, podeExcluir } = useAcoesModulo('cronograma');
+  const canEdit = podeEditar;
   const [searchParams, setSearchParams] = useSearchParams();
   const obraIdParam = searchParams.get('obra');
   const [obraId, setObraId] = useState(obraIdParam || '');
@@ -35,7 +38,7 @@ export function useCronogramaPage() {
   }, [obraIdParam]);
 
   const { obras } = useObrasCronograma();
-  const { cronograma } = useCronograma(obraId, canEdit);
+  const { cronograma } = useCronograma(obraId, podeCriar);
   const atividadesQuery = useCronogramaAtividades(cronograma?.id ?? null);
   const atividades = atividadesQuery.atividades;
   const { aditivos } = useAditivos(obraId);
@@ -213,7 +216,7 @@ export function useCronogramaPage() {
   };
 
   return {
-    canEdit, canEditPeso, obras, obraId, obraNome, selecionarObra,
+    canEdit, podeCriar, podeExcluir, canEditPeso, obras, obraId, obraNome, selecionarObra,
     cronograma, atividades, atividadesQuery, aditivos, indicadores, ganttData,
     dialogOpen, setDialogOpen, editingAtividade, formData, setFormData,
     aditivoDialogOpen, setAditivoDialogOpen, aditivoForm, setAditivoForm,

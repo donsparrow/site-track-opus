@@ -1,3 +1,4 @@
+import { useAcoesModulo } from '@/hooks/useAcoesModulo';
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -21,7 +22,9 @@ import { useFechamentos, useFechamentosMutations } from '@/features/funcionarios
 import { diasDoCiclo, offsetCicloAtual, toISODate } from '@/features/funcionarios/utils';
 
 export default function Funcionarios() {
-  const { canEdit, isAdmin, empresaId } = useAuth();
+  const { isAdmin, empresaId } = useAuth();
+  const { podeCriar, podeEditar, podeExcluir } = useAcoesModulo('funcionarios');
+  const canEdit = podeEditar;
   const qc = useQueryClient();
   const hoje = new Date();
   const hojeISO = toISODate(hoje);
@@ -117,7 +120,9 @@ export default function Funcionarios() {
             funcionarios={funcionarios}
             obras={obras}
             isLoading={isLoading}
-            canEdit={canEdit}
+            canEdit={podeEditar}
+            canCreate={podeCriar}
+            canDelete={podeExcluir}
             saving={funcMutations.salvar.isPending}
             onSave={(editId, values) => funcMutations.salvar.mutate({ editId, values })}
             onToggleAtivo={(id, ativo) => funcMutations.alternarAtivo.mutate({ id, ativo })}
@@ -181,7 +186,8 @@ export default function Funcionarios() {
             funcionarios={funcionarios}
             lancamentos={lancamentos}
             isLoading={lancLoading}
-            canEdit={canEdit}
+            canEdit={podeCriar}
+            canDelete={podeExcluir}
             saving={lancMutations.salvar.isPending}
             filtroFuncionario={filtroFuncionario}
             inicio={lancInicio}

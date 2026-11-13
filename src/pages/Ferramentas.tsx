@@ -1,3 +1,4 @@
+import { useAcoesModulo } from '@/hooks/useAcoesModulo';
 import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,8 @@ import ExcluirFerramentaDialog from '@/features/ferramentas/components/ExcluirFe
 import type { Ferramenta, FerramentaFormValues, ManutencaoFormValues } from '@/features/ferramentas/types';
 
 export default function Ferramentas() {
-  const { canEdit, empresaId } = useAuth();
+  const { empresaId } = useAuth();
+  const { podeCriar, podeEditar, podeExcluir } = useAcoesModulo('ferramentas');
   const { obras } = useObrasFerramentas();
   const { ferramentas, isLoading, isError, refetch } = useFerramentas();
   const mutations = useFerramentasMutations();
@@ -77,7 +79,7 @@ export default function Ferramentas() {
           <h1 className="text-2xl md:text-3xl font-display font-bold text-foreground">Ferramentas</h1>
           <p className="text-muted-foreground mt-1">Controle de equipamentos</p>
         </div>
-        {canEdit && (
+        {podeCriar && (
           <Button
             onClick={() => { setEditFerramenta(null); setDialogOpen(true); }}
             className="bg-accent text-accent-foreground hover:bg-accent/90"
@@ -109,7 +111,8 @@ export default function Ferramentas() {
         <TabelaFerramentas
           ferramentas={filtered}
           obras={obras}
-          canEdit={!!canEdit}
+          canEdit={podeEditar}
+          canDelete={podeExcluir}
           onEdit={(f) => { setEditFerramenta(f); setDialogOpen(true); }}
           onDelete={setDeleteId}
           onManutencao={(id) => { setManutencaoFerramentaId(id); setManutencaoOpen(true); }}

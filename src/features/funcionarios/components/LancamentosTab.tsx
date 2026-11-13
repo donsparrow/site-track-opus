@@ -27,6 +27,7 @@ interface Props {
   lancamentos: Lancamento[];
   isLoading: boolean;
   canEdit: boolean;
+  canDelete?: boolean;
   saving: boolean;
   filtroFuncionario: string | null;
   inicio: string;
@@ -38,7 +39,7 @@ interface Props {
 }
 
 export default function LancamentosTab({
-  funcionarios, lancamentos, isLoading, canEdit, saving,
+  funcionarios, lancamentos, isLoading, canEdit, canDelete = canEdit, saving,
   filtroFuncionario, inicio, fim, onChangeFiltro, onChangePeriodo, onSave, onDelete,
 }: Props) {
   const [aberto, setAberto] = useState(false);
@@ -178,7 +179,7 @@ export default function LancamentosTab({
         adiantamentos={painel}
         funcionarios={funcionarios}
         isLoading={loadingPainel}
-        canEdit={canEdit}
+        canEdit={canDelete}
         onDelete={onDelete}
       />
 
@@ -263,7 +264,7 @@ export default function LancamentosTab({
                             <TooltipContent className="max-w-xs">{PARCELA_TOOLTIP}</TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
-                      ) : canEdit && (
+                      ) : canDelete && (
                         <Button variant="ghost" size="icon" onClick={() => setExcluirId(l.id)}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>

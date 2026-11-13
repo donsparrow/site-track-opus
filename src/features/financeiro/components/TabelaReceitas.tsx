@@ -15,6 +15,7 @@ interface Props {
   receitas: ReceitaComObra[];
   anexos: FinanceiroAnexo[];
   canEdit: boolean;
+  canCreate?: boolean;
   isAdmin: boolean;
   expandedReceita: string | null;
   onToggleReceita: (id: string) => void;
@@ -30,7 +31,7 @@ interface Props {
 }
 
 export default function TabelaReceitas({
-  receitas, anexos, canEdit, isAdmin, expandedReceita, onToggleReceita, onNovaReceita,
+  receitas, anexos, canEdit, canCreate = canEdit, isAdmin, expandedReceita, onToggleReceita, onNovaReceita,
   onEditarReceita, onExcluirReceita, onEditarParcela, onExcluirParcela, onReceberParcela,
   onCriarParcelaSaldo, onAnexar, onPreviewAnexo,
 }: Props) {
@@ -52,7 +53,7 @@ export default function TabelaReceitas({
     return (
       <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 mb-3 text-sm">
         <span>Esta receita tem {fmt(saldo)} sem parcela.</span>
-        {canEdit && (
+        {canCreate && (
           <Button size="sm" variant="outline" onClick={() => onCriarParcelaSaldo(r.id)}>Criar parcela com o saldo</Button>
         )}
       </div>
@@ -112,7 +113,7 @@ export default function TabelaReceitas({
     <>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-display font-semibold">Receitas</h2>
-        {canEdit && (
+        {canCreate && (
           <Button onClick={onNovaReceita} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90">
             <Plus className="h-4 w-4 mr-1" /> Nova Receita
           </Button>

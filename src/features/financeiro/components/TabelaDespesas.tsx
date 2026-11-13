@@ -12,6 +12,7 @@ interface Props {
   despesas: DespesaComObra[];
   anexos: FinanceiroAnexo[];
   canEdit: boolean;
+  canCreate?: boolean;
   isAdmin: boolean;
   onNovaDespesa: () => void;
   onEditarDespesa: (d: DespesaComObra) => void;
@@ -21,7 +22,7 @@ interface Props {
 }
 
 export default function TabelaDespesas({
-  despesas, anexos, canEdit, isAdmin, onNovaDespesa, onEditarDespesa, onExcluirDespesa, onAnexar, onPreviewAnexo,
+  despesas, anexos, canEdit, canCreate = canEdit, isAdmin, onNovaDespesa, onEditarDespesa, onExcluirDespesa, onAnexar, onPreviewAnexo,
 }: Props) {
   const renderActions = (d: DespesaComObra) => (
     <div className="flex items-center gap-1">
@@ -52,7 +53,7 @@ export default function TabelaDespesas({
     <>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-display font-semibold">Despesas</h2>
-        {canEdit && (
+        {canCreate && (
           <Button onClick={onNovaDespesa} size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90">
             <Plus className="h-4 w-4 mr-1" /> Nova Despesa
           </Button>

@@ -20,12 +20,14 @@ interface Props {
   totalPesoAditivos?: number;
   progressoAditivos?: number;
   canEdit: boolean;
+  canEditar?: boolean;
+  canExcluir?: boolean;
   onMove: (id: string, direction: 'up' | 'down') => void;
   onEdit: (a: Atividade) => void;
   onDelete: (id: string) => void;
 }
 
-export default function AtividadesCard({ atividades, totalPeso, pesoValido, totalPesoAditivos = 0, progressoAditivos = 0, canEdit, onMove, onEdit, onDelete }: Props) {
+export default function AtividadesCard({ atividades, totalPeso, pesoValido, totalPesoAditivos = 0, progressoAditivos = 0, canEdit, canEditar = canEdit, canExcluir = canEdit, onMove, onEdit, onDelete }: Props) {
   const [sortColumn, setSortColumn] = useState<SortColumn>('ordem');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
@@ -145,7 +147,7 @@ export default function AtividadesCard({ atividades, totalPeso, pesoValido, tota
                             variant="ghost"
                             size="icon"
                             onClick={() => onMove(a.id, 'up')}
-                            disabled={i === 0 || !isDefaultOrder}
+                            disabled={!canEditar || i === 0 || !isDefaultOrder}
                             title={isDefaultOrder ? undefined : 'Volte à ordem padrão para reordenar'}
                           >
                             <ArrowUp className="h-3 w-3" />
@@ -154,13 +156,13 @@ export default function AtividadesCard({ atividades, totalPeso, pesoValido, tota
                             variant="ghost"
                             size="icon"
                             onClick={() => onMove(a.id, 'down')}
-                            disabled={i === sortedAtividades.length - 1 || !isDefaultOrder}
+                            disabled={!canEditar || i === sortedAtividades.length - 1 || !isDefaultOrder}
                             title={isDefaultOrder ? undefined : 'Volte à ordem padrão para reordenar'}
                           >
                             <ArrowDown className="h-3 w-3" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => onEdit(a)} aria-label={`Editar atividade ${a.nome_atividade}`} title="Editar atividade"><Pencil className="h-3 w-3" /></Button>
-                          <Button variant="ghost" size="icon" onClick={() => onDelete(a.id)}><Trash2 className="h-3 w-3 text-destructive" /></Button>
+                          {canEditar && <Button variant="ghost" size="icon" onClick={() => onEdit(a)} aria-label={`Editar atividade ${a.nome_atividade}`} title="Editar atividade"><Pencil className="h-3 w-3" /></Button>}
+                          {canExcluir && <Button variant="ghost" size="icon" onClick={() => onDelete(a.id)}><Trash2 className="h-3 w-3 text-destructive" /></Button>}
                         </div>
                       </TableCell>
                     )}
