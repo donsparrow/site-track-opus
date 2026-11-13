@@ -18,10 +18,11 @@ export default function NovoLaudoDialog({ open, onOpenChange, obras, laudos, onA
   return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-w-xl"><DialogHeader><DialogTitle>Novo laudo</DialogTitle></DialogHeader>
     <div className="space-y-4">
       <div className="space-y-2"><Label>Obra</Label><Select value={obraId} onValueChange={setObraId}><SelectTrigger><SelectValue placeholder="Selecione a obra" /></SelectTrigger><SelectContent>{obras.map(o => <SelectItem key={o.id} value={o.id}>{o.nome}</SelectItem>)}</SelectContent></Select></div>
-      <div className="grid gap-3 sm:grid-cols-2">{(['entrega_obra','vistoria_previa'] as const).map(t => <Button key={t} variant="outline" aria-pressed={tipo === t} onClick={() => setTipo(t)} className={`h-auto items-start whitespace-normal p-4 text-left ${tipo === t ? 'border-accent bg-accent/5' : ''}`}>
-        <div className="space-y-2"><div className="flex items-center gap-2">{t === 'entrega_obra' ? <FileText /> : <SearchCheck />}<span className="font-semibold">{tipoLaudo(t)}</span>{tipo === t && <Check className="text-accent" />}</div><p className="text-sm font-normal text-muted-foreground">{t === 'entrega_obra' ? 'Registro pré e pós-obra, garantia e aditivos.' : 'Registro por ambiente antes do início dos serviços.'}</p></div>
+      <div className="grid gap-3 sm:grid-cols-2">{(['entrega_obra','vistoria_previa'] as const).map(t => <Button key={t} variant="outline" aria-pressed={tipo === t} onClick={() => setTipo(t)} className={`h-auto items-start justify-start whitespace-normal p-4 text-left ${tipo === t ? 'border-accent bg-accent/5' : ''}`}>
+        <div className="w-full space-y-2"><div className="flex items-center gap-2">{t === 'entrega_obra' ? <FileText /> : <SearchCheck />}<span className="font-semibold">{tipoLaudo(t)}</span>{tipo === t && <Check className="text-accent" />}</div><p className="text-sm font-normal text-muted-foreground">{t === 'entrega_obra' ? 'Registro pré e pós-obra, garantia e aditivos.' : 'Registro por ambiente antes do início dos serviços.'}</p></div>
       </Button>)}</div>
       {existente && <p className="rounded-md border border-warning bg-warning/10 p-3 text-sm">Esta obra já tem um laudo de {tipoLaudo(tipo)} ({textoStatusLaudo(statusLaudo(existente))}). O sistema permite um por tipo em cada obra.</p>}
+      {!obra && <p className="text-center text-xs text-muted-foreground">Selecione a obra para continuar</p>}
       <Button className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={!obra || m.criar.isPending} onClick={() => {
         if (!obra) return;
         if (existente) { onOpenChange(false); onAbrir(obra.id, tipo); return; }
