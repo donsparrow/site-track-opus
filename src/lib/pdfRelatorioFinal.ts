@@ -285,8 +285,12 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
       ['CPF/CNPJ', relatorio.cliente_cpf_cnpj || '—'],
       ['Endereço', relatorio.endereco || '—'],
       ['Responsável', relatorio.responsavel || '—'],
-      ['Início', fmtDate(relatorio.data_inicio)],
-      ['Conclusão', fmtDate(relatorio.data_conclusao || relatorio.data_fim_prevista)],
+      ...(isVistoria
+        ? [['Data da vistoria', fmtDate(relatorio.data_vistoria)] as [string, string]]
+        : [
+            ['Início', fmtDate(relatorio.data_inicio)] as [string, string],
+            ['Conclusão', fmtDate(relatorio.data_conclusao || relatorio.data_fim_prevista)] as [string, string],
+          ]),
     ];
     if (relatorio.contrato?.trim()) info.push(['Contrato', relatorio.contrato.trim()]);
     const BOX_H = Math.max(60, 12 + info.length * 8);

@@ -45,7 +45,9 @@ export function useRelatorioFinalMutations(
         ...defaultsNovoLaudo(tipo, comTemplate),
         tipo_relatorio: tipo, template_capa_url: comTemplate?.template_capa_url ?? null,
         obra_id: obra.id, empresa_id: empresaId, cliente_nome: obra.clientes?.nome ?? null, cliente_cpf_cnpj: obra.clientes?.cpf_cnpj ?? null,
-        endereco: obra.endereco, responsavel: obra.responsavel_tecnico, data_inicio: obra.data_inicio, data_fim_prevista: obra.data_fim_prevista,
+        endereco: obra.endereco, responsavel: obra.responsavel_tecnico,
+        data_inicio: tipo === 'vistoria_previa' ? null : obra.data_inicio,
+        data_fim_prevista: tipo === 'vistoria_previa' ? null : obra.data_fim_prevista,
       });
       if (error) throw error;
       return { obra: obra.id, tipo };
