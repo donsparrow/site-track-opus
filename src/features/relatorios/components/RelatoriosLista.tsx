@@ -6,7 +6,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Download, Edit, Eye, Trash2, PenTool } from 'lucide-react';
 import type { RelatorioComObra } from '../types';
 import type { StatusLiberacao } from '../pdfArquivado';
-import { fmt, statusVariant } from '../utils';
+import { fmt, revLabel, statusVariant } from '../utils';
+import { formatarNumero, type InfoListaRelatorio } from '../nomeArquivo';
 
 interface Props {
   relatorios: RelatorioComObra[];
@@ -20,9 +21,39 @@ interface Props {
   onVisualizar: (r: RelatorioComObra) => void;
   onEditar: (r: RelatorioComObra) => void;
   onExcluir: (r: RelatorioComObra) => void;
+  info?: Record<string, InfoListaRelatorio>;
+  ocultarCriadoEm?: boolean;
 }
 
-export default function RelatoriosLista({ relatorios, podeEditar, podeExcluir, onBaixar, onVisualizar, onEditar, onExcluir, liberacoes = {}, mostrarPendenciaEmpresa = false, cliente, onAssinar }: Props) {
+export default function RelatoriosLista({ relatorios, podeEditar, podeExcluir, onBaixar, onVisualizar, onEditar, onExcluir, liberacoes = {}, mostrarPendenciaEmpresa = false, cliente, onAssinar, info, ocultarCriadoEm = false }: Props) {
+  const dataBR = (d: Date) => d.toLocaleDateString('pt-BR');
+  const renderNumero = (r: RelatorioComObra) => {
+    const n = info?.[r.id]?.numero;
+    return n ? formatarNumero(n) : '—';
+  };
+  const renderEmissao = (r: RelatorioComObra) => {
+    const i = info?.[r.id];
+    if (!i) return '—';
+    if (!i.emissao) return <span className="text-muted-foreground">Pendente</span>;
+    return (
+      <span className="inline-flex flex-wrap items-center gap-1">
+        {dataBR(i.emissao)}
+        {i.rev > 0 && <Badge variant="outline">{revLabel(i.rev)}</Badge>}
+      </span>
+    );
+  };
+  const renderAssinCliente = (r: RelatorioComObra) => {
+    const i = info?.[r.id];
+    if (!i) return '—';
+    const ds = i.assinaturasCliente;
+    if (ds.length === 0) return r.status === 'assinado' ? <span className="text-muted-foreground">Pendente</span> : '—';
+    if (ds.length === 1) return dataBR(ds[0]);
+    return (
+      <span title={ds.map(dataBR).join('\n')}>
+        {dataBR(ds[0])} <span className="text-xs text-muted-foreground">+{ds.length - 1}</span>
+      </span>
+    );
+  };
   const jaAssinei = (r: RelatorioComObra) => !!cliente?.userId && !!liberacoes[r.id]?.assinantesCliente?.includes(cliente.userId);
   const renderStatus = (r: RelatorioComObra) => (
     <span className="inline-flex flex-wrap items-center gap-2">
@@ -94,10 +125,13 @@ export default function RelatoriosLista({ relatorios, podeEditar, podeExcluir, o
 <Table>
             <TableHeader>
               <TableRow>
+                <TableHead>Nº</TableHead>
                 <TableHead>Obra</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Período</TableHead>
-                <TableHead>Criado em</TableHead>
+                {!ocultarCriadoEm && <TableHead>Criado em</TableHead>}
+                <TableHead>Emissão</TableHead>
+                <TableHead>Assinatura cliente</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
@@ -105,12 +139,15 @@ export default function RelatoriosLista({ relatorios, podeEditar, podeExcluir, o
             <TableBody>
               {relatorios.map((r) => (
                 <TableRow key={r.id}>
+                  <TableCell className="text-sm tabular-nums">{renderNumero(r)}</TableCell>
                   <TableCell className="font-medium">{r.obras?.nome || '—'}</TableCell>
                   <TableCell>{r.obras?.clientes?.nome || '—'}</TableCell>
                   <TableCell className="text-sm">
                     {r.data_inicio ? fmt(r.data_inicio) : '—'} a {r.data_fim ? fmt(r.data_fim) : '—'}
                   </TableCell>
-                  <TableCell className="text-sm">{new Date(r.created_at).toLocaleDateString('pt-BR')}</TableCell>
+                  {!ocultarCriadoEm && <TableCell className="text-sm">{new Date(r.created_at).toLocaleDateString('pt-BR')}</TableCell>}
+                  <TableCell className="text-sm">{renderEmissao(r)}</TableCell>
+                  <TableCell className="text-sm">{renderAssinCliente(r)}</TableCell>
                   <TableCell>{renderStatus(r)}</TableCell>
                   <TableCell>
                     {renderActions(r)}
@@ -124,8 +161,8 @@ export default function RelatoriosLista({ relatorios, podeEditar, podeExcluir, o
  {relatorios.length === 0 && <p className="py-8 text-center text-sm text-muted-foreground">Nenhum relatório encontrado</p>}
  {relatorios.map((r) => (
  <Card key={r.id}><CardContent className="p-4 space-y-3">
- <h3 className="font-semibold break-words">{r.obras?.nome || '—'}</h3>
- <div className="space-y-1 text-sm break-words"><p>Cliente: {r.obras?.clientes?.nome || '—'}</p><p>Período: {r.data_inicio ? fmt(r.data_inicio) : '—'} a {r.data_fim ? fmt(r.data_fim) : '—'}</p>{renderStatus(r)}</div>
+ <h3 className="font-semibold break-words">{info?.[r.id]?.numero ? `${formatarNumero(info[r.id].numero as number)} · ` : ''}{r.obras?.nome || '—'}</h3>
+ <div className="space-y-1 text-sm break-words"><p>Cliente: {r.obras?.clientes?.nome || '—'}</p><p>Período: {r.data_inicio ? fmt(r.data_inicio) : '—'} a {r.data_fim ? fmt(r.data_fim) : '—'}</p><p>Emissão: {renderEmissao(r)}</p><p>Assinatura cliente: {renderAssinCliente(r)}</p>{renderStatus(r)}</div>
  {renderActions(r)}
  </CardContent></Card>
  ))}
