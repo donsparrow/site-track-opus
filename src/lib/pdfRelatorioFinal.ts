@@ -5,7 +5,7 @@ import { resolveAnexoUrl } from '@/lib/anexoUrl';
 import type { RelatorioFinal, RelatorioFinalFoto } from '@/features/relatorio-final/types';
 import { resolverSecoes } from '@/features/relatorio-final/lib/secoes';
 import { resolverGruposFotos } from '@/features/relatorio-final/lib/gruposFotos';
-import { desenharFoto, quadroFoto } from '@/features/relatorio-final/lib/fotoQuadro';
+import { desenharFoto, quadroFoto, layoutGradeFotos, celulaDaGrade, encaixarFoto, legendaEmLinhas } from '@/features/relatorio-final/lib/fotoQuadro';
 import { renderRichText } from '@/lib/pdfRichText';
 
 const fmtDate = (v?: string | null) => (v ? new Date(`${v}T00:00:00`).toLocaleDateString('pt-BR') : '—');
@@ -413,6 +413,43 @@ export async function gerarPdfRelatorioFinal({ relatorio, fotos, obraNome, empre
     doc.text(g.label, MARGIN, y);
     y += 8;
     doc.setTextColor(30, 30, 30);
+
+    const grade = layoutGradeFotos(relatorio.fotos_por_pagina, contentW, pageH, y);
+
+    if (grade) {
+      // Grade: fotos inteiras (sem corte), N por página, legenda em até 2 linhas.
+      let idx = 0;
+      let naPagina = 0;
+      let topo = y;
+      for (const foto of lista) {
+        idx += 1;
+        if (naPagina === grade.fotosPorPagina) {
+          topo = newPage();
+          naPagina = 0;
+        }
+        const celula = celulaDaGrade(grade, naPagina, MARGIN, topo);
+        const rotacao = foto.rotacao ?? 0;
+        const dataUrl = await loadFotoOriginal(foto.foto_url);
+        const dims = dataUrl ? await measureImage(dataUrl) : null;
+        const encaixe = dims ? encaixarFoto(dims.w, dims.h, celula.largura, grade.areaFotoAltura, rotacao) : null;
+        const box = encaixe ?? { largura: celula.largura, altura: grade.areaFotoAltura };
+        const boxX = celula.x + (celula.largura - box.largura) / 2;
+        const boxY = celula.y + (grade.areaFotoAltura - box.altura) / 2;
+        if (await inserirFotoQuadro(doc, dataUrl, boxX, boxY, box.largura, box.altura, rotacao)) falhasFotos += 1;
+
+        const legenda = `Foto ${String(idx).padStart(2, '0')}${foto.legenda ? ` — ${foto.legenda}` : ''}`;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(grade.fonteLegenda);
+        doc.setTextColor(30, 30, 30);
+        const linhas = legendaEmLinhas(legenda, (t) => doc.getTextWidth(t), celula.largura, 2);
+        const salto = grade.fonteLegenda * 0.5;
+        linhas.forEach((linha, i) => {
+          doc.text(linha, celula.x + celula.largura / 2, celula.y + grade.areaFotoAltura + 4 + i * salto, { align: 'center' });
+        });
+        naPagina += 1;
+      }
+      continue;
+    }
 
     let idx = 0;
     for (const foto of lista) {

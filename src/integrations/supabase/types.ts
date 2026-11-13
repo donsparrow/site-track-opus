@@ -2196,6 +2196,7 @@ export type Database = {
           endereco: string | null
           foto_capa_escala: number
           foto_capa_url: string | null
+          fotos_por_pagina: number | null
           grupos_fotos: Json | null
           id: string
           link_externo: string | null
@@ -2240,6 +2241,7 @@ export type Database = {
           endereco?: string | null
           foto_capa_escala?: number
           foto_capa_url?: string | null
+          fotos_por_pagina?: number | null
           grupos_fotos?: Json | null
           id?: string
           link_externo?: string | null
@@ -2284,6 +2286,7 @@ export type Database = {
           endereco?: string | null
           foto_capa_escala?: number
           foto_capa_url?: string | null
+          fotos_por_pagina?: number | null
           grupos_fotos?: Json | null
           id?: string
           link_externo?: string | null
