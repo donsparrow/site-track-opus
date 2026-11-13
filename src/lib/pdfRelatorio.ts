@@ -63,6 +63,9 @@ interface RelatorioPDFData {
   versoes?: { rev: string; data: string; resumo: string }[];
   /** 1 = layout legado (inalterado); >= 2 = fotos por data, histórico em colunas. */
   versaoLayout?: number;
+  numeroRelatorio?: number | null;
+  dataEmissaoTexto?: string;
+  fileName?: string;
 }
 
 const fmt = (d: string) => {
@@ -438,11 +441,12 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   doc.setTextColor(40);
 
   const coverInfo = [
+    ...(data.numeroRelatorio ? [{ label: 'Relatório nº', value: String(data.numeroRelatorio).padStart(2, '0') }] : []),
     { label: 'Obra', value: data.obra.nome },
     { label: 'Cliente', value: data.obra.cliente_nome || '—' },
     { label: 'Endereço', value: data.obra.endereco || '—' },
     { label: 'Responsável Técnico', value: `${data.obra.responsavel || '—'}${data.obra.crea_cau ? ' — ' + data.obra.crea_cau : ''}` },
-    { label: 'Data de Emissão', value: new Date().toLocaleDateString('pt-BR') },
+    { label: 'Data de Emissão', value: data.dataEmissaoTexto ?? new Date().toLocaleDateString('pt-BR') },
   ];
 
   coverInfo.forEach(item => {
@@ -1444,7 +1448,7 @@ export async function gerarRelatorioPDF(data: RelatorioPDFData) {
   const hoje = new Date();
   const dataFormatada = `${String(hoje.getDate()).padStart(2, '0')}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${hoje.getFullYear()}`;
   const nomeObra = data.obra.nome.toLowerCase().replace(/\s+/g, '_').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  const fileName = `relatorio_${nomeObra}_${dataFormatada}.pdf`;
+  const fileName = data.fileName || `relatorio_${nomeObra}_${dataFormatada}.pdf`;
 
   if (data.saida === 'blob') {
     return { blob: doc.output('blob'), fileName };

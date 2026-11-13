@@ -6,6 +6,7 @@ import { carregarDadosRelatorio } from '@/lib/relatorioDados';
 import type { Json } from '@/integrations/supabase/types';
 import { relatoriosPrefixes } from '../queryKeys';
 import { gerarPDFRelatorio } from '../pdf';
+import { buscarNumerosRelatorios } from '../nomeArquivo';
 import {
   arquivarPdfAssinado, baixarPdfAssinadoOuArquivar,
   excluirPdfArquivado as excluirPdfArquivadoFn, getVersaoLayout, montarArgsPdf,
@@ -289,7 +290,7 @@ export function useRelatorioMutations() {
         versoesPdf = [novaVersao as typeof versoes[number], ...versoes];
       }
 
-      await gerarPDFRelatorio({ empresa, obra, periodo, dados, assinaturas, versoes: versoesPdf, revisao: hasChanges && relatorioId && user ? revisaoPdf + 1 : revisaoPdf, versaoLayout });
+      await gerarPDFRelatorio({ empresa, obra, periodo, dados, assinaturas, versoes: versoesPdf, revisao: hasChanges && relatorioId && user ? revisaoPdf + 1 : revisaoPdf, versaoLayout, numeroRelatorio: relatorioId ? (await buscarNumerosRelatorios([relatorioId]))[relatorioId] ?? null : null });
 
       if (!relatorioId || !user) return { relatorioId, novaRevisao: revisaoPdf, mensagem: 'PDF gerado!' };
 
