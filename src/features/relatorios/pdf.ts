@@ -2,6 +2,7 @@ import { gerarRelatorioPDF } from '@/lib/pdfRelatorio';
 import { resolveAssinaturas } from '@/lib/anexoUrl';
 import type { Assinatura, DadosRelatorio, EmpresaConfig, ObraRelatorio, RelatorioVersao } from './types';
 import { revLabel } from './utils';
+import { calcularEmissao, montarNomeArquivoRelatorio, textoDataEmissao } from './nomeArquivo';
 
 interface ObraPdf {
   nome: string;
@@ -21,6 +22,7 @@ export interface GerarPdfArgs {
   revisao: number;
   /** 1 = layout legado; >= 2 = novo layout. */
   versaoLayout?: number;
+  numeroRelatorio?: number | null;
 }
 
 /**
@@ -28,10 +30,14 @@ export interface GerarPdfArgs {
  * não faz nenhum fetch: recebe os dados já carregados pelos hooks.
  * As assinaturas continuam resolvidas em URL assinada do bucket privado.
  */
-export async function gerarPDFRelatorio({ empresa, obra, periodo, dados, assinaturas, versoes, revisao, versaoLayout = 1 }: GerarPdfArgs, opts?: { saida?: 'download' | 'blob' }) {
+export async function gerarPDFRelatorio({ empresa, obra, periodo, dados, assinaturas, versoes, revisao, versaoLayout = 1, numeroRelatorio = null }: GerarPdfArgs, opts?: { saida?: 'download' | 'blob' }) {
   const v2 = versaoLayout >= 2;
   const maiorVersao = (versoes || []).reduce((m, v) => Math.max(m, v.numero_versao), 0);
+  const emissao = calcularEmissao({ assinaturas: assinaturas || [], versoes: versoes || [], revisao, versaoLayout });
   return await gerarRelatorioPDF({
+    numeroRelatorio,
+    dataEmissaoTexto: textoDataEmissao(emissao.data),
+    fileName: montarNomeArquivoRelatorio({ nomeObra: obra.nome, numero: numeroRelatorio, rev: emissao.rev, data: emissao.data }),
     empresa: empresa || null,
     obra: {
       nome: obra.nome,

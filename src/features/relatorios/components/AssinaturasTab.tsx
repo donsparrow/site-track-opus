@@ -11,8 +11,9 @@ import {
 import { Download, FileText, Trash2 } from 'lucide-react';
 import type { Assinatura, EmpresaConfig } from '../types';
 import {
-  baixarPdfArquivado, listarPdfsArquivados, nomeArquivoPdf, type PdfArquivado,
+  baixarPdfArquivado, listarPdfsArquivados, type PdfArquivado,
 } from '../pdfArquivado';
+import { nomeArquivoRelatorioPorId } from '../nomeArquivo';
 import { useRelatorioMutations } from '../hooks/useRelatorioMutations';
 
 interface Props {
@@ -45,7 +46,9 @@ function DocumentoArquivado({ relatorioId, isAdmin, nomeObra, pendente }: { rela
   const vigente = registros.find((r) => !r.excluido_em) || null;
 
   const handleBaixar = async (registro: PdfArquivado) => {
-    await baixarPdfArquivado(registro, nomeArquivoPdf(nomeObra));
+    let nome: string;
+    try { nome = await nomeArquivoRelatorioPorId(relatorioId); } catch { nome = `${nomeObra || 'Obra'} - Relatorio.pdf`; }
+    await baixarPdfArquivado(registro, nome);
   };
 
   return (

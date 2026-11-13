@@ -3,6 +3,7 @@ import { carregarDadosRelatorio } from '@/lib/relatorioDados';
 import { aplicarIndicadoresCongelados } from './indicadores';
 import { gerarPDFRelatorio, type GerarPdfArgs } from './pdf';
 import type { Assinatura, EmpresaConfig, ObraRelatorio, Relatorio, RelatorioVersao } from './types';
+import { buscarNumerosRelatorios, nomeArquivoRelatorioPorId } from './nomeArquivo';
 import type { Tables } from '@/integrations/supabase/types';
 
 export type PdfArquivado = Tables<'relatorio_pdfs_assinados'>;
@@ -14,14 +15,6 @@ export async function getVersaoLayout(relatorioId: string | null): Promise<numbe
   if (!relatorioId) return 2;
   const { data } = await supabase.from('relatorios').select('versao_layout').eq('id', relatorioId).maybeSingle();
   return (data as { versao_layout?: number } | null)?.versao_layout ?? 1;
-}
-
-/** Nome de exibição do arquivo — mesmo padrão do download gerado na hora. */
-export function nomeArquivoPdf(nomeObra: string): string {
-  const hoje = new Date();
-  const dataFormatada = `${String(hoje.getDate()).padStart(2, '0')}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${hoje.getFullYear()}`;
-  const nome = nomeObra.toLowerCase().replace(/\s+/g, '_').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  return `relatorio_${nome}_${dataFormatada}.pdf`;
 }
 
 /**
@@ -53,7 +46,7 @@ export async function montarArgsPdf(
     supabase.from('relatorio_versoes').select('*').eq('relatorio_id', relatorio.id).order('numero_versao', { ascending: false }),
   ]);
 
-  const versaoLayout = await getVersaoLayout(relatorio.id);
+  const [versaoLayout, numeros] = await Promise.all([getVersaoLayout(relatorio.id), buscarNumerosRelatorios([relatorio.id])]);
 
   return {
     versaoLayout,
@@ -64,6 +57,7 @@ export async function montarArgsPdf(
     assinaturas: (assinRes.data || []) as Assinatura[],
     versoes: (versRes.data || []) as RelatorioVersao[],
     revisao: relatorio.revisao_pdf || 0,
+    numeroRelatorio: numeros[relatorio.id] ?? null,
   };
 }
 
@@ -278,7 +272,13 @@ export async function baixarPdfAssinadoOuArquivar({
   nomeObra: string;
   isCliente?: boolean;
 }): Promise<ResultadoDownload> {
-  const fileName = nomeArquivoPdf(nomeObra);
+  let fileName: string;
+  try {
+    fileName = await nomeArquivoRelatorioPorId(relatorioId);
+  } catch (e) {
+    console.warn('Falha ao montar o nome do arquivo:', e);
+    fileName = `${nomeObra || 'Obra'} - Relatorio.pdf`;
+  }
 
   let registro: PdfArquivado | null = null;
   try {
