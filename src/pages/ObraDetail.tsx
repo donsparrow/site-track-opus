@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect, lazy, Suspense } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { useParams, Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -638,8 +639,8 @@ const PainelObraCliente = lazy(() => import('@/features/painel-cliente/component
 /** admin/super_admin: tela interna; síndico, cliente e trabalhador: Painel da Obra (hooks internos nem montam). */
 export default function ObraDetail() {
   const { id } = useParams<{ id: string }>();
-  const { role, isSuperAdmin, loading } = useAuth();
-  const carregandoPapel = loading || (!role && !isSuperAdmin);
+  const { role, loading } = useAuth();
+  const carregandoPapel = loading;
   if (carregandoPapel) return <div className="space-y-4"><Skeleton className="h-10 w-1/2" /><Skeleton className="h-48 w-full" /></div>;
   if (role === 'sindico' || role === 'cliente' || role === 'trabalhador') {
     return (
