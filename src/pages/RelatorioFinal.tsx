@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FileDown, ChevronLeft, Eye, Clock, Cloud, Check } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePermissions } from '@/hooks/usePermissions';
+import { useAcoesModulo } from '@/hooks/useAcoesModulo';
 import { fetchEmpresaConfigOrBranding } from '@/lib/empresaBranding';
 import LaudosLista from '@/features/relatorio-final/components/LaudosLista';
 import StatusLaudoBadge from '@/features/relatorio-final/components/StatusLaudoBadge';
@@ -21,7 +21,7 @@ import type { EmpresaPDFData } from '@/lib/pdfShared';
 export default function RelatorioFinalPage() {
   const { role } = useAuth();
   const isExterno = role === 'sindico' || role === 'cliente';
-  const { pode } = usePermissions();
+  const { podeEditar } = useAcoesModulo('relatorio_final');
   const [params, setParams] = useSearchParams();
   const obraId = params.get('obra');
   const tipoRelatorio = params.get('tipo') || 'entrega_obra';
@@ -33,7 +33,7 @@ export default function RelatorioFinalPage() {
   const m = useRelatorioFinalMutations(obraId, relatorio?.id ?? null, tipoRelatorio);
 
   const obra = useMemo(() => obras.find((o) => o.id === obraId) || null, [obras, obraId]);
-  const canEdit = pode('relatorio_final', 'editar') && relatorio?.status !== 'assinado';
+  const canEdit = podeEditar && relatorio?.status !== 'assinado';
   const auto = useLaudoAutosave(relatorio, !isExterno && canEdit, m.salvarAuto.mutateAsync);
   const preview = !isExterno && params.get('preview') === '1';
   const voltar = async () => { try { await auto.flush(); setParams({}); } catch { /* Retry remains available. */ } };

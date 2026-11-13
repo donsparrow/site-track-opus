@@ -13,6 +13,8 @@ interface Props {
   obras: ObraOption[];
   isLoading: boolean;
   canEdit: boolean;
+  canCreate?: boolean;
+  canDelete?: boolean;
   saving: boolean;
   onSave: (editId: string | null, values: FuncionarioFormValues) => void;
   onToggleAtivo: (id: string, ativo: boolean) => void;
@@ -22,7 +24,7 @@ interface Props {
 const brl = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
 export default function CadastroTab({
-  funcionarios, obras, isLoading, canEdit, saving, onSave, onToggleAtivo, onDelete,
+  funcionarios, obras, isLoading, canEdit, canCreate = canEdit, canDelete = canEdit, saving, onSave, onToggleAtivo, onDelete,
 }: Props) {
   const [open, setOpen] = useState(false);
   const [edit, setEdit] = useState<Funcionario | null>(null);
@@ -33,7 +35,7 @@ export default function CadastroTab({
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        {canEdit && (
+        {canCreate && (
           <Button onClick={() => { setEdit(null); setOpen(true); }}>
             <Plus className="h-4 w-4 mr-2" /> Novo funcionário
           </Button>
@@ -75,17 +77,17 @@ export default function CadastroTab({
                       <Badge variant={f.ativo ? 'default' : 'secondary'}>{f.ativo ? 'Ativo' : 'Inativo'}</Badge>
                     </TableCell>
                     <TableCell className="text-right whitespace-nowrap">
-                      {canEdit && (
+                      {(canEdit || canDelete) && (
                         <>
-                          <Button variant="ghost" size="sm" onClick={() => onToggleAtivo(f.id, !f.ativo)}>
+                          {canEdit && <><Button variant="ghost" size="sm" onClick={() => onToggleAtivo(f.id, !f.ativo)}>
                             {f.ativo ? 'Desativar' : 'Ativar'}
                           </Button>
                           <Button variant="ghost" size="icon" onClick={() => { setEdit(f); setOpen(true); }}>
                             <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => onDelete(f.id)}>
+                          </Button></>}
+                          {canDelete && <Button variant="ghost" size="icon" onClick={() => onDelete(f.id)}>
                             <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                          </Button>}
                         </>
                       )}
                     </TableCell>

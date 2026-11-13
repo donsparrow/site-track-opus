@@ -36,7 +36,7 @@ export default function Cronograma() {
         obraNome={p.obraNome}
         obraId={p.obraId}
         obras={p.obras}
-        canEdit={p.canEdit}
+        canEdit={p.podeCriar}
         onSelectObra={p.selecionarObra}
         onExportPdf={p.exportPDF}
         onNovoAditivo={p.openNewAditivo}
@@ -81,14 +81,16 @@ export default function Cronograma() {
             diasConsumidos={p.indicadores.diasConsumidos}
             diasSemDiario={p.indicadores.diasSemDiario}
           />
-          <AditivosCard aditivos={p.aditivos} canEdit={p.canEdit} onDelete={p.setDeleteAditivoId} onEdit={p.openEditAditivo} loading={p.loadingAditivo} />
+          <AditivosCard aditivos={p.aditivos} canEdit={p.canEdit || p.podeExcluir} canEditar={p.canEdit} canExcluir={p.podeExcluir} onDelete={p.setDeleteAditivoId} onEdit={p.openEditAditivo} loading={p.loadingAditivo} />
           <AtividadesCard
             atividades={p.atividades}
             totalPeso={p.indicadores.totalPeso}
             pesoValido={p.indicadores.pesoValido}
             totalPesoAditivos={p.indicadores.totalPesoAditivos}
             progressoAditivos={p.indicadores.progressoAditivos}
-            canEdit={p.canEdit}
+            canEdit={p.canEdit || p.podeExcluir}
+            canEditar={p.canEdit}
+            canExcluir={p.podeExcluir}
             onMove={p.moveAtividade}
             onEdit={p.openEdit}
             onDelete={p.setDeleteId}

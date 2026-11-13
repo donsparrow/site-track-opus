@@ -10,6 +10,7 @@ interface Props {
   ferramentas: Ferramenta[];
   obras: ObraOption[];
   canEdit: boolean;
+  canDelete?: boolean;
   onEdit: (f: Ferramenta) => void;
   onDelete: (id: string) => void;
   onManutencao: (id: string) => void;
@@ -22,6 +23,7 @@ export default function TabelaFerramentas({
   ferramentas,
   obras,
   canEdit,
+  canDelete = canEdit,
   onEdit,
   onDelete,
   onManutencao,
@@ -119,17 +121,17 @@ export default function TabelaFerramentas({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {canEdit && (
+                        {(canEdit || canDelete) && (
                           <>
-                            <Button size="icon" variant="ghost" title="Registrar manutenção" onClick={() => onManutencao(f.id)}>
+                            {canEdit && <><Button size="icon" variant="ghost" title="Registrar manutenção" onClick={() => onManutencao(f.id)}>
                               <Wrench className="h-4 w-4" />
                             </Button>
                             <Button size="icon" variant="ghost" title="Editar" onClick={() => onEdit(f)}>
                               <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button size="icon" variant="ghost" title="Excluir" onClick={() => onDelete(f.id)}>
+                            </Button></>}
+                            {canDelete && <Button size="icon" variant="ghost" title="Excluir" onClick={() => onDelete(f.id)}>
                               <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
+                            </Button>}
                           </>
                         )}
                         <Button size="icon" variant="ghost" title="Histórico" onClick={() => onHistorico(f.id)}>

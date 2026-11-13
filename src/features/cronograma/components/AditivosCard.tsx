@@ -9,12 +9,14 @@ import type { Aditivo } from '../types';
 interface Props {
   aditivos: Aditivo[];
   canEdit: boolean;
+  canEditar?: boolean;
+  canExcluir?: boolean;
   onDelete: (id: string) => void;
   onEdit: (aditivo: Aditivo) => void;
   loading?: boolean;
 }
 
-export default function AditivosCard({ aditivos, canEdit, onDelete, onEdit, loading }: Props) {
+export default function AditivosCard({ aditivos, canEdit, canEditar = canEdit, canExcluir = canEdit, onDelete, onEdit, loading }: Props) {
   if (aditivos.length === 0) return null;
   return (
     <Card>
@@ -43,12 +45,12 @@ export default function AditivosCard({ aditivos, canEdit, onDelete, onEdit, load
                   <TableCell className="text-xs">{ad.responsavel_aprovacao || '—'}</TableCell>
                   {canEdit && (
                     <TableCell>
-                      <Button variant="ghost" size="icon" disabled={loading} onClick={() => onEdit(ad)} aria-label={`Editar aditivo ${ad.descricao}`} title="Editar aditivo">
+                      {canEditar && <Button variant="ghost" size="icon" disabled={loading} onClick={() => onEdit(ad)} aria-label={`Editar aditivo ${ad.descricao}`} title="Editar aditivo">
                         <Pencil className="h-3 w-3" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => onDelete(ad.id)}>
+                      </Button>}
+                      {canExcluir && <Button variant="ghost" size="icon" onClick={() => onDelete(ad.id)}>
                         <Trash2 className="h-3 w-3 text-destructive" />
-                      </Button>
+                      </Button>}
                     </TableCell>
                   )}
                 </TableRow>

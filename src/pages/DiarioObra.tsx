@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAcoesModulo } from '@/hooks/useAcoesModulo';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Sun } from 'lucide-react';
@@ -15,7 +15,7 @@ import { ExcluirDiarioDialog } from '@/features/diario/components/ExcluirDiarioD
 import { DiarioDetalhe } from '@/features/diario/components/DiarioDetalhe';
 
 export default function DiarioObra() {
-  const { canEdit } = useAuth();
+  const { podeCriar, podeEditar, podeExcluir } = useAcoesModulo('diario_obra');
   const { obras, isLoading: obrasLoading } = useObrasDiario();
   const { selectedObra, setSelectedObra, obra } = useObraSelecionada(obras);
 
@@ -44,7 +44,7 @@ export default function DiarioObra() {
             </SelectContent>
           </Select>
         </div>
-        {selectedObra && canEdit && (
+        {selectedObra && podeCriar && (
           <Button onClick={() => setNovoOpen(true)} className="bg-accent text-accent-foreground hover:bg-accent/90">
             <Plus className="h-4 w-4 mr-1" /> Novo Diário
           </Button>
@@ -65,7 +65,9 @@ export default function DiarioObra() {
                 diarios={diarios}
                 loading={diariosLoading && diarios.length === 0}
                 selectedId={selectedId}
-                canEditDelete={canEdit}
+                canEditDelete={podeEditar || podeExcluir}
+                canEditar={podeEditar}
+                canExcluir={podeExcluir}
                 onSelect={(d) => { setSelectedId(d.id); setEditMode(false); }}
                 onEdit={(d) => { setSelectedId(d.id); setEditMode(true); }}
                 onDelete={(id) => setDeleteId(id)}
@@ -77,8 +79,8 @@ export default function DiarioObra() {
                 <DiarioDetalhe
                   diario={diario}
                   cronogramaAtividades={cronogramaAtividades}
-                  canEdit={canEdit}
-                  canEditDelete={canEdit}
+                  canEdit={podeEditar}
+                  canEditDelete={podeEditar}
                   editMode={editMode}
                   onEnterEdit={() => setEditMode(true)}
                   onCancelEdit={() => setEditMode(false)}

@@ -1,3 +1,4 @@
+import { useAcoesModulo } from '@/hooks/useAcoesModulo';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -35,7 +36,8 @@ import ConfirmarExclusaoDialog from '@/features/financeiro/components/ConfirmarE
 import type { DespesaComObra, Parcela, ReceitaComObra, TipoRegistroAnexo } from '@/features/financeiro/types';
 
 export default function Financeiro() {
-  const { canEdit, role } = useAuth();
+  const { role } = useAuth();
+  const { podeCriar, podeEditar } = useAcoesModulo('financeiro');
   const isAdmin = role === 'admin';
 
   const [filterObra, setFilterObra] = useState('all');
@@ -125,7 +127,8 @@ export default function Financeiro() {
               <TabelaReceitas
                 receitas={receitas}
                 anexos={anexos}
-                canEdit={canEdit}
+                canEdit={podeEditar}
+                canCreate={podeCriar}
                 isAdmin={isAdmin}
                 expandedReceita={expandedReceita}
                 onToggleReceita={(id) => setExpandedReceita((prev) => (prev === id ? null : id))}
@@ -149,7 +152,8 @@ export default function Financeiro() {
               <TabelaDespesas
                 despesas={despesas}
                 anexos={anexos}
-                canEdit={canEdit}
+                canEdit={podeEditar}
+                canCreate={podeCriar}
                 isAdmin={isAdmin}
                 onNovaDespesa={() => setDespesaOpen(true)}
                 onEditarDespesa={setEditDespesa}

@@ -9,12 +9,14 @@ interface Props {
   loading: boolean;
   selectedId: string | null;
   canEditDelete: boolean;
+  canEditar?: boolean;
+  canExcluir?: boolean;
   onSelect: (d: Diario) => void;
   onEdit: (d: Diario) => void;
   onDelete: (id: string) => void;
 }
 
-export function ListaDiarios({ diarios, loading, selectedId, canEditDelete, onSelect, onEdit, onDelete }: Props) {
+export function ListaDiarios({ diarios, loading, selectedId, canEditDelete, canEditar = canEditDelete, canExcluir = canEditDelete, onSelect, onEdit, onDelete }: Props) {
   if (loading) {
     return (
       <div className="flex justify-center py-8">
@@ -51,22 +53,22 @@ export function ListaDiarios({ diarios, loading, selectedId, canEditDelete, onSe
             )}
             {canEditDelete && (
               <div className="flex gap-1 mt-2">
-                <Button
+                {canEditar && <Button
                   size="sm"
                   variant="ghost"
                   className="h-7 px-2 text-xs"
                   onClick={(e) => { e.stopPropagation(); onEdit(d); }}
                 >
                   <Pencil className="h-3 w-3 mr-1" />Editar
-                </Button>
-                <Button
+                </Button>}
+                {canExcluir && <Button
                   size="sm"
                   variant="ghost"
                   className="h-7 px-2 text-xs text-destructive"
                   onClick={(e) => { e.stopPropagation(); onDelete(d.id); }}
                 >
                   <Trash2 className="h-3 w-3 mr-1" />Excluir
-                </Button>
+                </Button>}
               </div>
             )}
           </div>
