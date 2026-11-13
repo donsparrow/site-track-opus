@@ -178,8 +178,7 @@ describe('legendaEmLinhas', () => {
   });
 
   it('quebra em duas linhas quando o texto passa de uma', () => {
-    const linhas = legendaEmLinhas('aa bb cc dd ee ff', medir, largura, 2);
-    expect(linhas).toEqual(['aa bb', 'cc dd ee ff']);
+    expect(legendaEmLinhas('aa bb cc dd ee ff gg hh', medir, largura, 2)).toEqual(['aa bb cc dd ee ff gg', 'hh']);
   });
 
   it('limita a duas linhas e corta com reticências', () => {
