@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { statusLiberacaoLote } from '@/features/relatorios/pdfArquivado';
+import { infoListaRelatorios } from '@/features/relatorios/nomeArquivo';
 import { Button } from '@/components/ui/button';
 import { FileText } from 'lucide-react';
 import { usePermissions } from '@/hooks/usePermissions';
@@ -49,6 +50,12 @@ export default function Relatorios() {
     queryFn: () => statusLiberacaoLote(ids),
   });
   const liberacoes = liberacaoQuery.data ?? {};
+  const idsTodos = listaQuery.relatorios.map((r) => r.id).sort();
+  const infoQuery = useQuery({
+    queryKey: ['relatorio-liberacao', 'info-lista', user?.id, idsTodos],
+    enabled: listaQuery.isSuccess,
+    queryFn: () => infoListaRelatorios(listaQuery.relatorios),
+  });
   const relatorios = filtroStatus === 'aguardando_liberacao'
     ? listaQuery.relatorios.filter((r) => liberacoes[r.id]?.pendente)
     : listaQuery.relatorios;
@@ -114,6 +121,8 @@ export default function Relatorios() {
         <RelatoriosLista
           relatorios={relatorios}
           liberacoes={liberacoes}
+          info={infoQuery.data}
+          ocultarCriadoEm={isCliente}
           mostrarPendenciaEmpresa={operacional}
           cliente={isCliente ? { userId: user?.id } : undefined}
           onAssinar={(r) => setAssinandoRel(r)}

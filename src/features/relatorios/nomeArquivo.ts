@@ -30,7 +30,7 @@ export function calcularRev({ versoes, revisao, versaoLayout = 1 }: { versoes: V
   return versaoLayout >= 2 && maiorVersao > 0 ? maiorVersao - 1 : revisao;
 }
 
-function dataAssinatura(a: AssinaturaEmissao): Date | null {
+export function dataAssinatura(a: AssinaturaEmissao): Date | null {
   if (a.assinado_em) return new Date(a.assinado_em);
   if (a.data_assinatura) {
     const d = a.data_assinatura;
@@ -99,4 +99,48 @@ export async function nomeArquivoRelatorioPorId(relatorioId: string): Promise<st
     versaoLayout: rel?.versao_layout ?? 1,
   });
   return montarNomeArquivoRelatorio({ nomeObra: rel?.obras?.nome || '', numero: numeros[relatorioId], rev, data });
+}
+
+export interface InfoListaRelatorio {
+  numero: number | null;
+  rev: number;
+  emissao: Date | null;
+  assinaturasCliente: Date[];
+}
+
+type RelatorioLista = { id: string; revisao_pdf?: number | null; versao_layout?: number | null };
+
+export async function infoListaRelatorios(relatorios: RelatorioLista[]): Promise<Record<string, InfoListaRelatorio>> {
+  const ids = relatorios.map((r) => r.id);
+  if (!ids.length) return {};
+  const consultar = async <T,>(fn: () => PromiseLike<{ data: T[] | null; error: unknown }>): Promise<T[]> => {
+    try {
+      const { data, error } = await fn();
+      if (error) throw error;
+      return data || [];
+    } catch (e) {
+      console.warn('Falha ao carregar informações da lista de relatórios:', e);
+      return [];
+    }
+  };
+  const [numeros, assinaturas, versoes] = await Promise.all([
+    buscarNumerosRelatorios(ids).catch((e) => { console.warn(e); return {} as Record<string, number>; }),
+    consultar<AssinaturaEmissao & { relatorio_id: string }>(() =>
+      supabase.from('assinaturas').select('relatorio_id, tipo, assinado_em, data_assinatura').in('relatorio_id', ids)),
+    consultar<VersaoEmissao & { relatorio_id: string }>(() =>
+      supabase.from('relatorio_versoes').select('relatorio_id, numero_versao, data_criacao').in('relatorio_id', ids)),
+  ]);
+  const out: Record<string, InfoListaRelatorio> = {};
+  for (const r of relatorios) {
+    const ass = assinaturas.filter((a) => a.relatorio_id === r.id);
+    const vers = versoes.filter((v) => v.relatorio_id === r.id);
+    const { rev, data } = calcularEmissao({ assinaturas: ass, versoes: vers, revisao: r.revisao_pdf || 0, versaoLayout: r.versao_layout ?? 1 });
+    const assinaturasCliente = ass
+      .filter((a) => a.tipo === 'cliente')
+      .map(dataAssinatura)
+      .filter((d): d is Date => !!d && !isNaN(d.getTime()))
+      .sort((a, b) => b.getTime() - a.getTime());
+    out[r.id] = { numero: numeros[r.id] ?? null, rev, emissao: data, assinaturasCliente };
+  }
+  return out;
 }
