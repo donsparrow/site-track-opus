@@ -6,4 +6,5 @@ export const relatorioFinalKeys = {
   relatorio: (obraId: string | null, tipo?: string) =>
     ['relatorio-final', 'relatorio', obraId, tipo ?? 'entrega_obra'] as const,
   fotos: (relatorioId: string | null) => ['relatorio-final', 'fotos', relatorioId] as const,
+  importado: (relatorioId: string | null) => ['relatorio-final', 'importado', relatorioId] as const,
 };
