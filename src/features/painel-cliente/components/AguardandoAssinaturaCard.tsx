@@ -8,9 +8,9 @@ import ListaExpansivel, { tituloComTotal } from './ListaExpansivel';
 import { fmtDataCurta } from '../utils';
 
 /** Só aparece quando houver documentos aguardando a assinatura do usuário. */
-export default function AguardandoAssinaturaCard({ obraId, podeLaudos }: { obraId: string; podeLaudos: boolean }) {
+export default function AguardandoAssinaturaCard({ obraId, podeLaudos, podeRelatorios = true }: { obraId: string; podeLaudos: boolean; podeRelatorios?: boolean }) {
   const navigate = useNavigate();
-  const { data = [] } = useAguardandoAssinatura(obraId, podeLaudos);
+  const { data = [] } = useAguardandoAssinatura(obraId, podeLaudos, podeRelatorios);
   if (data.length === 0) return null;
 
   return (
