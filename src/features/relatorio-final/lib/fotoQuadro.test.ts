@@ -181,10 +181,12 @@ describe('legendaEmLinhas', () => {
     expect(legendaEmLinhas('aa bb cc dd ee ff gg hh', medir, largura, 2)).toEqual(['aa bb cc dd ee ff gg', 'hh']);
   });
 
-  it('limita a duas linhas e corta com reticências', () => {
-    const linhas = legendaEmLinhas('aa bb cc dd ee ff', medir, largura, 2);
+  it('limita a duas linhas e corta a última com reticências', () => {
+    const linhas = legendaEmLinhas('aa bb cc dd ee ff gg hh ii jj kk ll mm nn oo', medir, largura, 2);
     expect(linhas).toHaveLength(2);
-    expect(legendaEmLinhas('aa bb cc dd ee ff gg hh ii jj', medir, largura, 2)[1].endsWith('…')).toBe(true);
+    expect(linhas[0]).toBe('aa bb cc dd ee ff gg');
+    expect(linhas[1].endsWith('…')).toBe(true);
+    expect(medir(linhas[1])).toBeLessThanOrEqual(largura);
   });
 
   it('não devolve linhas vazias para texto vazio', () => {
