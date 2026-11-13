@@ -123,7 +123,7 @@ export function legendaEmLinhas(texto: string, medir: (t: string) => number, lar
       atual = teste;
     }
   }
-  if (atual && !sobrouTexto) linhas.push(atual);
+  if (atual) linhas.push(atual);
   if (!linhas.length) return [];
   if (sobrouTexto) {
     let corte = linhas[linhas.length - 1];
