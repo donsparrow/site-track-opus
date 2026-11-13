@@ -42,3 +42,4 @@
   pdfjs-dist) só via import dinâmico no momento do uso ou dentro de
   componente lazy. Nunca importar no topo de layout, sidebar ou
   componentes compartilhados.
+- Gate module create/edit/delete buttons through `src/hooks/useAcoesModulo.ts` instead of `canEdit`; external roles never write and worker actions follow stored per-module permissions.
