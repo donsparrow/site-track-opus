@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { ArrowDown, ArrowUp, ImagePlus, Trash2, RotateCw } from 'lucide-react';
 import { useSignedUrls } from '../hooks/useSignedUrls';
 import FotoQuadro from './FotoQuadro';
+import PaginaFotosPreview from './PaginaFotosPreview';
 import { proximaRotacao } from '../lib/fotoQuadro';
 import type { RelatorioFinalFoto, TipoFoto } from '../types';
 
@@ -21,6 +22,8 @@ interface Props {
   onFormato?: (id: string, values: { orientacao?: 'horizontal' | 'vertical'; rotacao?: number }) => void;
   abas?: ReactNode;
   grupoLabel?: string;
+  /** Quando definido (2/4/6/8), as fotos são mostradas inteiras e a miniatura abre a prévia da página. */
+  fotosPorPagina?: number | null;
 }
 
 function FotoLegendaInput({
@@ -56,10 +59,13 @@ function FotoLegendaInput({
   );
 }
 
-export default function FotosManager({ tipo, titulo, fotos, editable, uploading, onUpload, onLegenda, onMover, onExcluir, onFormato, abas, grupoLabel }: Props) {
+export default function FotosManager({ tipo, titulo, fotos, editable, uploading, onUpload, onLegenda, onMover, onExcluir, onFormato, abas, grupoLabel, fotosPorPagina }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [previa, setPrevia] = useState<string | null>(null);
   const lista = fotos.filter((f) => f.tipo === tipo);
   const urls = useSignedUrls(lista.map((f) => f.foto_url));
+  const emGrade = fotosPorPagina != null;
+  const ordenadas = [...lista].sort((a, b) => a.ordem - b.ordem);
 
   return (
     <Card>
